@@ -1,6 +1,6 @@
 # Yuchao Li 个人主页
 
-用 Hugo 和 Pascal Michaillat 的 [hugo-website](https://github.com/pmichaillat/hugo-website) 模板（基于 PaperMod 主题）搭建，部署在腾讯 EdgeOne Pages。页面不引用任何境外 CDN、字体或统计脚本，国内外都能正常加载。
+用 Hugo 和 Pascal Michaillat 的 [hugo-website](https://github.com/pmichaillat/hugo-website) 模板（基于 PaperMod 主题）搭建，部署在 GitHub Pages。页面不引用任何外部 CDN、字体或统计脚本。
 
 ## 改哪里
 
@@ -12,7 +12,8 @@
 | 教学 | `content/teaching.md` |
 | 照片、CV | `static/picture.jpeg`、`static/Li_Yuchao_CV.pdf` |
 | 网站地址 | `config.yml` 第一行的 `baseURL`（https://www.yuchaoli.com/） |
-| EdgeOne 构建设置 | `edgeone.json` |
+| GitHub Pages 部署 | `.github/workflows/hugo.yml` |
+| EdgeOne 构建设置（备用） | `edgeone.json` |
 
 ### 论文分组
 
@@ -47,14 +48,13 @@ hugo server
 
 浏览器打开 http://localhost:1313/ ，改完文件页面会自动刷新。
 
-## 部署（EdgeOne Pages）
+## 部署（GitHub Pages）
 
-1. 把本仓库推到 GitHub。
-2. 在 EdgeOne Pages 控制台导入这个仓库。它会识别出 Hugo，并读取 `edgeone.json`。
-3. 加速区域选「全球可用区（不含中国大陆）」，不需要备案。
-4. 绑定自定义域名 `www.yuchaoli.com`：先在 Porkbun 的 DNS 里删掉指向 `pixie.porkbun.com` 的默认记录，再按 EdgeOne 弹窗的提示加验证记录和 CNAME，然后在 EdgeOne 里申请免费 HTTPS 证书。
-5. 不带 www 的 `yuchaoli.com`：在 Porkbun 的 URL Forwarding 里转发到 `https://www.yuchaoli.com`（301，勾选保留路径）。
-6. 之后每次 `git push`，EdgeOne 会自动重新构建发布。
+每次推送到 `main`，`.github/workflows/hugo.yml` 会自动构建并发布到 GitHub Pages。
+
+- 仓库设置：Settings → Pages → Source 选 **GitHub Actions**；Custom domain 填 `www.yuchaoli.com`，勾选 Enforce HTTPS。
+- DNS（Porkbun）：`www` 的 CNAME 指向 `yuchao-li2025.github.io`。不带 www 的 `yuchaoli.com` 用 URL Forwarding 301 跳转到 `https://www.yuchaoli.com`（保留路径）。
+- 备用：EdgeOne Pages 项目仍然连着这个仓库，`edgeone.json` 是它的构建设置。要切回 EdgeOne，把 `www` 的 CNAME 改回 EdgeOne 给的地址即可。之前 UCSC 校园网的 DNS 安全过滤会把 EdgeOne 的地址（`dnsoe7.com`）当成钓鱼网站拦截，所以换到了 GitHub Pages。
 
 ## 保持国内可访问
 
