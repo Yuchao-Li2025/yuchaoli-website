@@ -39,11 +39,10 @@ jobs:
         env:
           HUGO_CACHEDIR: ${{ runner.temp }}/hugo_cache
           HUGO_ENVIRONMENT: production
-        # base_url is https://www.yuchaoli.com once the custom domain is set in Settings -> Pages
-        run: |
-          hugo \
-            --minify \
-            --baseURL "${{ steps.pages.outputs.base_url }}/"
+        # Use baseURL from config.yml (https://www.yuchaoli.com/). configure-pages reports
+        # an http:// base_url until "Enforce HTTPS" is on, which produced http:// links and
+        # stylesheets on the HTTPS site (mixed content, "Not secure").
+        run: hugo --minify
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5
         with:
