@@ -1,0 +1,100 @@
+baseURL: "https://www.yuchaoli.com/"
+title: Yuchao Li
+theme: PaperMod
+copyright: "© 2026 Yuchao Li"
+
+enableInlineShortcodes: true
+enableRobotsTXT: true
+disableKinds: [taxonomy, term]
+pagination:
+  pagerSize: 20
+
+menu:
+    main:
+        - name: Research
+          url: papers/
+          weight: 1
+        - name: Teaching
+          url: teaching/
+          weight: 2
+        - name: CV
+          url: Li_Yuchao_CV.pdf
+          weight: 3
+
+params:
+    description: "Yuchao Li is a Ph.D. candidate in Economics at the University of California, Santa Cruz, working on asset pricing and behavioral finance. He is on the 2026–27 job market."
+    author: Yuchao Li
+    DateFormat: January 2006
+    defaultTheme: light
+    hideFooter: false
+    disableThemeToggle: true
+    ShowShareButtons: false
+    ShowReadingTime: false
+    disableSpecial1stPost: true
+    disableAnchoredHeadings: true
+    ShowPostNavLinks: false
+    ShowBreadCrumbs: false
+    ShowCodeCopyButtons: true
+    ShowAllPagesInArchive: false
+    MainSections: [papers]
+    ShowToc: false
+    disableScrollToTop: true
+    TocOpen: true
+    ShowWordCount: false
+    UseHugoToc: true
+    comments: false
+    # 公式渲染默认关闭。需要公式的页面在 front matter 里写 math: true（KaTeX 已放在 static/katex/，不走外部 CDN）
+    math: false
+    profileMode:
+          enabled: true
+          title: Yuchao Li
+          subtitle: "I am a Ph.D. candidate in Economics at the University of California, Santa Cruz, with a Designated Emphasis in Data Science. My research focuses on asset pricing and behavioral finance, with secondary interests in macroeconomics and macro-finance."
+          # 首页的求职信息（Markdown，行尾的 \ 表示换行）。求职季结束后整段删掉即可
+          jobMarket: |
+            **I am on the 2026–27 job market.**
+
+            **Job Market Paper:** [Decoding the Factor Zoo: Insights from Arbitrage Trading](papers/factor-zoo-arbitrage/) (with Yuntong Wu)
+
+            We use sophisticated arbitrageurs' observed trading as an informed indicator of mispricing to classify the 212 factors of the factor zoo, conservatively identifying 29 as mispricing. A Common Mispricing Factor built from a high-conviction core of these factors is unspanned by every leading model, and a three-factor model (MKT, SMB, CMF) prices the unclassified factors as well as leading benchmark models.
+
+            **Fields:** Asset pricing, behavioral finance (primary); macroeconomics, macro-finance (secondary)\
+            **Expected completion:** June 2027\
+            **References:** Alonso Villacorta (advisor), Hikaru Saijo (co-advisor), Galina Hale (committee member)
+          imageUrl: picture.jpeg
+          imageWidth: 160
+          imageHeight: 160
+          buttons:
+            - name: Research
+              url: papers/
+            - name: Teaching
+              url: teaching/
+            - name: CV
+              url: Li_Yuchao_CV.pdf
+
+    socialIcons:
+        - name: CV
+          url: Li_Yuchao_CV.pdf
+        - name: Email
+          url: mailto:yli852@ucsc.edu
+        - name: LinkedIn
+          url: https://www.linkedin.com/in/li-yuchao/
+
+    assets:
+        disableScrollBarStyle: true
+    cover:
+        hiddenInList: false
+        hiddenInSingle: true
+    label:
+      text: Yuchao Li
+      icon: favicon.ico
+      iconHeight: 18
+
+markup:
+    goldmark:
+        renderer:
+            unsafe: true
+    highlight:
+        guessSyntax: true
+        style: autumn
+    tableOfContents:
+        endLevel: 2

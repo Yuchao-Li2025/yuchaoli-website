@@ -1,0 +1,34 @@
+/* 首页求职信息 */
+.profile .job-market p {
+    margin: 0;
+}
+
+.profile .job-market p + p {
+    margin-top: 10px;
+}
+
+.profile .job-market a {
+    box-shadow: 0 1px 0 var(--primary);
+}
+
+/* Research 页的分组标题，以及论文页标题上方的类别标签 */
+.paper-group,
+.paper-category {
+    font-size: 14px;
+    font-weight: var(--semibold);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--secondary);
+}
+
+.paper-group {
+    margin: 40px 0 12px;
+}
+
+.page-header + .paper-group {
+    margin-top: 0;
+}
+
+.paper-category {
+    margin-bottom: 8px;
+}

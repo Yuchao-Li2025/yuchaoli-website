@@ -1,0 +1,41 @@
+{{- define "main" }}
+{{- /* Research 页：按论文 front matter 里的 category 分组，组内按 weight 排序 */}}
+<header class="page-header">
+  <h1>{{ .Title }}</h1>
+</header>
+
+{{- $groups := slice
+  (dict "key" "Job Market Paper" "heading" "Job Market Paper")
+  (dict "key" "Working Paper" "heading" "Working Papers")
+  (dict "key" "Work in Progress" "heading" "Work in Progress") }}
+
+{{- $keys := slice }}
+{{- range $groups }}
+{{- $keys = $keys | append .key }}
+{{- end }}
+
+{{- range $groups }}
+{{- $g := . }}
+{{- with (where $.RegularPages "Params.category" $g.key).ByWeight }}
+<h2 class="paper-group">{{ $g.heading }}</h2>
+{{- range . }}
+{{- partial "paper_entry.html" . }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{- /* 没写 category 或写错的论文放在最后，避免被漏掉 */}}
+{{- $others := slice }}
+{{- range $.RegularPages.ByWeight }}
+{{- if not (in $keys (.Params.category | default "")) }}
+{{- $others = $others | append . }}
+{{- end }}
+{{- end }}
+{{- with $others }}
+<h2 class="paper-group">Other Papers</h2>
+{{- range . }}
+{{- partial "paper_entry.html" . }}
+{{- end }}
+{{- end }}
+
+{{- end }}{{- /* end main */ -}}
