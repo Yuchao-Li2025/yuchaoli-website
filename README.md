@@ -10,7 +10,7 @@
 | 首页求职信息（JMP、领域、毕业时间、推荐人） | `config.yml` 里的 `profileMode.jobMarket` |
 | 论文 | `content/papers/<论文>/index.md`，PDF 放在同一个文件夹 |
 | 教学 | `content/teaching.md` |
-| 照片 | `static/picture.jpeg` |
+| 照片 | `static/picture.jpeg`：480×480 的正方形 JPEG，约 26 KB，首页显示成 160px 的圆形。换照片时同名覆盖，尺寸和大小保持在这个量级，不要直接放相机或影楼原图 |
 | CV | 在 Overleaf 里改，自动同步到 `static/Li_Yuchao_CV.pdf`（英文）和 `static/Li_Yuchao_CV_zh.pdf`（中文），见下文"更新 CV" |
 | 网站地址 | `config.yml` 第一行的 `baseURL`（https://www.yuchaoli.com/） |
 | GitHub Pages 部署 | `.github/workflows/hugo.yml` |
@@ -54,7 +54,7 @@ Research 页按每篇论文 front matter 里的 `category` 分组，组内按 `w
 
 ## 上线前要做
 
-- [ ] 换照片 `static/picture.jpeg`（正方形，现在是占位图）
+- [x] 换照片 `static/picture.jpeg`
 - [ ] 论文 PDF：放进各论文文件夹并命名为 `paper.pdf`，再删掉 Download 那段的注释标记。JMP 最要紧
 - [ ] 核对首页的 JMP 简介和各论文卡片上的简介（摘要原文取自 CV）
 - [x] 域名：yuchaoli.com（Porkbun）
