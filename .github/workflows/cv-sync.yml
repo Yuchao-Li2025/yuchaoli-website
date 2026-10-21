@@ -1,0 +1,214 @@
+# Keep static/Li_Yuchao_CV.pdf in sync with the CV project on Overleaf.
+#
+# Every hour this reads the Overleaf project through Overleaf's Git integration. A new
+# version is compiled and published once it has stayed unchanged for a full hourly check,
+# so a half-finished edit does not go online. "Run workflow" publishes the current version
+# immediately. If a version fails, the site keeps the previous PDF and an issue is opened;
+# the issue is closed automatically once the site is current again.
+#
+# Needs two repository secrets (Settings → Secrets and variables → Actions):
+#   OVERLEAF_TOKEN       Overleaf → Account Settings → Git integration. Expires after a year.
+#   OVERLEAF_PROJECT_ID  the id in the project's URL: overleaf.com/project/<id>
+# Until both exist, every run exits right away.
+name: Sync CV from Overleaf
+
+on:
+  schedule:
+    - cron: "23 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write # commit the new PDF
+  actions: write # start the deploy workflow
+  issues: write # report a failed sync
+
+concurrency:
+  group: cv-sync
+  cancel-in-progress: false
+
+env:
+  CV_PDF: static/Li_Yuchao_CV.pdf
+  STATE_FILE: .github/cv-overleaf-tree # Overleaf tree hash behind the published PDF
+  ISSUE_TITLE: CV sync from Overleaf failed
+  GH_REPO: ${{ github.repository }}
+
+jobs:
+  sync:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check secrets
+        id: setup
+        env:
+          TOKEN: ${{ secrets.OVERLEAF_TOKEN }}
+          PROJECT: ${{ secrets.OVERLEAF_PROJECT_ID }}
+        run: |
+          if [[ -n "$TOKEN" && -n "$PROJECT" ]]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::OVERLEAF_TOKEN and OVERLEAF_PROJECT_ID are not both set; nothing to do."
+          fi
+
+      - name: Checkout
+        if: steps.setup.outputs.ready == 'true'
+        uses: actions/checkout@v5
+
+      - name: Fetch the Overleaf project
+        id: src
+        if: steps.setup.outputs.ready == 'true'
+        env:
+          TOKEN: ${{ secrets.OVERLEAF_TOKEN }}
+          PROJECT: ${{ secrets.OVERLEAF_PROJECT_ID }}
+          MAIN: ${{ vars.CV_MAIN_TEX }} # optional: main .tex file, if it can't be detected
+          SRC: ${{ runner.temp }}/overleaf
+        run: |
+          for attempt in 1 2 3; do
+            rm -rf "$SRC"
+            git clone --quiet --depth 1 "https://git:${TOKEN}@git.overleaf.com/${PROJECT}" "$SRC" && break
+            if (( attempt == 3 )); then
+              echo "::error::Could not read the Overleaf project. Check OVERLEAF_PROJECT_ID, and whether OVERLEAF_TOKEN has expired."
+              exit 1
+            fi
+            sleep 30
+          done
+
+          # Main file: the only top-level .tex with \documentclass, else main.tex.
+          if [[ -z "$MAIN" ]]; then
+            mapfile -t roots < <(grep -l '^[[:space:]]*\\documentclass' "$SRC"/*.tex 2>/dev/null || true)
+            roots=("${roots[@]#"$SRC"/}")
+            if (( ${#roots[@]} == 1 )); then
+              MAIN=${roots[0]}
+            elif [[ " ${roots[*]} " == *" main.tex "* ]]; then
+              MAIN=main.tex
+            else
+              echo "::error::Cannot tell which .tex file is the CV (candidates: ${roots[*]:-none}). Set the repository variable CV_MAIN_TEX."
+              exit 1
+            fi
+          fi
+          if [[ ! -f "$SRC/$MAIN" ]]; then
+            echo "::error::$MAIN is not in the Overleaf project."
+            exit 1
+          fi
+
+          tree=$(git -C "$SRC" rev-parse 'HEAD^{tree}')
+          published=$(cat "$STATE_FILE" 2>/dev/null || true)
+          {
+            echo "main=$MAIN"
+            echo "tree=$tree"
+            if [[ "$tree" == "$published" ]]; then echo "current=true"; else echo "current=false"; fi
+          } >> "$GITHUB_OUTPUT"
+
+      # Markers in the Actions cache: "seen" = this version was already there at an earlier
+      # check; "failed" = it failed to compile before (so it is not retried every hour).
+      - name: Was this version seen before?
+        id: seen
+        if: steps.src.outputs.current == 'false'
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ runner.temp }}/cv-marker
+          key: cv-seen-${{ steps.src.outputs.tree }}
+          lookup-only: true
+
+      - name: Did it fail before?
+        id: failed
+        if: steps.src.outputs.current == 'false'
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ runner.temp }}/cv-marker
+          key: cv-failed-${{ steps.src.outputs.tree }}
+          lookup-only: true
+
+      - name: Decide
+        id: plan
+        if: steps.setup.outputs.ready == 'true'
+        env:
+          CURRENT: ${{ steps.src.outputs.current }}
+          SEEN: ${{ steps.seen.outputs.cache-hit }}
+          FAILED: ${{ steps.failed.outputs.cache-hit }}
+          MANUAL: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          msg=
+          if [[ "$CURRENT" == true ]]; then
+            status=current; msg="The website already has the latest CV."
+          elif [[ "$MANUAL" == true ]]; then
+            status=build
+          elif [[ "$SEEN" != true ]]; then
+            status=waiting; msg="New version on Overleaf; it is published if still unchanged at the next hourly check."
+          elif [[ "$FAILED" == true ]]; then
+            status=skipped; msg="This version failed before; skipping it (Run workflow retries it)."
+          else
+            status=build
+          fi
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          if [[ -n "$msg" ]]; then echo "::notice::$msg"; fi
+          mkdir -p "$RUNNER_TEMP/cv-marker" && touch "$RUNNER_TEMP/cv-marker/marker"
+
+      - name: Remember this version
+        if: steps.plan.outputs.status == 'waiting'
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ runner.temp }}/cv-marker
+          key: cv-seen-${{ steps.src.outputs.tree }}
+
+      - name: Compile
+        id: compile
+        if: steps.plan.outputs.status == 'build'
+        uses: xu-cheng/latex-action@v4 # full TeX Live, latexmk + pdfLaTeX, stops on errors
+        with:
+          working_directory: ${{ runner.temp }}/overleaf
+          root_file: ${{ steps.src.outputs.main }}
+          work_in_root_file_dir: true
+          # \today in Pacific time. A POSIX rule works without a time-zone database.
+          pre_compile: export TZ='PST8PDT,M3.2.0,M11.1.0'
+
+      - name: Publish
+        if: steps.plan.outputs.status == 'build'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MAIN_PATH: ${{ runner.temp }}/overleaf/${{ steps.src.outputs.main }}
+          TREE: ${{ steps.src.outputs.tree }}
+        run: |
+          cp "${MAIN_PATH%.tex}.pdf" "$CV_PDF"
+          echo "$TREE" > "$STATE_FILE"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$CV_PDF" "$STATE_FILE"
+          git commit --quiet -m "Update CV from Overleaf"
+          git pull --quiet --rebase origin main
+          git push --quiet origin HEAD:main
+          # Pushes made with GITHUB_TOKEN do not trigger workflows, so start the deploy here.
+          gh workflow run hugo.yml --ref main
+          echo "::notice::Published the new CV; the site redeploys in a minute or two."
+
+      - name: Close the failure issue
+        if: steps.plan.outputs.status == 'current' || steps.plan.outputs.status == 'build'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue list --state open --json number,title --jq '.[] | select(.title == env.ISSUE_TITLE) | .number' |
+            while read -r n; do
+              gh issue close "$n" --comment "已同步，网站上的 CV 是 Overleaf 上的最新版本。"
+            done
+
+      - name: Remember the failed version
+        if: failure() && steps.compile.outcome == 'failure'
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ runner.temp }}/cv-marker
+          key: cv-failed-${{ steps.src.outputs.tree }}
+
+      - name: Open an issue
+        if: failure() && steps.setup.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          open=$(gh issue list --state open --json title --jq '[.[] | select(.title == env.ISSUE_TITLE)] | length')
+          if (( open == 0 )); then
+            gh issue create --title "$ISSUE_TITLE" --body "Overleaf 上的 CV 没能同步到网站，网站上仍是上一版。
+
+          日志：$RUN_URL
+
+          常见原因：LaTeX 编译出错（日志里的 Compile 一步会显示错误行）；或 OVERLEAF_TOKEN 过期（有效期一年，在 Overleaf 重新生成后替换仓库 secret）。修好后，下一次同步成功时这个 issue 会自动关闭。"
+          fi
