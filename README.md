@@ -10,7 +10,7 @@
 | 首页求职信息（JMP、领域、毕业时间、推荐人） | `config.yml` 里的 `profileMode.jobMarket` |
 | 论文 | `content/papers/<论文>/index.md`，PDF 放在同一个文件夹 |
 | 教学 | `content/teaching.md` |
-| 照片 | `static/picture.jpeg`：480×480 的正方形 JPEG，约 26 KB，首页显示成 160px 的圆形。换照片时同名覆盖，尺寸和大小保持在这个量级，不要直接放相机或影楼原图 |
+| 照片 | `static/picture.jpeg`：480×480 的正方形 JPEG，约 24 KB，首页显示成 160px 的圆形。换照片时同名覆盖，尺寸和大小保持在这个量级，不要直接放相机或影楼原图 |
 | CV | 在 Overleaf 里改，自动同步到 `static/Li_Yuchao_CV.pdf`（英文）和 `static/Li_Yuchao_CV_zh.pdf`（中文），见下文"更新 CV" |
 | 网站地址 | `config.yml` 第一行的 `baseURL`（https://www.yuchaoli.com/） |
 | GitHub Pages 部署 | `.github/workflows/hugo.yml` |
