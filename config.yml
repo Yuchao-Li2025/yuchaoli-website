@@ -70,6 +70,10 @@ params:
               url: teaching/
             - name: CV
               url: Li_Yuchao_CV.pdf
+            # 中文简历：PDF 由 Overleaf 自动同步。static/ 里还没有这个文件时，按钮不显示
+            - name: 中文简历
+              url: Li_Yuchao_CV_zh.pdf
+              lang: zh
 
     socialIcons:
         - name: CV

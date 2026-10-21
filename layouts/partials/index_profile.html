@@ -41,7 +41,10 @@
         {{- with .buttons }}
         <div class="buttons">
             {{- range . }}
-            <a class="button" href="{{ trim .url " " }}" rel="noopener" title="{{ .name }}">
+            {{- $url := trim .url " " }}
+            {{- /* 指向站内 PDF 的按钮，在 static/ 里还没有这个文件时不显示（例如中文简历第一次同步之前） */}}
+            {{- if or (findRE "://" $url) (not (strings.HasSuffix $url ".pdf")) (fileExists (path.Join "static" $url)) }}
+            <a class="button" href="{{ $url }}" rel="noopener" title="{{ .name }}"{{ with .lang }} lang="{{ . }}" hreflang="{{ . }}"{{ end }}>
                 <span class="button-inner">
                     {{ .name }}
                     {{- if (findRE "://" .url) }}&nbsp;
@@ -54,6 +57,7 @@
                     {{- end }}
                 </span>
             </a>
+            {{- end }}
             {{- end }}
         </div>
         {{- end }}
