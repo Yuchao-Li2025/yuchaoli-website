@@ -52,9 +52,9 @@ jobs:
             main: ""
             pdf: static/Li_Yuchao_CV_zh.pdf
             xelatex: true
-            # Noto Serif/Sans CJK, which Overleaf also has installed. ctex's default
-            # (Fandol) and fonts uploaded to the project work without this.
-            packages: font-noto-cjk
+            # Noto Serif/Sans CJK in all weights, which Overleaf also has installed.
+            # ctex's default (Fandol) and fonts uploaded to the project work without these.
+            packages: font-noto-cjk font-noto-cjk-extra
     env:
       CV_PDF: ${{ matrix.pdf }}
       STATE_FILE: .github/cv-overleaf-tree-${{ matrix.doc }} # Overleaf tree behind the published PDF
