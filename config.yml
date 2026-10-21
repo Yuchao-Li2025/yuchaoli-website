@@ -24,6 +24,9 @@ menu:
 params:
     description: "Yuchao Li is a Ph.D. candidate in Economics at the University of California, Santa Cruz, working on asset pricing and behavioral finance. He is on the 2026–27 job market."
     author: Yuchao Li
+    # 分享链接时的预览图（Open Graph），1200×630，源文件和生成方法见 og-image/。
+    # 换图后改成 og.jpg?v=2、?v=3……，否则 LinkedIn 等平台可能继续显示缓存的旧图
+    images: ["og.jpg"]
     DateFormat: January 2006
     defaultTheme: light
     hideFooter: false
@@ -49,7 +52,7 @@ params:
           enabled: true
           title: Yuchao Li
           subtitle: "I am a Ph.D. candidate in Economics at the University of California, Santa Cruz, with a Designated Emphasis in Data Science. My research focuses on asset pricing and behavioral finance, with secondary interests in macroeconomics and macro-finance."
-          # 首页的求职信息（Markdown，行尾的 \ 表示换行）。求职季结束后整段删掉即可
+          # 首页的求职信息（Markdown，行尾的 \ 表示换行）。求职季结束后整段删掉即可；预览图 static/og.jpg 里也有求职那一行，要一起重新生成
           jobMarket: |
             **I am on the 2026–27 job market.**
 

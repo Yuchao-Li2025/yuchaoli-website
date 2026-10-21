@@ -11,6 +11,7 @@
 | 论文 | `content/papers/<论文>/index.md`，PDF 放在同一个文件夹 |
 | 教学 | `content/teaching.md` |
 | 照片 | `static/picture.jpeg`：480×480 的正方形 JPEG，约 24 KB，首页显示成 160px 的圆形。换照片时同名覆盖，尺寸和大小保持在这个量级，不要直接放相机或影楼原图 |
+| 分享链接时的预览图 | `static/og.jpg`（1200×630），由 `config.yml` 里的 `images` 指定。源文件是 `og-image/og.html`（这个文件夹不会发布），改完运行 `python3 og-image/render.py` 重新生成；换图后把 `images` 改成 `og.jpg?v=2` 这样，避免各平台显示缓存的旧图。图里有求职那一行，求职季结束后要删掉再生成 |
 | CV | 在 Overleaf 里改，自动同步到 `static/Li_Yuchao_CV.pdf`（英文）和 `static/Li_Yuchao_CV_zh.pdf`（中文），见下文"更新 CV" |
 | 网站地址 | `config.yml` 第一行的 `baseURL`（https://www.yuchaoli.com/） |
 | GitHub Pages 部署 | `.github/workflows/hugo.yml` |

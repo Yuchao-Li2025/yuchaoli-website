@@ -1,0 +1,51 @@
+<!doctype html>
+<!--
+  分享链接时的预览图（Open Graph）的源文件。这个文件夹不会发布到网站上。
+  改完运行 python3 og-image/render.py，生成 static/og.jpg（1200×630）。
+  颜色取自网站：背景 #f5f5f5，正文 #1e1e1e，次要文字 #6c6c6c，强调色 #6a7ba2。
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 1200px; height: 630px; overflow: hidden;
+    background: #f5f5f5; color: #1e1e1e;
+    font-family: "Inter", sans-serif; -webkit-font-smoothing: antialiased;
+  }
+  .card {
+    box-sizing: border-box; width: 1200px; height: 630px;
+    display: flex; align-items: center; justify-content: center; gap: 60px;
+  }
+  .photo {
+    flex: none; box-sizing: border-box; width: 372px; height: 372px;
+    border-radius: 50%; border: 2px solid #d6d6d6; display: block;
+  }
+  .text { flex: none; }
+  h1 {
+    font-family: "Inter Display", "Inter", sans-serif; font-weight: 700;
+    font-size: 94px; line-height: 1; letter-spacing: -0.015em; margin: 0 0 28px;
+  }
+  .role { font-size: 36px; line-height: 1.36; margin: 0; white-space: nowrap; }
+  .inst { color: #6c6c6c; }
+  .rule { width: 56px; height: 3px; background: #6a7ba2; border: 0; margin: 34px 0 32px; }
+  .meta { font-size: 30px; line-height: 1.5; color: #6c6c6c; margin: 0; white-space: nowrap; }
+  /* 三个领域时缩小到 24.5px 才放得下；只写两个领域时删掉这一条，和下一行同为 30px */
+  .fields { font-size: 24.5px; }
+  .meta strong { color: #1e1e1e; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="card">
+  <img class="photo" src="../static/picture.jpeg" alt="">
+  <div class="text">
+    <h1>Yuchao Li</h1>
+    <p class="role">Ph.D. Candidate in Economics<br><span class="inst">University of California, Santa Cruz</span></p>
+    <hr class="rule">
+    <!-- 求职季结束后删掉 <br> 和 strong 这一行 -->
+    <p class="meta"><span class="fields">Asset Pricing · Behavioral Finance · Macro-Finance</span><br><strong>On the 2026–27 Job Market</strong></p>
+  </div>
+</div>
+</body>
+</html>
