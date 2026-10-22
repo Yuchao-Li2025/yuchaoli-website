@@ -20,6 +20,11 @@ menu:
         - name: CV
           url: Li_Yuchao_CV.pdf
           weight: 3
+        - name: 中文简历
+          url: Li_Yuchao_CV_zh.pdf
+          weight: 4
+          pre: '<span lang="zh">'
+          post: '</span>'
 
 params:
     description: "Yuchao Li is a Ph.D. candidate in Economics at the University of California, Santa Cruz, working on asset pricing and behavioral finance. He is on the 2026–27 job market."
