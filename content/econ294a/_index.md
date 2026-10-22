@@ -4,7 +4,7 @@ description: "Lecture notes for ECON 294A, Python for Finance, a graduate course
 outputs: ["HTML"]
 ---
 
-Graduate course, Department of Economics, UC Santa Cruz. Spring 2025 and Spring 2026.
+These are my lecture notes for the graduate Python course I taught at UC Santa Cruz, one Jupyter notebook per lecture. The notebooks are also on [GitHub](https://github.com/Yuchao-Li2025/python-for-finance).
 
 [Syllabus (Spring 2026)](/teaching/ECON294A_Syllabus_Spring2026.pdf)
 
