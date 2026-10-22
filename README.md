@@ -6,7 +6,8 @@
 
 | 内容 | 文件 |
 |---|---|
-| 名字、简介、导航、邮箱、LinkedIn | `config.yml` |
+| 名字、简介、导航、邮箱、LinkedIn、GitHub | `config.yml` |
+| 首页图标的样子 | `layouts/partials/svg.html`：邮件、LinkedIn、GitHub 用的是 Tabler Icons 的线条图标，按 `config.yml` 里 `socialIcons` 的 `name` 对应 |
 | 首页求职信息（JMP、领域、毕业时间、推荐人） | `config.yml` 里的 `profileMode.jobMarket` |
 | 论文 | `content/papers/<论文>/index.md`，PDF 放在同一个文件夹 |
 | 教学 | `content/teaching.md` |
@@ -109,4 +110,4 @@ hugo server
 
 ## 许可
 
-模板代码来自 Pascal Michaillat 的 hugo-website（MIT License，见 `LICENSE.md`）；KaTeX 为 MIT License（`static/katex/LICENSE`）。网站内容 © Yuchao Li。
+模板代码来自 Pascal Michaillat 的 hugo-website（MIT License，见 `LICENSE.md`）；KaTeX 为 MIT License（`static/katex/LICENSE`）；首页的邮件、LinkedIn、GitHub 图标来自 Tabler Icons（MIT License，Copyright (c) 2020-2026 Paweł Kuna）。网站内容 © Yuchao Li。
