@@ -1,0 +1,870 @@
+---
+title: "Lecture 2: Working with Lists and if Statements"
+lecture: 2
+weight: 2
+summary: "for loops and indentation, range(), numerical lists, list comprehensions, slicing, copies vs. aliases, and tuples; conditional tests, and/or, membership, and if/elif/else."
+description: "ECON 294A lecture notes by Yuchao Li: loops over lists, slicing, tuples, and if statements, with finance examples."
+notebook: "ECON294A_Lecture2.ipynb"
+---
+<div class="toc"><details><summary accesskey="c" title="(Alt + C)"><span class="details">Contents</span></summary><div class="inner"><ul><li><a href="#what-well-cover" aria-label="What We&#x27;ll Cover">What We&#x27;ll Cover</a></li><li><a href="#ch-4-working-with-lists" aria-label="Ch 4: Working with Lists">Ch 4: Working with Lists</a><ul><li><a href="#looping-over-a-list" aria-label="Looping Over a List">Looping Over a List</a></li><li><a href="#lists-of-numbers" aria-label="Lists of Numbers">Lists of Numbers</a></li><li><a href="#slicing" aria-label="Slicing">Slicing</a></li><li><a href="#copies-vs-aliases" aria-label="Copies vs. Aliases">Copies vs. Aliases</a></li><li><a href="#tuples" aria-label="Tuples">Tuples</a></li><li><a href="#in-class-exercise" aria-label="In-Class Exercise">In-Class Exercise</a></li></ul></li><li><a href="#ch-5-if-statements" aria-label="Ch 5: if Statements">Ch 5: if Statements</a><ul><li><a href="#up-days-and-down-days" aria-label="Up Days and Down Days">Up Days and Down Days</a></li><li><a href="#comparisons-and-boolean-tests" aria-label="Comparisons and Boolean Tests">Comparisons and Boolean Tests</a></li><li><a href="#making-decisions-with-if" aria-label="Making Decisions with if">Making Decisions with if</a></li><li><a href="#combining-loops-and-conditions" aria-label="Combining Loops and Conditions">Combining Loops and Conditions</a></li><li><a href="#writing-readable-conditions" aria-label="Writing Readable Conditions">Writing Readable Conditions</a></li><li><a href="#in-class-exercise-2" aria-label="In-Class Exercise">In-Class Exercise</a></li></ul></li></ul></div></details></div>
+<div class="post-content nb">
+<ul>
+<li><p>In Lecture 1 we stored data in variables and lists. This lecture covers repeating a calculation for every item in a list and making decisions based on the data.</p>
+</li>
+<li><p>A <code>for</code> loop applies the same steps to each item in a list, however long the list is.</p>
+</li>
+<li><p>An <code>if</code> statement runs code only when a condition holds, for example to flag a loss or to reject an order for a ticker we cannot trade.</p>
+</li>
+<li><p>From Lecture 6 on, pandas handles many of these loops, but the logic is the same.</p>
+</li>
+</ul>
+
+<h3 id="what-well-cover">What We'll Cover</h3><ul>
+<li><p><strong>Ch 4 (Working with Lists):</strong> <code>for</code> loops and indentation, <code>range()</code>, numerical lists, <code>min()</code>/<code>max()</code>/<code>sum()</code>, list comprehensions, slicing, copying lists, and tuples.</p>
+</li>
+<li><p><strong>Ch 5 (if Statements):</strong> conditional tests, <code>and</code>/<code>or</code>, <code>in</code>/<code>not in</code>, Boolean values, <code>if</code>/<code>if-else</code>/<code>if-elif-else</code>, and <code>if</code> statements with lists.</p>
+</li>
+<li><p>The running example is a small watchlist of stocks (AAPL, MSFT, NVDA, JPM, XOM, KO) and two weeks of daily closing prices for one stock. All prices, ratios, and portfolio figures in this lecture are illustrative, not market data.</p>
+</li>
+</ul>
+
+<h2 id="ch-4-working-with-lists">Ch 4: Working with Lists</h2>
+
+<ul>
+<li><p>Lecture 1 showed how to create a list, read items by their index, and add, remove, and sort items one at a time.</p>
+</li>
+<li><p>In practice we usually need to process every item in a list, for example to turn each price into a return or to add up the value of each position.</p>
+</li>
+<li><p>This chapter covers looping over a list, creating and summarizing lists of numbers, selecting part of a list, and tuples, a list-like type whose contents cannot change.</p>
+</li>
+</ul>
+
+<h3 id="looping-over-a-list">Looping Over a List</h3><ul>
+<li><p>A <strong><code>for</code> loop</strong> runs the same block of code once for each item in a list.</p>
+</li>
+<li><p>The loop below prints every ticker on the watchlist.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">watchlist</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"AAPL"</span><span class="p">,</span> <span class="s2">"MSFT"</span><span class="p">,</span> <span class="s2">"NVDA"</span><span class="p">,</span> <span class="s2">"JPM"</span><span class="p">,</span> <span class="s2">"XOM"</span><span class="p">,</span> <span class="s2">"KO"</span><span class="p">]</span>
+
+<span class="k">for</span> <span class="n">ticker</span> <span class="ow">in</span> <span class="n">watchlist</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">ticker</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>AAPL
+MSFT
+NVDA
+JPM
+XOM
+KO
+</pre>
+</div></div>
+<h4 id="how-a-for-loop-works">How a <code>for</code> Loop Works</h4><ul>
+<li><p>At the line <code>for ticker in watchlist:</code>, Python takes the first item of <code>watchlist</code>, stores it in the variable <code>ticker</code>, and runs the indented block below.</p>
+</li>
+<li><p>When the block finishes, Python goes back to the <code>for</code> line, stores the next item in <code>ticker</code>, and runs the block again.</p>
+</li>
+<li><p>The loop ends after the last item. With six tickers, the block runs six times.</p>
+</li>
+<li><p>The loop variable can have any name. Use a name that describes one item and give the list a name that describes the whole collection, as in <code>for ticker in watchlist</code> or <code>for price in prices</code>.</p>
+</li>
+</ul>
+
+<h4 id="inside-vs-after-the-loop">Inside vs. After the Loop</h4><ul>
+<li><p>The indented lines after the <code>for</code> line form the <strong>body</strong> of the loop. The body runs once per item and can contain any number of lines.</p>
+</li>
+<li><p>The first line that is not indented is outside the loop. It runs once, after the loop finishes, so it is the place for a summary such as a total.</p>
+</li>
+<li><p>Below, the loop adds the market value of each position to a running total, and the line after the loop prints the result. <code>total += value</code> is shorthand for <code>total = total + value</code>. Python ignores the underscore in <code>12_500.00</code>; it only makes the number easier to read.</p>
+</li>
+<li><p>In an f-string, <code>{value:,.2f}</code> displays a number with a thousands separator and 2 decimals. It changes only how the number is printed, not the value stored.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">position_values</span> <span class="o">=</span> <span class="p">[</span><span class="mf">12_500.00</span><span class="p">,</span> <span class="mf">8_300.00</span><span class="p">,</span> <span class="mf">21_750.00</span><span class="p">,</span> <span class="mf">4_900.00</span><span class="p">]</span>
+<span class="n">total</span> <span class="o">=</span> <span class="mi">0</span>
+
+<span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">position_values</span><span class="p">:</span>
+    <span class="n">total</span> <span class="o">+=</span> <span class="n">value</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Added $</span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">; running total $</span><span class="si">{</span><span class="n">total</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Portfolio value: $</span><span class="si">{</span><span class="n">total</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Added $12,500.00; running total $12,500.00
+Added $8,300.00; running total $20,800.00
+Added $21,750.00; running total $42,550.00
+Added $4,900.00; running total $47,450.00
+Portfolio value: $47,450.00
+</pre>
+</div></div>
+<h4 id="indentation">Indentation</h4><ul>
+<li><p>Many languages mark a block of code with braces <code>{ }</code>. Python uses indentation instead: the indented lines after a line that ends in a colon form the block.</p>
+</li>
+<li><p>The convention is 4 spaces per level. Jupyter, Colab, and VS Code insert them automatically when you press Enter after a colon.</p>
+</li>
+<li><p>A common mistake is forgetting to indent the body. Python then raises an <code>IndentationError</code> and does not run the cell.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># This will fail: the loop body is not indented</span>
+<span class="k">for</span> <span class="n">ticker</span> <span class="ow">in</span> <span class="n">watchlist</span><span class="p">:</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">ticker</span><span class="p">)</span></code></pre></div><div class="nb-out nb-error">
+<pre>
+  Cell In[3], line 3
+    print(ticker)
+    ^
+IndentationError: expected an indented block after 'for' statement on line 2
+</pre>
+</div></div>
+<ul>
+<li><p>The last line of an error message gives the error type and the problem (<code>expected an indented block</code>), so read it first. The lines above it show where Python found the problem.</p>
+</li>
+<li><p>Leaving out the colon at the end of the <code>for</code> line raises a <code>SyntaxError</code>.</p>
+</li>
+<li><p>Python cannot catch every indentation mistake. If the final <code>print</code> in the portfolio example were indented, it would run on every pass and print a "Portfolio value" line four times, three of them with incomplete totals. No error would be raised, so check which lines are inside a loop.</p>
+</li>
+</ul>
+
+<h3 id="lists-of-numbers">Lists of Numbers</h3><ul>
+<li><p>Financial data such as a price history or a series of returns is often stored as a list of numbers.</p>
+</li>
+<li><p>Python can generate integer sequences with <code>range()</code>, summarize a list with <code>min()</code>, <code>max()</code>, and <code>sum()</code>, and build a new list from an existing one with a list comprehension.</p>
+</li>
+</ul>
+
+<h4 id="counting-with-range">Counting with <code>range()</code></h4><ul>
+<li><p><code>range(start, stop)</code> produces the integers from <code>start</code> up to, but not including, <code>stop</code>.</p>
+</li>
+<li><p>To count years 1 through 5, write <code>range(1, 6)</code>. Forgetting that <code>stop</code> is excluded is a common cause of off-by-one errors.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">for</span> <span class="n">year</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">6</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Year </span><span class="si">{</span><span class="n">year</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Year 1
+Year 2
+Year 3
+Year 4
+Year 5
+</pre>
+</div></div>
+<ul>
+<li><p>With one argument, <code>range(n)</code> starts at 0 and produces <code>n</code> integers: 0 through <code>n - 1</code>.</p>
+</li>
+<li><p>A third argument sets the <strong>step</strong>. A 5-year bond that pays a coupon every 6 months pays in months 6, 12, 18, and so on up to 60.</p>
+</li>
+<li><p>A <code>range</code> produces its numbers on demand instead of storing them. Wrap it in <code>list()</code> to see or keep them.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="nb">print</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">)))</span>
+
+<span class="n">coupon_months</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">61</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">coupon_months</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Number of coupon payments: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">coupon_months</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>[0, 1, 2, 3, 4]
+[6, 12, 18, 24, 30, 36, 42, 48, 54, 60]
+Number of coupon payments: 10
+</pre>
+</div></div>
+<h4 id="building-a-list-in-a-loop">Building a List in a Loop</h4><ul>
+<li><p>A common pattern is to start with an empty list and <code>append()</code> one value on each pass through a loop.</p>
+</li>
+<li><p>Below we build a compounding schedule for a deposit of 10,000 dollars earning 5% a year, compounded annually. After <code>year</code> years the balance is <code>principal * (1 + rate) ** year</code>.</p>
+</li>
+<li><p><code>round(balance, 2)</code> rounds each balance to the nearest cent before it is stored.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">principal</span> <span class="o">=</span> <span class="mi">10_000</span>
+<span class="n">rate</span> <span class="o">=</span> <span class="mf">0.05</span>
+<span class="n">balances</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="k">for</span> <span class="n">year</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">6</span><span class="p">):</span>
+    <span class="n">balance</span> <span class="o">=</span> <span class="n">principal</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">rate</span><span class="p">)</span> <span class="o">**</span> <span class="n">year</span>
+    <span class="n">balances</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">balance</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">balances</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>[10500.0, 11025.0, 11576.25, 12155.06, 12762.82]
+</pre>
+</div></div>
+<h4 id="summary-statistics-min-max-sum">Summary Statistics: <code>min()</code>, <code>max()</code>, <code>sum()</code></h4><ul>
+<li><p>These built-in functions take a list of numbers and return its smallest value, its largest value, and its total.</p>
+</li>
+<li><p>To try them, we store ten trading days of closing prices for one stock in <code>closes</code>. The average close is <code>sum(closes) / len(closes)</code>.</p>
+</li>
+<li><p><code>sum()</code> can replace the running-total loop from earlier: <code>sum(position_values)</code> returns the same total, 47,450.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">closes</span> <span class="o">=</span> <span class="p">[</span><span class="mf">100.00</span><span class="p">,</span> <span class="mf">101.50</span><span class="p">,</span> <span class="mf">99.80</span><span class="p">,</span> <span class="mf">102.30</span><span class="p">,</span> <span class="mf">103.10</span><span class="p">,</span>
+          <span class="mf">101.90</span><span class="p">,</span> <span class="mf">104.20</span><span class="p">,</span> <span class="mf">105.00</span><span class="p">,</span> <span class="mf">102.60</span><span class="p">,</span> <span class="mf">104.70</span><span class="p">]</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Lowest close:  $</span><span class="si">{</span><span class="nb">min</span><span class="p">(</span><span class="n">closes</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Highest close: $</span><span class="si">{</span><span class="nb">max</span><span class="p">(</span><span class="n">closes</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Average close: $</span><span class="si">{</span><span class="nb">sum</span><span class="p">(</span><span class="n">closes</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="n">closes</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Lowest close:  $99.80
+Highest close: $105.00
+Average close: $102.51
+</pre>
+</div></div>
+<h4 id="list-comprehensions">List Comprehensions</h4><ul>
+<li><p>A <strong>list comprehension</strong> builds a new list from an existing sequence in a single expression: <code>[expression for item in sequence]</code>.</p>
+</li>
+<li><p>It reads as "compute <code>expression</code> for each <code>item</code> and collect the results in a list."</p>
+</li>
+<li><p>The cell below builds the compounding schedule from above in one line.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">balances</span> <span class="o">=</span> <span class="p">[</span><span class="nb">round</span><span class="p">(</span><span class="n">principal</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">rate</span><span class="p">)</span> <span class="o">**</span> <span class="n">year</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">year</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">6</span><span class="p">)]</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">balances</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>[10500.0, 11025.0, 11576.25, 12155.06, 12762.82]
+</pre>
+</div></div>
+<ul>
+<li><p>The <strong>daily return</strong> on day <code>t</code> is that day's close divided by the previous close, minus one: <code>closes[t] / closes[t - 1] - 1</code>. The comprehension below applies this formula to <code>closes</code>.</p>
+</li>
+<li><p>The first day has no previous close, so <code>t</code> runs from 1 to <code>len(closes) - 1</code>, and ten prices give nine returns.</p>
+</li>
+<li><p>The result is an ordinary list, so <code>max()</code> and <code>min()</code> find the best and worst day. In an f-string, <code>{x:.2%}</code> multiplies by 100, rounds to 2 decimals, and adds a percent sign: 0.0251 prints as <code>2.51%</code>.</p>
+</li>
+<li><p>In Lecture 6, pandas computes the same returns with a single method, <code>pct_change()</code>.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">daily_returns</span> <span class="o">=</span> <span class="p">[</span><span class="n">closes</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">/</span> <span class="n">closes</span><span class="p">[</span><span class="n">t</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">closes</span><span class="p">))]</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">closes</span><span class="p">)</span><span class="si">}</span><span class="s2"> prices -&gt; </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">daily_returns</span><span class="p">)</span><span class="si">}</span><span class="s2"> returns"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">([</span><span class="nb">round</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">daily_returns</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Best day:  </span><span class="si">{</span><span class="nb">max</span><span class="p">(</span><span class="n">daily_returns</span><span class="p">)</span><span class="si">:</span><span class="s2">.2%</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Worst day: </span><span class="si">{</span><span class="nb">min</span><span class="p">(</span><span class="n">daily_returns</span><span class="p">)</span><span class="si">:</span><span class="s2">.2%</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>10 prices -&gt; 9 returns
+[0.015, -0.0167, 0.0251, 0.0078, -0.0116, 0.0226, 0.0077, -0.0229, 0.0205]
+Best day:  2.51%
+Worst day: -2.29%
+</pre>
+</div></div>
+<h3 id="slicing">Slicing</h3><ul>
+<li><p>A <strong>slice</strong> selects a run of consecutive items: <code>closes[start:stop]</code>.</p>
+</li>
+<li><p>As with <code>range()</code>, <code>start</code> is included and <code>stop</code> is excluded, so <code>closes[0:3]</code> returns the items at positions 0, 1, and 2.</p>
+</li>
+<li><p>Omit <code>start</code> to begin at the first item; omit <code>stop</code> to continue to the end.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="nb">print</span><span class="p">(</span><span class="n">closes</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">])</span>   <span class="c1"># positions 0, 1, 2</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">closes</span><span class="p">[:</span><span class="mi">3</span><span class="p">])</span>    <span class="c1"># same slice: start defaults to 0</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">closes</span><span class="p">[</span><span class="mi">7</span><span class="p">:])</span>    <span class="c1"># position 7 to the end</span></code></pre></div><div class="nb-out nb-stream">
+<pre>[100.0, 101.5, 99.8]
+[100.0, 101.5, 99.8]
+[105.0, 102.6, 104.7]
+</pre>
+</div></div>
+<h4 id="counting-from-the-end">Counting from the End</h4><ul>
+<li>Negative positions count from the end, so <code>closes[-5:]</code> is the last five closes. Their average is the latest value of the 5-day moving average, a common trend indicator.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">last_five</span> <span class="o">=</span> <span class="n">closes</span><span class="p">[</span><span class="o">-</span><span class="mi">5</span><span class="p">:]</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">last_five</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"5-day moving average: $</span><span class="si">{</span><span class="nb">sum</span><span class="p">(</span><span class="n">last_five</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="n">last_five</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>[101.9, 104.2, 105.0, 102.6, 104.7]
+5-day moving average: $103.68
+</pre>
+</div></div>
+<h4 id="slices-in-a-for-loop">Slices in a <code>for</code> Loop</h4><ul>
+<li><p>A slice is itself a list, so a <code>for</code> loop can run over it.</p>
+</li>
+<li><p>Suppose <code>ranked</code> lists the watchlist from best to worst performer this month. Looping over <code>ranked[:3]</code> reports only the top three.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">ranked</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"NVDA"</span><span class="p">,</span> <span class="s2">"MSFT"</span><span class="p">,</span> <span class="s2">"JPM"</span><span class="p">,</span> <span class="s2">"AAPL"</span><span class="p">,</span> <span class="s2">"KO"</span><span class="p">,</span> <span class="s2">"XOM"</span><span class="p">]</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Top three performers:"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">ticker</span> <span class="ow">in</span> <span class="n">ranked</span><span class="p">[:</span><span class="mi">3</span><span class="p">]:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">ticker</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Top three performers:
+  NVDA
+  MSFT
+  JPM
+</pre>
+</div></div>
+<h3 id="copies-vs-aliases">Copies vs. Aliases</h3><ul>
+<li><p>Suppose you want a team watchlist that starts with your tickers and can then be changed without affecting yours.</p>
+</li>
+<li><p>The assignment <code>team_watchlist = my_watchlist</code> does not copy anything. It gives the same list a second name.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">my_watchlist</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"AAPL"</span><span class="p">,</span> <span class="s2">"MSFT"</span><span class="p">,</span> <span class="s2">"NVDA"</span><span class="p">]</span>
+<span class="n">team_watchlist</span> <span class="o">=</span> <span class="n">my_watchlist</span>          <span class="c1"># a second name, not a copy</span>
+
+<span class="n">team_watchlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"JPM"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Mine: </span><span class="si">{</span><span class="n">my_watchlist</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Team: </span><span class="si">{</span><span class="n">team_watchlist</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Mine: ['AAPL', 'MSFT', 'NVDA', 'JPM']
+Team: ['AAPL', 'MSFT', 'NVDA', 'JPM']
+</pre>
+</div></div>
+<ul>
+<li><p>JPM was added through <code>team_watchlist</code>, but it also appears in <code>my_watchlist</code>, because both names refer to the same list in memory. This is called <strong>aliasing</strong>.</p>
+</li>
+<li><p>Bugs caused by aliasing are hard to find because no error is raised; the data just changes in a place you did not expect.</p>
+</li>
+<li><p>To make an independent copy, slice the whole list with <code>[:]</code> or call <code>my_watchlist.copy()</code>. Work on a copy when you need to change a list but keep the original, for example raw prices before cleaning.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">my_watchlist</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"AAPL"</span><span class="p">,</span> <span class="s2">"MSFT"</span><span class="p">,</span> <span class="s2">"NVDA"</span><span class="p">]</span>
+<span class="n">team_watchlist</span> <span class="o">=</span> <span class="n">my_watchlist</span><span class="p">[:]</span>       <span class="c1"># a new list with the same items</span>
+
+<span class="n">team_watchlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"JPM"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Mine: </span><span class="si">{</span><span class="n">my_watchlist</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Team: </span><span class="si">{</span><span class="n">team_watchlist</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Mine: ['AAPL', 'MSFT', 'NVDA']
+Team: ['AAPL', 'MSFT', 'NVDA', 'JPM']
+</pre>
+</div></div>
+<h3 id="tuples">Tuples</h3><ul>
+<li><p>A <strong>tuple</strong> is an ordered sequence like a list, but it is written with parentheses instead of square brackets.</p>
+</li>
+<li><p>A tuple is <strong>immutable</strong>: once created, its items cannot be changed, added, or removed.</p>
+</li>
+<li><p>Tuples suit small records that should not change, such as a quote that pairs a ticker with a price. Indexing and <code>for</code> loops work the same way as with a list.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">quote</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"AAPL"</span><span class="p">,</span> <span class="mf">189.50</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">quote</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Ticker: </span><span class="si">{</span><span class="n">quote</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Price:  </span><span class="si">{</span><span class="n">quote</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>('AAPL', 189.5)
+Ticker: AAPL
+Price:  189.5
+</pre>
+</div></div>
+<h4 id="trying-to-change-a-tuple">Trying to Change a Tuple</h4><ul>
+<li>Assigning to an item of a tuple raises a <code>TypeError</code>. This prevents accidental changes to a record that should stay fixed.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># This will fail: tuples do not support item assignment</span>
+<span class="n">quote</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mf">192.25</span></code></pre></div><div class="nb-out nb-error">
+<pre>
+---------------------------------------------------------------------------
+TypeError                                 Traceback (most recent call last)
+Cell In[16], line 2
+      1 # This will fail: tuples do not support item assignment
+----&gt; 2 quote[1] = 192.25
+
+TypeError: 'tuple' object does not support item assignment</pre>
+</div></div>
+<ul>
+<li>To record a new price, create a new tuple and assign it to the same variable. Reassigning a variable is allowed; changing a tuple in place is not.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">quote</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"AAPL"</span><span class="p">,</span> <span class="mf">192.25</span><span class="p">)</span>
+<span class="n">quote</span></code></pre></div><div class="nb-out nb-text">
+<pre>('AAPL', 192.25)</pre>
+</div></div>
+<h4 id="unpacking-a-tuple">Unpacking a Tuple</h4><ul>
+<li><strong>Unpacking</strong> assigns each item of a tuple to its own variable in one line. The number of variables on the left must match the number of items.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">ticker</span><span class="p">,</span> <span class="n">price</span> <span class="o">=</span> <span class="n">quote</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ticker</span><span class="si">}</span><span class="s2"> last traded at $</span><span class="si">{</span><span class="n">price</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>AAPL last traded at $192.25
+</pre>
+</div></div>
+<h4 id="a-list-of-tuples-as-a-table">A List of Tuples as a Table</h4><ul>
+<li><p>A list of tuples works like a small table: each tuple is a row, and each position is a column.</p>
+</li>
+<li><p>Unpacking in the <code>for</code> line gives each column its own variable. Each holding below is a (ticker, shares, price) record.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">holdings</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">"AAPL"</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mf">192.25</span><span class="p">),</span> <span class="p">(</span><span class="s2">"JPM"</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mf">201.10</span><span class="p">),</span> <span class="p">(</span><span class="s2">"KO"</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mf">62.40</span><span class="p">)]</span>
+<span class="n">total_value</span> <span class="o">=</span> <span class="mi">0</span>
+
+<span class="k">for</span> <span class="n">ticker</span><span class="p">,</span> <span class="n">shares</span><span class="p">,</span> <span class="n">price</span> <span class="ow">in</span> <span class="n">holdings</span><span class="p">:</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="n">shares</span> <span class="o">*</span> <span class="n">price</span>
+    <span class="n">total_value</span> <span class="o">+=</span> <span class="n">value</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ticker</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">shares</span><span class="si">}</span><span class="s2"> shares x $</span><span class="si">{</span><span class="n">price</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> = $</span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Total value: $</span><span class="si">{</span><span class="n">total_value</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>AAPL: 40 shares x $192.25 = $7,690.00
+JPM: 25 shares x $201.10 = $5,027.50
+KO: 100 shares x $62.40 = $6,240.00
+Total value: $18,957.50
+</pre>
+</div></div>
+<p><strong>Note:</strong> A tuple with a single item needs a trailing comma: <code>(0.05,)</code> is a tuple, but <code>(0.05)</code> is just the number 0.05 in parentheses.</p>
+
+<h4 id="choosing-between-lists-and-tuples">Choosing Between Lists and Tuples</h4><ul>
+<li><p>Use a list for a collection that changes, such as a watchlist or a price history that gains a new close every day.</p>
+</li>
+<li><p>Use a tuple for a fixed record whose parts belong together, such as a quote or an executed trade.</p>
+</li>
+<li><p>If unsure, start with a list. Use a tuple when the data should not change after it is created.</p>
+</li>
+</ul>
+
+<h3 id="in-class-exercise">In-Class Exercise</h3>
+
+<p><strong>4-1. Watchlist Review:</strong></p>
+<ul>
+<li>Create a list <code>my_tickers</code> with five tickers of your choice.</li>
+<li>Loop through it and print a line such as <code>Reviewing MSFT...</code> for each ticker.</li>
+<li>After the loop, print one line reporting how many tickers were reviewed (use <code>len()</code>).</li>
+</ul>
+
+<p><strong>4-2. Savings Schedule:</strong></p>
+<ul>
+<li>Use a list comprehension with <code>range()</code> to build the year-end balances of 2,000 dollars deposited at 4% annual interest, compounded annually, for years 1 through 10.</li>
+<li>Print the final balance and the total interest earned (final balance minus the deposit).</li>
+</ul>
+
+<p><strong>4-3. Returns and a Moving Average:</strong></p>
+<ul>
+<li>Start from <code>prices = [50.00, 51.20, 50.60, 52.10, 53.00, 52.40, 54.30, 55.10]</code>.</li>
+<li>Use a list comprehension to compute the daily returns, then print the best and worst day as percentages.</li>
+<li>Use a slice to compute the average of the last three prices.</li>
+</ul>
+
+<p><strong>4-4. Copying a List:</strong></p>
+<ul>
+<li>Create a list <code>core_holdings</code> with three tickers, then make an independent copy called <code>trial_holdings</code>.</li>
+<li>Append two tickers to <code>trial_holdings</code> and print both lists to confirm that <code>core_holdings</code> is unchanged.</li>
+<li>Repeat with <code>trial_holdings = core_holdings</code> and explain the different result in a comment.</li>
+</ul>
+
+<p><strong>4-5. Trade Records:</strong></p>
+<ul>
+<li>Store one executed trade as a tuple <code>(ticker, side, shares, price)</code>, for example <code>("MSFT", "BUY", 15, 410.30)</code>.</li>
+<li>Unpack it into four variables and print a sentence describing the trade and its total cost.</li>
+<li>Build a list of three such tuples and loop over it, printing one line per trade.</li>
+</ul>
+
+<h2 id="ch-5-if-statements">Ch 5: if Statements</h2>
+
+<ul>
+<li><p>Programs often need to check a condition before acting, for example whether a price is above a target or whether a ticker is on the list of stocks we are allowed to trade.</p>
+</li>
+<li><p>An <strong><code>if</code> statement</strong> runs a block of code only when a condition holds. Inside a loop, it applies a rule to every item in a list.</p>
+</li>
+<li><p>This chapter covers conditional tests, the forms of the <code>if</code> statement, and <code>if</code> statements with lists.</p>
+</li>
+</ul>
+
+<h3 id="up-days-and-down-days">Up Days and Down Days</h3><ul>
+<li><p>The example below labels each of the nine daily returns from Ch 4 as an up day or a down day. The following sections explain each part in detail.</p>
+</li>
+<li><p><code>if daily_return &gt; 0:</code> tests whether the return is positive. If it is, Python runs the indented line below it; otherwise it runs the line under <code>else:</code>.</p>
+</li>
+<li><p>The code has two levels of indentation: the <code>if</code> and <code>else</code> lines are inside the loop, and each <code>print</code> is inside its branch.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">for</span> <span class="n">daily_return</span> <span class="ow">in</span> <span class="n">daily_returns</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">daily_return</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">daily_return</span><span class="si">:</span><span class="s2">.2%</span><span class="si">}</span><span class="s2">  up"</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">daily_return</span><span class="si">:</span><span class="s2">.2%</span><span class="si">}</span><span class="s2">  down"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>1.50%  up
+-1.67%  down
+2.51%  up
+0.78%  up
+-1.16%  down
+2.26%  up
+0.77%  up
+-2.29%  down
+2.05%  up
+</pre>
+</div></div>
+<h3 id="comparisons-and-boolean-tests">Comparisons and Boolean Tests</h3><ul>
+<li><p>The expression after <code>if</code> is a <strong>conditional test</strong>: an expression whose value is either <code>True</code> or <code>False</code>.</p>
+</li>
+<li><p>You can evaluate a test on its own to see its value. When an <code>if</code> statement does not behave as expected, check the value of its test first.</p>
+</li>
+</ul>
+
+<h4 id="equality">Equality: <code>==</code></h4><ul>
+<li>A single equals sign (<code>=</code>) assigns a value. A double equals sign (<code>==</code>) tests whether two values are equal.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">ticker</span> <span class="o">=</span> <span class="s2">"MSFT"</span>            <span class="c1"># assignment: store "MSFT" in ticker</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">ticker</span> <span class="o">==</span> <span class="s2">"MSFT"</span><span class="p">)</span>    <span class="c1"># test: is ticker equal to "MSFT"?</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">ticker</span> <span class="o">==</span> <span class="s2">"AAPL"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>True
+False
+</pre>
+</div></div>
+<ul>
+<li>Writing <code>=</code> where a test needs <code>==</code> is a common mistake. In an <code>if</code> line, Python raises a <code>SyntaxError</code> and suggests the fix.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># This will fail: = assigns a value; a test needs ==</span>
+<span class="k">if</span> <span class="n">ticker</span> <span class="o">=</span> <span class="s2">"MSFT"</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Found MSFT"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-error">
+<pre>
+  Cell In[22], line 2
+    if ticker = "MSFT":
+       ^
+SyntaxError: invalid syntax. Maybe you meant '==' or ':=' instead of '='?
+</pre>
+</div></div>
+<h4 id="case-insensitive-comparison">Case-Insensitive Comparison</h4><ul>
+<li><p>String comparisons are <strong>case-sensitive</strong>: <code>"msft"</code> and <code>"MSFT"</code> are different strings.</p>
+</li>
+<li><p>Tickers are usually written in uppercase, but user input and data files are not always consistent, so normalize a string before comparing it. <code>.strip()</code> removes leading and trailing spaces, and <code>.upper()</code> converts to uppercase.</p>
+</li>
+<li><p>These methods return a new string and leave the original unchanged, so store the cleaned version if you need it again.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">user_ticker</span> <span class="o">=</span> <span class="s2">" msft "</span>
+<span class="n">clean_ticker</span> <span class="o">=</span> <span class="n">user_ticker</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">user_ticker</span> <span class="o">==</span> <span class="s2">"MSFT"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">clean_ticker</span> <span class="o">==</span> <span class="s2">"MSFT"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Original: '</span><span class="si">{</span><span class="n">user_ticker</span><span class="si">}</span><span class="s2">'  Cleaned: '</span><span class="si">{</span><span class="n">clean_ticker</span><span class="si">}</span><span class="s2">'"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>False
+True
+Original: ' msft '  Cleaned: 'MSFT'
+</pre>
+</div></div>
+<h4 id="inequality">Inequality: <code>!=</code></h4><ul>
+<li><code>!=</code> means "is not equal to." Use it when every case except one needs the same handling, for example any trade not settled in US dollars.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">currency</span> <span class="o">=</span> <span class="s2">"EUR"</span>
+
+<span class="k">if</span> <span class="n">currency</span> <span class="o">!=</span> <span class="s2">"USD"</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Trade in </span><span class="si">{</span><span class="n">currency</span><span class="si">}</span><span class="s2">: convert to USD before settlement"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Trade in EUR: convert to USD before settlement
+</pre>
+</div></div>
+<h4 id="price-and-return-thresholds">Price and Return Thresholds</h4><ul>
+<li><p>Numbers can be compared with <code>==</code>, <code>!=</code>, <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, and <code>&gt;=</code>.</p>
+</li>
+<li><p>Price alerts and risk limits use these comparisons. A <strong>stop-loss</strong> is a price at which a trader plans to sell to limit a loss, so the test is whether the current price is at or below it.</p>
+</li>
+<li><p>Returns are compared the same way. A fall of more than 2% means a return below -0.02.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">price</span> <span class="o">=</span> <span class="mf">94.80</span>
+<span class="n">stop_loss</span> <span class="o">=</span> <span class="mf">95.00</span>
+<span class="n">target</span> <span class="o">=</span> <span class="mf">110.00</span>
+<span class="n">daily_return</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.021</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">price</span> <span class="o">&lt;=</span> <span class="n">stop_loss</span><span class="p">)</span>     <span class="c1"># at or below the stop-loss?</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">price</span> <span class="o">&gt;=</span> <span class="n">target</span><span class="p">)</span>        <span class="c1"># at or above the profit target?</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">daily_return</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mf">0.02</span><span class="p">)</span>   <span class="c1"># down more than 2% today?</span></code></pre></div><div class="nb-out nb-stream">
+<pre>True
+False
+True
+</pre>
+</div></div>
+<p><strong>Note:</strong> Be careful with <code>==</code> on decimal numbers. Computers store most decimals approximately, so two weights of 10% and 20% do not add up to exactly 30%. Rounding before comparing avoids the problem.</p>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">weight_a</span> <span class="o">=</span> <span class="mf">0.1</span>
+<span class="n">weight_b</span> <span class="o">=</span> <span class="mf">0.2</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">weight_a</span> <span class="o">+</span> <span class="n">weight_b</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">weight_a</span> <span class="o">+</span> <span class="n">weight_b</span> <span class="o">==</span> <span class="mf">0.3</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">weight_a</span> <span class="o">+</span> <span class="n">weight_b</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span> <span class="o">==</span> <span class="mf">0.3</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>0.30000000000000004
+False
+True
+</pre>
+</div></div>
+<h4 id="combining-tests-and-or">Combining Tests: <code>and</code>, <code>or</code></h4><ul>
+<li><p><code>and</code> is <code>True</code> only when both tests are true; <code>or</code> is <code>True</code> when at least one is true.</p>
+</li>
+<li><p>Consider a value screen with two tests: a P/E ratio below 20 and a dividend yield above 2%. A stock with a P/E of 17.5 and a 1.2% yield passes the first test but not the second.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">pe_ratio</span> <span class="o">=</span> <span class="mf">17.5</span>
+<span class="n">dividend_yield</span> <span class="o">=</span> <span class="mf">0.012</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">pe_ratio</span> <span class="o">&lt;</span> <span class="mi">20</span> <span class="ow">and</span> <span class="n">dividend_yield</span> <span class="o">&gt;</span> <span class="mf">0.02</span><span class="p">)</span>   <span class="c1"># both must hold</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">pe_ratio</span> <span class="o">&lt;</span> <span class="mi">20</span> <span class="ow">or</span> <span class="n">dividend_yield</span> <span class="o">&gt;</span> <span class="mf">0.02</span><span class="p">)</span>    <span class="c1"># one is enough</span></code></pre></div><div class="nb-out nb-stream">
+<pre>False
+True
+</pre>
+</div></div>
+<ul>
+<li><p><code>or</code> suits alerts that should fire in several situations, such as a move of more than 3% in either direction. Parentheses around each test are optional but make the line easier to read.</p>
+</li>
+<li><p>Python also allows <strong>chained comparisons</strong>, written as in math: <code>0 &lt;= weight &lt;= 0.25</code> checks that a portfolio weight is between 0% and 25%.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">daily_return</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.034</span>
+<span class="n">weight</span> <span class="o">=</span> <span class="mf">0.18</span>
+
+<span class="nb">print</span><span class="p">((</span><span class="n">daily_return</span> <span class="o">&gt;</span> <span class="mf">0.03</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">daily_return</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mf">0.03</span><span class="p">))</span>   <span class="c1"># big move?</span>
+<span class="nb">print</span><span class="p">(</span><span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">weight</span> <span class="o">&lt;=</span> <span class="mf">0.25</span><span class="p">)</span>                               <span class="c1"># within limit?</span></code></pre></div><div class="nb-out nb-stream">
+<pre>True
+True
+</pre>
+</div></div>
+<h4 id="membership-in-and-not-in">Membership: <code>in</code> and <code>not in</code></h4><ul>
+<li><p><code>in</code> tests whether a value appears in a list; <code>not in</code> tests whether it is absent.</p>
+</li>
+<li><p>Use them to check a ticker against a watchlist or a list of approved tickers.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">new_idea</span> <span class="o">=</span> <span class="s2">"AMZN"</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"NVDA"</span> <span class="ow">in</span> <span class="n">watchlist</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">new_idea</span> <span class="ow">in</span> <span class="n">watchlist</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">new_idea</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">watchlist</span><span class="p">:</span>
+    <span class="n">watchlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_idea</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Added </span><span class="si">{</span><span class="n">new_idea</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">watchlist</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>True
+False
+Added AMZN: ['AAPL', 'MSFT', 'NVDA', 'JPM', 'XOM', 'KO', 'AMZN']
+</pre>
+</div></div>
+<h4 id="boolean-values">Boolean Values</h4><ul>
+<li><p><code>True</code> and <code>False</code> are values of type <strong><code>bool</code></strong> (short for Boolean). They are capitalized and written without quotes.</p>
+</li>
+<li><p>A Boolean variable records a yes-or-no state, such as whether the market is open or whether a position is in profit. It can be assigned directly or from the result of a test.</p>
+</li>
+<li><p>The built-in <code>type()</code> reports the type of any value.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">market_open</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="n">margin_enabled</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="n">last_price</span> <span class="o">=</span> <span class="mf">192.25</span>
+<span class="n">cost_basis</span> <span class="o">=</span> <span class="mf">180.00</span>   <span class="c1"># price paid per share</span>
+<span class="n">in_profit</span> <span class="o">=</span> <span class="n">last_price</span> <span class="o">&gt;</span> <span class="n">cost_basis</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">market_open</span><span class="p">,</span> <span class="n">margin_enabled</span><span class="p">,</span> <span class="n">in_profit</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">in_profit</span><span class="p">))</span></code></pre></div><div class="nb-out nb-stream">
+<pre>True False True
+&lt;class 'bool'&gt;
+</pre>
+</div></div>
+<h3 id="making-decisions-with-if">Making Decisions with <code>if</code></h3><ul>
+<li><p>An <code>if</code> statement comes in three common forms: a plain <code>if</code>, <code>if-else</code>, and <code>if-elif-else</code>.</p>
+</li>
+<li><p>As with a <code>for</code> loop, each <code>if</code>, <code>elif</code>, and <code>else</code> line ends with a colon, and the code it controls is indented below it.</p>
+</li>
+</ul>
+
+<h4 id="a-plain-if">A Plain <code>if</code></h4><ul>
+<li>A plain <code>if</code> runs its block when the test is <code>True</code> and does nothing when it is <code>False</code>.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">price</span> <span class="o">=</span> <span class="mf">112.40</span>
+<span class="n">target</span> <span class="o">=</span> <span class="mf">110.00</span>
+
+<span class="k">if</span> <span class="n">price</span> <span class="o">&gt;=</span> <span class="n">target</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"ALERT: price </span><span class="si">{</span><span class="n">price</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> has reached the target of </span><span class="si">{</span><span class="n">target</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>ALERT: price 112.40 has reached the target of 110.00
+</pre>
+</div></div>
+<h4 id="if-else"><code>if-else</code></h4><ul>
+<li><p><code>if-else</code> chooses between two actions: one when the test is <code>True</code> and the other when it is <code>False</code>.</p>
+</li>
+<li><p>The cell below checks whether the account has enough cash to pay for a buy order before sending it.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">cash</span> <span class="o">=</span> <span class="mf">5_000.00</span>
+<span class="n">shares</span> <span class="o">=</span> <span class="mi">30</span>
+<span class="n">price</span> <span class="o">=</span> <span class="mf">189.50</span>
+<span class="n">order_cost</span> <span class="o">=</span> <span class="n">shares</span> <span class="o">*</span> <span class="n">price</span>
+
+<span class="k">if</span> <span class="n">order_cost</span> <span class="o">&lt;=</span> <span class="n">cash</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Order sent: </span><span class="si">{</span><span class="n">shares</span><span class="si">}</span><span class="s2"> shares for $</span><span class="si">{</span><span class="n">order_cost</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Rejected: costs $</span><span class="si">{</span><span class="n">order_cost</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">, cash is $</span><span class="si">{</span><span class="n">cash</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Rejected: costs $5,685.00, cash is $5,000.00
+</pre>
+</div></div>
+<h4 id="three-or-more-cases-if-elif-else">Three or More Cases: <code>if-elif-else</code></h4><ul>
+<li><p>For more than two cases, use an <strong><code>if-elif-else</code> chain</strong>; <code>elif</code> is short for "else if."</p>
+</li>
+<li><p>Python checks the tests from top to bottom, runs the block of the first test that is <code>True</code>, and skips the rest. The <code>else</code> block runs only if every test is <code>False</code>.</p>
+</li>
+<li><p>The example below classifies a daily return as a rally, a sell-off, or a normal day.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">daily_return</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.0229</span>
+
+<span class="k">if</span> <span class="n">daily_return</span> <span class="o">&gt;=</span> <span class="mf">0.02</span><span class="p">:</span>
+    <span class="n">label</span> <span class="o">=</span> <span class="s2">"rally"</span>
+<span class="k">elif</span> <span class="n">daily_return</span> <span class="o">&lt;=</span> <span class="o">-</span><span class="mf">0.02</span><span class="p">:</span>
+    <span class="n">label</span> <span class="o">=</span> <span class="s2">"sell-off"</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">label</span> <span class="o">=</span> <span class="s2">"normal day"</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">daily_return</span><span class="si">:</span><span class="s2">.2%</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>-2.29%: sell-off
+</pre>
+</div></div>
+<h4 id="a-commission-schedule">A Commission Schedule</h4><ul>
+<li><p>A chain can include as many <code>elif</code> blocks as needed. Suppose a broker charges a lower commission rate on larger trades: 0.50% below 10,000 dollars, 0.25% below 50,000, 0.10% below 250,000, and 0.05% from 250,000 up.</p>
+</li>
+<li><p>Because the tests run in order, each <code>elif</code> needs only an upper bound; the lower bound is implied by the tests that already failed.</p>
+</li>
+<li><p>The final <code>else</code> covers every remaining case, here any trade of 250,000 dollars or more. A chain does not have to end with <code>else</code>.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">for</span> <span class="n">trade_value</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">5_000</span><span class="p">,</span> <span class="mi">30_000</span><span class="p">,</span> <span class="mi">72_000</span><span class="p">,</span> <span class="mi">400_000</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">trade_value</span> <span class="o">&lt;</span> <span class="mi">10_000</span><span class="p">:</span>
+        <span class="n">commission_rate</span> <span class="o">=</span> <span class="mf">0.0050</span>
+    <span class="k">elif</span> <span class="n">trade_value</span> <span class="o">&lt;</span> <span class="mi">50_000</span><span class="p">:</span>
+        <span class="n">commission_rate</span> <span class="o">=</span> <span class="mf">0.0025</span>
+    <span class="k">elif</span> <span class="n">trade_value</span> <span class="o">&lt;</span> <span class="mi">250_000</span><span class="p">:</span>
+        <span class="n">commission_rate</span> <span class="o">=</span> <span class="mf">0.0010</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">commission_rate</span> <span class="o">=</span> <span class="mf">0.0005</span>
+    <span class="n">commission</span> <span class="o">=</span> <span class="n">trade_value</span> <span class="o">*</span> <span class="n">commission_rate</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"$</span><span class="si">{</span><span class="n">trade_value</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">commission_rate</span><span class="si">:</span><span class="s2">.2%</span><span class="si">}</span><span class="s2"> -&gt; $</span><span class="si">{</span><span class="n">commission</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>$5,000: 0.50% -&gt; $25.00
+$30,000: 0.25% -&gt; $75.00
+$72,000: 0.10% -&gt; $72.00
+$400,000: 0.05% -&gt; $200.00
+</pre>
+</div></div>
+<h4 id="independent-tests-vs-a-chain">Independent Tests vs. a Chain</h4><ul>
+<li><p>A chain runs at most one block. This is correct when the cases are mutually exclusive; for example, each trade falls into exactly one commission tier.</p>
+</li>
+<li><p>When several conditions can be true at the same time and each needs a response, use separate <code>if</code> statements. Python checks each one regardless of the results of the others.</p>
+</li>
+<li><p>In the example below, one position is more than 25% of the portfolio, down more than 10% since purchase, and facing an earnings announcement this week, so all three checks print an alert.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">position_weight</span> <span class="o">=</span> <span class="mf">0.31</span>     <span class="c1"># share of the portfolio in this stock</span>
+<span class="n">return_since_buy</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.14</span>   <span class="c1"># return since the shares were bought</span>
+<span class="n">earnings_this_week</span> <span class="o">=</span> <span class="kc">True</span>
+
+<span class="k">if</span> <span class="n">position_weight</span> <span class="o">&gt;</span> <span class="mf">0.25</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Alert: position exceeds 25</span><span class="si">% o</span><span class="s2">f the portfolio"</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">return_since_buy</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mf">0.10</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Alert: position is down more than 10</span><span class="si">% s</span><span class="s2">ince purchase"</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">earnings_this_week</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Alert: earnings announcement this week"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Alert: position exceeds 25% of the portfolio
+Alert: position is down more than 10% since purchase
+Alert: earnings announcement this week
+</pre>
+</div></div>
+<ul>
+<li><p>Written as a chain, the same checks report only the first alert, because Python stops at the first <code>True</code> test and skips the rest.</p>
+</li>
+<li><p>Use a chain when the cases cannot overlap (commission tiers) and separate <code>if</code> statements when they can (risk alerts).</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">if</span> <span class="n">position_weight</span> <span class="o">&gt;</span> <span class="mf">0.25</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Alert: position exceeds 25</span><span class="si">% o</span><span class="s2">f the portfolio"</span><span class="p">)</span>
+<span class="k">elif</span> <span class="n">return_since_buy</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mf">0.10</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Alert: position is down more than 10</span><span class="si">% s</span><span class="s2">ince purchase"</span><span class="p">)</span>
+<span class="k">elif</span> <span class="n">earnings_this_week</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Alert: earnings announcement this week"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Alert: position exceeds 25% of the portfolio
+</pre>
+</div></div>
+<h3 id="combining-loops-and-conditions">Combining Loops and Conditions</h3><ul>
+<li>An <code>if</code> statement inside a <code>for</code> loop applies a rule to every item in a list, for example to accept or reject each order or to keep only the negative returns. An <code>if</code> before the loop can check whether the list is empty.</li>
+</ul>
+
+<h4 id="handling-an-empty-list">Handling an Empty List</h4><ul>
+<li><p>Before looping over a list, you can check whether it has any items.</p>
+</li>
+<li><p>In an <code>if</code> test, a non-empty list counts as <code>True</code> and an empty list counts as <code>False</code>, so <code>if pending_orders:</code> means "if there are any pending orders."</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">pending_orders</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="k">if</span> <span class="n">pending_orders</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">order</span> <span class="ow">in</span> <span class="n">pending_orders</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Sending order for </span><span class="si">{</span><span class="n">order</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"No pending orders. Nothing to send."</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>No pending orders. Nothing to send.
+</pre>
+</div></div>
+<h4 id="checking-orders-against-a-tradable-list">Checking Orders Against a Tradable List</h4><ul>
+<li><p>Brokers and funds restrict which securities can be traded, so every incoming order should be checked against the approved list before it is sent.</p>
+</li>
+<li><p>These orders come from different sources and are not consistently formatted, so each ticker is normalized before the <code>in</code> test.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">tradable</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"AAPL"</span><span class="p">,</span> <span class="s2">"MSFT"</span><span class="p">,</span> <span class="s2">"NVDA"</span><span class="p">,</span> <span class="s2">"AMZN"</span><span class="p">,</span> <span class="s2">"JPM"</span><span class="p">,</span> <span class="s2">"XOM"</span><span class="p">,</span> <span class="s2">"KO"</span><span class="p">]</span>
+<span class="n">orders</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"nvda"</span><span class="p">,</span> <span class="s2">"KO"</span><span class="p">,</span> <span class="s2">"TSLA"</span><span class="p">,</span> <span class="s2">" aapl"</span><span class="p">,</span> <span class="s2">"BRK.B"</span><span class="p">]</span>
+
+<span class="k">for</span> <span class="n">order</span> <span class="ow">in</span> <span class="n">orders</span><span class="p">:</span>
+    <span class="n">symbol</span> <span class="o">=</span> <span class="n">order</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">symbol</span> <span class="ow">in</span> <span class="n">tradable</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">symbol</span><span class="si">}</span><span class="s2">: accepted"</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">symbol</span><span class="si">}</span><span class="s2">: rejected, not on the tradable list"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>NVDA: accepted
+KO: accepted
+TSLA: rejected, not on the tradable list
+AAPL: accepted
+BRK.B: rejected, not on the tradable list
+</pre>
+</div></div>
+<h4 id="filtering-a-list">Filtering a List</h4><ul>
+<li>Filtering builds a new list that keeps only the items that pass a test. One way is to start with an empty list and call <code>append()</code> inside an <code>if</code>.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">accepted</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="k">for</span> <span class="n">order</span> <span class="ow">in</span> <span class="n">orders</span><span class="p">:</span>
+    <span class="n">symbol</span> <span class="o">=</span> <span class="n">order</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">symbol</span> <span class="ow">in</span> <span class="n">tradable</span><span class="p">:</span>
+        <span class="n">accepted</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">symbol</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">accepted</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>['NVDA', 'KO', 'AAPL']
+</pre>
+</div></div>
+<ul>
+<li>A list comprehension can also filter. Adding an <code>if</code> clause at the end, <code>[expression for item in sequence if test]</code>, keeps only the items that pass the test.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">down_days</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">daily_returns</span> <span class="k">if</span> <span class="n">r</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">down_days</span><span class="p">)</span><span class="si">}</span><span class="s2"> down days out of </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">daily_returns</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">([</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">r</span><span class="si">:</span><span class="s2">.2%</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">down_days</span><span class="p">])</span></code></pre></div><div class="nb-out nb-stream">
+<pre>3 down days out of 9
+['-1.67%', '-1.16%', '-2.29%']
+</pre>
+</div></div>
+<h3 id="writing-readable-conditions">Writing Readable Conditions</h3><ul>
+<li><p>Put spaces around comparison operators: write <code>price &gt;= target</code>, not <code>price&gt;=target</code>. PEP 8, Python's official style guide, recommends this.</p>
+</li>
+<li><p>Test Boolean values directly: write <code>if market_open:</code> rather than <code>if market_open == True:</code>, and <code>if not pending_orders:</code> rather than <code>if len(pending_orders) == 0:</code>. (<code>not</code> turns <code>True</code> into <code>False</code> and <code>False</code> into <code>True</code>.)</p>
+</li>
+<li><p>For a complex condition, store each part in a Boolean variable with a descriptive name, so that the <code>if</code> line reads like a sentence.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">pe_ratio</span> <span class="o">=</span> <span class="mf">14.2</span>
+<span class="n">dividend_yield</span> <span class="o">=</span> <span class="mf">0.034</span>
+<span class="n">debt_to_equity</span> <span class="o">=</span> <span class="mf">0.6</span>
+
+<span class="n">is_cheap</span> <span class="o">=</span> <span class="n">pe_ratio</span> <span class="o">&lt;</span> <span class="mi">15</span>
+<span class="n">pays_dividend</span> <span class="o">=</span> <span class="n">dividend_yield</span> <span class="o">&gt;</span> <span class="mf">0.02</span>
+<span class="n">low_leverage</span> <span class="o">=</span> <span class="n">debt_to_equity</span> <span class="o">&lt;</span> <span class="mf">1.0</span>
+
+<span class="k">if</span> <span class="n">is_cheap</span> <span class="ow">and</span> <span class="n">pays_dividend</span> <span class="ow">and</span> <span class="n">low_leverage</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Passes the value screen"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Passes the value screen
+</pre>
+</div></div>
+<h3 id="in-class-exercise-2">In-Class Exercise</h3>
+
+<p><strong>5-1. Price Alert:</strong></p>
+<ul>
+<li>Set <code>price = 87.25</code> and <code>alert_level = 90.00</code>.</li>
+<li>Write an <code>if-else</code> that prints an alert if the price is at or below the alert level, and otherwise prints how far above the level the price is, in dollars.</li>
+<li>Change <code>price</code> and re-run the cell to test both branches.</li>
+</ul>
+
+<p><strong>5-2. Ticker Lookup:</strong></p>
+<ul>
+<li>A user types the ticker <code>" Jpm"</code>, with a leading space and mixed case.</li>
+<li>Normalize it and use <code>in</code> to check whether it is on <code>watchlist</code>. Print a message either way.</li>
+</ul>
+
+<p><strong>5-3. Return Buckets:</strong></p>
+<ul>
+<li>Loop through <code>daily_returns</code> and use an <code>if-elif-else</code> chain to count rally days (+2% or more), sell-off days (-2% or less), and normal days.</li>
+<li>Print the three counts and check that they add up to <code>len(daily_returns)</code>.</li>
+</ul>
+
+<p><strong>5-4. Order Desk:</strong></p>
+<ul>
+<li>Create a list <code>approved</code> with five tickers and a list <code>incoming</code> with four orders; make at least one order lowercase and at least one not approved.</li>
+<li>If <code>incoming</code> is empty, print <code>No orders today.</code>; otherwise, loop through it, normalize each ticker, and print <code>filled</code> or <code>rejected</code> for each order.</li>
+<li>Test the empty case by setting <code>incoming = []</code>.</li>
+</ul>
+
+<p><strong>5-5. Value Screen:</strong></p>
+<ul>
+<li>Start from <code>stocks = [("AAPL", 29.5, 0.005), ("JPM", 12.1, 0.022), ("XOM", 13.4, 0.034), ("NVDA", 48.0, 0.001), ("KO", 23.7, 0.029)]</code>, where each tuple is (ticker, P/E ratio, dividend yield).</li>
+<li>Collect the tickers with a P/E below 20 and a dividend yield above 2% in a list, then print it.</li>
+<li>If no stock passes, print a message instead. Test this by lowering the P/E cutoff to 10.</li>
+</ul>
+</div>

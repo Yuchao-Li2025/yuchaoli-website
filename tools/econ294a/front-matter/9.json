@@ -1,0 +1,3 @@
+{"title": "Lecture 9: Machine Learning & Deep Learning", "lecture": 9, "weight": 9,
+ "summary": "The scikit-learn workflow (time-series splits, regularization, cross-validation, pipelines, tree-based models) and a first look at PyTorch, forecasting S&P 500 returns and volatility.",
+ "description": "ECON 294A lecture notes by Yuchao Li: machine learning with scikit-learn and deep learning with PyTorch, forecasting S&P 500 returns and volatility."}

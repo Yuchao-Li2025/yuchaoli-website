@@ -8,8 +8,8 @@ All courses are in the Department of Economics, University of California, Santa 
 
 ##### Instructor
 
-+ ECON 100B: Intermediate Macroeconomics, Summer 2026
-+ ECON 294A: Python for Finance (graduate), Spring 2025 and Spring 2026
++ ECON 100B: Intermediate Macroeconomics, Summer 2026 · [Syllabus](/teaching/ECON100B_Syllabus_Summer2026.pdf)
++ ECON 294A: Python for Finance (graduate), Spring 2025 and Spring 2026 · [Syllabus](/teaching/ECON294A_Syllabus_Spring2026.pdf) · [Lecture notes](/econ294a/)
 
 ##### Teaching Assistant
 

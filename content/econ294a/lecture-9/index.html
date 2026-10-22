@@ -1,0 +1,1342 @@
+---
+title: "Lecture 9: Machine Learning & Deep Learning"
+lecture: 9
+weight: 9
+summary: "The scikit-learn workflow (time-series splits, regularization, cross-validation, pipelines, tree-based models) and a first look at PyTorch, forecasting S&P 500 returns and volatility."
+description: "ECON 294A lecture notes by Yuchao Li: machine learning with scikit-learn and deep learning with PyTorch, forecasting S&P 500 returns and volatility."
+notebook: "ECON294A_Lecture9.ipynb"
+---
+<div class="toc"><details><summary accesskey="c" title="(Alt + C)"><span class="details">Contents</span></summary><div class="inner"><ul><li><a href="#what-well-cover" aria-label="What We&#x27;ll Cover">What We&#x27;ll Cover</a></li><li><a href="#leakage-and-out-of-sample-evaluation" aria-label="Leakage and Out-of-Sample Evaluation">Leakage and Out-of-Sample Evaluation</a></li><li><a href="#setup-installing-and-importing-libraries" aria-label="Setup: Installing and Importing Libraries">Setup: Installing and Importing Libraries</a></li><li><a href="#loading-s-p-500-data" aria-label="Loading S&amp;P 500 Data">Loading S&amp;P 500 Data</a></li><li><a href="#ch-19-machine-learning-with-scikit-learn" aria-label="Ch 19: Machine Learning with scikit-learn">Ch 19: Machine Learning with scikit-learn</a><ul><li><a href="#the-machine-learning-workflow" aria-label="The Machine-Learning Workflow">The Machine-Learning Workflow</a></li><li><a href="#feature-engineering" aria-label="Feature Engineering">Feature Engineering</a></li><li><a href="#train-test-split-for-time-series" aria-label="Train/Test Split for Time Series">Train/Test Split for Time Series</a></li><li><a href="#predicting-returns" aria-label="Predicting Returns">Predicting Returns</a></li><li><a href="#regularization-ridge-and-lasso" aria-label="Regularization: Ridge and Lasso">Regularization: Ridge and Lasso</a></li><li><a href="#cross-validation-for-time-series" aria-label="Cross-Validation for Time Series">Cross-Validation for Time Series</a></li><li><a href="#preprocessing-pipelines" aria-label="Preprocessing Pipelines">Preprocessing Pipelines</a></li><li><a href="#tree-based-models" aria-label="Tree-Based Models">Tree-Based Models</a></li><li><a href="#classification-predicting-direction" aria-label="Classification: Predicting Direction">Classification: Predicting Direction</a></li><li><a href="#predicting-volatility" aria-label="Predicting Volatility">Predicting Volatility</a></li><li><a href="#connection-to-garch" aria-label="Connection to GARCH">Connection to GARCH</a></li><li><a href="#in-class-exercise" aria-label="In-Class Exercise">In-Class Exercise</a></li></ul></li><li><a href="#ch-20-deep-learning-with-pytorch" aria-label="Ch 20: Deep Learning with PyTorch">Ch 20: Deep Learning with PyTorch</a><ul><li><a href="#tensors" aria-label="Tensors">Tensors</a></li><li><a href="#autograd-automatic-differentiation" aria-label="Autograd: Automatic Differentiation">Autograd: Automatic Differentiation</a></li><li><a href="#building-a-neural-network" aria-label="Building a Neural Network">Building a Neural Network</a></li><li><a href="#preparing-the-data-as-tensors" aria-label="Preparing the Data as Tensors">Preparing the Data as Tensors</a></li><li><a href="#the-training-loop" aria-label="The Training Loop">The Training Loop</a></li><li><a href="#evaluating-the-network" aria-label="Evaluating the Network">Evaluating the Network</a></li><li><a href="#when-to-use-deep-learning" aria-label="When to Use Deep Learning">When to Use Deep Learning</a></li><li><a href="#in-class-exercise-2" aria-label="In-Class Exercise">In-Class Exercise</a></li></ul></li></ul></div></details></div>
+<div class="post-content nb">
+<ul>
+<li><p>Lecture 8 was about <strong>inference</strong>: estimating relationships and testing whether they're real.</p>
+</li>
+<li><p>This lecture is about <strong>prediction</strong>: building models that forecast well on data they haven't seen.</p>
+</li>
+<li><p>In inference we care about coefficients and standard errors; in prediction we care about out-of-sample accuracy.</p>
+</li>
+<li><p>A model can be good for one goal and poor for the other, so we evaluate the two separately.</p>
+</li>
+</ul>
+
+<h3 id="what-well-cover">What We'll Cover</h3><ul>
+<li><p><strong>Ch 19 (scikit-learn):</strong> the machine-learning workflow, including train/test splits, regularization, cross-validation, pipelines, and tree-based models.</p>
+</li>
+<li><p><strong>Ch 20 (PyTorch):</strong> a first, exposure-level look at deep learning, covering tensors, autograd, and the training loop.</p>
+</li>
+<li><p>The running example is forecasting the S&amp;P 500.</p>
+<ul>
+<li>Returns are hard to predict because markets are close to efficient.</li>
+<li>Volatility is much easier to predict because it clusters. This connects to the GARCH model from Lecture 8.</li>
+</ul>
+</li>
+</ul>
+
+<h3 id="leakage-and-out-of-sample-evaluation">Leakage and Out-of-Sample Evaluation</h3><ul>
+<li><p>It is easy to appear to predict markets by accidentally letting future information leak into the features, or by reporting in-sample fit.</p>
+</li>
+<li><p>We follow two rules throughout:</p>
+<ol>
+<li><strong>No look-ahead:</strong> every feature uses only past data.</li>
+<li><strong>Out-of-sample evaluation:</strong> we judge models on a held-out test period, in chronological order.</li>
+</ol>
+</li>
+</ul>
+
+<h3 id="setup-installing-and-importing-libraries">Setup: Installing and Importing Libraries</h3><ul>
+<li><code>scikit-learn</code>, <code>numpy</code>, <code>pandas</code>, and <code>torch</code> are pre-installed in Colab.</li>
+<li>We install <code>yfinance</code> (to download prices) and <code>arch</code> (for the GARCH comparison).</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="err">!</span><span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">q</span> <span class="n">yfinance</span> <span class="n">arch</span></code></pre></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">seaborn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sns</span>
+
+<span class="n">sns</span><span class="o">.</span><span class="n">set_theme</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s1">'whitegrid'</span><span class="p">)</span></code></pre></div></div>
+<h3 id="loading-s-p-500-data">Loading S&amp;P 500 Data</h3><ul>
+<li>We download daily S&amp;P 500 prices. The loader below tries <code>yfinance</code> first and falls back to Stooq and then FRED, so the notebook still works if one source is down.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">load_sp500</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="s1">'2010-01-01'</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">'2024-12-31'</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Load daily S&amp;P 500 closing prices. Tries yfinance, then Stooq, then FRED."""</span>
+    <span class="c1"># 1) yfinance — the standard tool for market data</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">yfinance</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">yf</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">yf</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="s1">'^GSPC'</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span>
+                           <span class="n">progress</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">auto_adjust</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">close</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">'Close'</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">close</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>   <span class="c1"># newer yfinance returns MultiIndex cols</span>
+                <span class="n">close</span> <span class="o">=</span> <span class="n">close</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">close</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="s1">'SP500'</span><span class="p">)</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"yfinance failed (</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">); trying Stooq."</span><span class="p">)</span>
+    <span class="c1"># 2) Stooq via pandas-datareader (reliable, no API key)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">pandas_datareader.data</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">web</span>
+        <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s1">'ignore'</span><span class="p">,</span> <span class="ne">FutureWarning</span><span class="p">)</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">web</span><span class="o">.</span><span class="n">DataReader</span><span class="p">(</span><span class="s1">'^SPX'</span><span class="p">,</span> <span class="s1">'stooq'</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="s1">'Close'</span><span class="p">]</span><span class="o">.</span><span class="n">sort_index</span><span class="p">()</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="s1">'SP500'</span><span class="p">)</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Stooq failed (</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">); trying FRED."</span><span class="p">)</span>
+    <span class="c1"># 3) FRED (closing price only, ~10 years of history)</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">pandas_datareader.data</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">web</span>
+    <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s1">'ignore'</span><span class="p">,</span> <span class="ne">FutureWarning</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">web</span><span class="o">.</span><span class="n">DataReader</span><span class="p">(</span><span class="s1">'SP500'</span><span class="p">,</span> <span class="s1">'fred'</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="s1">'SP500'</span><span class="p">]</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="s1">'SP500'</span><span class="p">)</span></code></pre></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">sp500</span> <span class="o">=</span> <span class="n">load_sp500</span><span class="p">()</span>
+<span class="n">sp500</span><span class="o">.</span><span class="n">tail</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>SP500</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>2024-12-23</th>
+<td>5974.069824</td>
+</tr>
+<tr>
+<th>2024-12-24</th>
+<td>6040.040039</td>
+</tr>
+<tr>
+<th>2024-12-26</th>
+<td>6037.589844</td>
+</tr>
+<tr>
+<th>2024-12-27</th>
+<td>5970.839844</td>
+</tr>
+<tr>
+<th>2024-12-30</th>
+<td>5906.939941</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> float64</label></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Observations: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">sp500</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Date range: </span><span class="si">{</span><span class="n">sp500</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="si">:</span><span class="s2">%Y-%m-%d</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">sp500</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">:</span><span class="s2">%Y-%m-%d</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Observations: 3773
+Date range: 2010-01-04 to 2024-12-30
+</pre>
+</div></div>
+<h4 id="visualizing-the-price-series">Visualizing the Price Series</h4>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">11</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sp500</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">sp500</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'steelblue'</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'S&amp;P 500 Index Level'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'Index level'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="378" loading="lazy" src="fig-01.png" width="947"/>
+</div></div>
+<h4 id="from-prices-to-returns">From Prices to Returns</h4><ul>
+<li><p>We model returns rather than price levels. A price series is non-stationary (it trends and wanders), and predicting tomorrow's price is nearly trivial because it is close to today's.</p>
+</li>
+<li><p>Daily returns are roughly stationary and are the quantity we care about.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">returns</span> <span class="o">=</span> <span class="n">sp500</span><span class="o">.</span><span class="n">pct_change</span><span class="p">()</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span>
+<span class="n">returns</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>SP500</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>2010-01-05</th>
+<td>0.003116</td>
+</tr>
+<tr>
+<th>2010-01-06</th>
+<td>0.000546</td>
+</tr>
+<tr>
+<th>2010-01-07</th>
+<td>0.004001</td>
+</tr>
+<tr>
+<th>2010-01-08</th>
+<td>0.002882</td>
+</tr>
+<tr>
+<th>2010-01-11</th>
+<td>0.001747</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> float64</label></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">11</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">returns</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">returns</span> <span class="o">*</span> <span class="mi">100</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'steelblue'</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.6</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'black'</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'S&amp;P 500 Daily Returns (%) — Note the Volatility Clusters'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'Daily return (%)'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="378" loading="lazy" src="fig-02.png" width="941"/>
+</div></div>
+<ul>
+<li>The return series shows <strong>volatility clustering</strong>: calm stretches and turbulent stretches group together. We use this later to forecast volatility.</li>
+</ul>
+
+<h2 id="ch-19-machine-learning-with-scikit-learn">Ch 19: Machine Learning with scikit-learn</h2>
+
+<ul>
+<li><p><code>scikit-learn</code> is the standard Python library for machine learning.</p>
+</li>
+<li><p>Every model follows the same <strong>estimator API</strong>:</p>
+<ul>
+<li><code>model.fit(X, y)</code> learns from training data.</li>
+<li><code>model.predict(X)</code> makes predictions.</li>
+<li><code>model.score(X, y)</code> evaluates performance.</li>
+</ul>
+</li>
+<li><p>This consistency means swapping a linear model for a random forest is a one-line change.</p>
+</li>
+</ul>
+
+<h3 id="the-machine-learning-workflow">The Machine-Learning Workflow</h3><ul>
+<li>The steps are almost always the same:<ol>
+<li><strong>Build features</strong> (<code>X</code>) and a target (<code>y</code>).</li>
+<li><strong>Split</strong> into training and test sets.</li>
+<li><strong>Fit</strong> a model on the training set.</li>
+<li><strong>Evaluate</strong> on the held-out test set.</li>
+<li><strong>Tune</strong> with cross-validation, then re-evaluate.</li>
+</ol>
+</li>
+</ul>
+
+<h3 id="feature-engineering">Feature Engineering</h3>
+
+<ul>
+<li><p>Models learn from <strong>features</strong>. From a single return series we can build many predictive inputs.</p>
+</li>
+<li><p>Every feature must use only past information. We <code>shift</code> each series so that today's feature never uses today's or tomorrow's return.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">'ret'</span><span class="p">:</span> <span class="n">returns</span><span class="p">})</span>
+
+<span class="c1"># Lagged returns: yesterday's, 2 days ago, etc.</span>
+<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">]:</span>
+    <span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s1">'ret_lag</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s1">'</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">'ret'</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+
+<span class="n">data</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>ret</th>
+<th>ret_lag1</th>
+<th>ret_lag2</th>
+<th>ret_lag3</th>
+<th>ret_lag5</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>2010-01-05</th>
+<td>0.003116</td>
+<td>NaN</td>
+<td>NaN</td>
+<td>NaN</td>
+<td>NaN</td>
+</tr>
+<tr>
+<th>2010-01-06</th>
+<td>0.000546</td>
+<td>0.003116</td>
+<td>NaN</td>
+<td>NaN</td>
+<td>NaN</td>
+</tr>
+<tr>
+<th>2010-01-07</th>
+<td>0.004001</td>
+<td>0.000546</td>
+<td>0.003116</td>
+<td>NaN</td>
+<td>NaN</td>
+</tr>
+<tr>
+<th>2010-01-08</th>
+<td>0.002882</td>
+<td>0.004001</td>
+<td>0.000546</td>
+<td>0.003116</td>
+<td>NaN</td>
+</tr>
+<tr>
+<th>2010-01-11</th>
+<td>0.001747</td>
+<td>0.002882</td>
+<td>0.004001</td>
+<td>0.000546</td>
+<td>NaN</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h4 id="moving-averages-and-momentum">Moving Averages and Momentum</h4><ul>
+<li>Short- and medium-term average returns, plus 21-day momentum (about one trading month).</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">data</span><span class="p">[</span><span class="s1">'ma5'</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">'ret'</span><span class="p">]</span><span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">data</span><span class="p">[</span><span class="s1">'ma21'</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">'ret'</span><span class="p">]</span><span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="mi">21</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">data</span><span class="p">[</span><span class="s1">'mom21'</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">'ret'</span><span class="p">]</span><span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="mi">21</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">data</span><span class="p">[[</span><span class="s1">'ma5'</span><span class="p">,</span> <span class="s1">'ma21'</span><span class="p">,</span> <span class="s1">'mom21'</span><span class="p">]]</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>ma5</th>
+<th>ma21</th>
+<th>mom21</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>2010-01-05</th>
+<td>NaN</td>
+<td>NaN</td>
+<td>NaN</td>
+</tr>
+<tr>
+<th>2010-01-06</th>
+<td>NaN</td>
+<td>NaN</td>
+<td>NaN</td>
+</tr>
+<tr>
+<th>2010-01-07</th>
+<td>NaN</td>
+<td>NaN</td>
+<td>NaN</td>
+</tr>
+<tr>
+<th>2010-01-08</th>
+<td>NaN</td>
+<td>NaN</td>
+<td>NaN</td>
+</tr>
+<tr>
+<th>2010-01-11</th>
+<td>NaN</td>
+<td>NaN</td>
+<td>NaN</td>
+</tr>
+<tr>
+<th>2010-01-12</th>
+<td>0.002458</td>
+<td>NaN</td>
+<td>NaN</td>
+</tr>
+<tr>
+<th>2010-01-13</th>
+<td>-0.000041</td>
+<td>NaN</td>
+<td>NaN</td>
+</tr>
+<tr>
+<th>2010-01-14</th>
+<td>0.001515</td>
+<td>NaN</td>
+<td>NaN</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h4 id="volatility-features-har-style">Volatility Features (HAR-style)</h4><ul>
+<li><p>Past <strong>realized volatility</strong> at several horizons (5, 21, and 63 days). These are the standard predictors of future volatility.</p>
+</li>
+<li><p>We annualize and convert to percent (multiply by sqrt(252) and by 100) so the numbers are easier to read.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">ANN</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">252</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span>   <span class="c1"># annualize daily vol to percent</span>
+
+<span class="n">data</span><span class="p">[</span><span class="s1">'vol5'</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">'ret'</span><span class="p">]</span><span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">std</span><span class="p">()</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">ANN</span>
+<span class="n">data</span><span class="p">[</span><span class="s1">'vol21'</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">'ret'</span><span class="p">]</span><span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="mi">21</span><span class="p">)</span><span class="o">.</span><span class="n">std</span><span class="p">()</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">ANN</span>
+<span class="n">data</span><span class="p">[</span><span class="s1">'vol63'</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">'ret'</span><span class="p">]</span><span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="mi">63</span><span class="p">)</span><span class="o">.</span><span class="n">std</span><span class="p">()</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">ANN</span>
+<span class="n">data</span><span class="p">[[</span><span class="s1">'vol5'</span><span class="p">,</span> <span class="s1">'vol21'</span><span class="p">,</span> <span class="s1">'vol63'</span><span class="p">]]</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>vol5</th>
+<th>vol21</th>
+<th>vol63</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>2010-01-05</th>
+<td>NaN</td>
+<td>NaN</td>
+<td>NaN</td>
+</tr>
+<tr>
+<th>2010-01-06</th>
+<td>NaN</td>
+<td>NaN</td>
+<td>NaN</td>
+</tr>
+<tr>
+<th>2010-01-07</th>
+<td>NaN</td>
+<td>NaN</td>
+<td>NaN</td>
+</tr>
+<tr>
+<th>2010-01-08</th>
+<td>NaN</td>
+<td>NaN</td>
+<td>NaN</td>
+</tr>
+<tr>
+<th>2010-01-11</th>
+<td>NaN</td>
+<td>NaN</td>
+<td>NaN</td>
+</tr>
+<tr>
+<th>2010-01-12</th>
+<td>2.123419</td>
+<td>NaN</td>
+<td>NaN</td>
+</tr>
+<tr>
+<th>2010-01-13</th>
+<td>8.536166</td>
+<td>NaN</td>
+<td>NaN</td>
+</tr>
+<tr>
+<th>2010-01-14</th>
+<td>10.446403</td>
+<td>NaN</td>
+<td>NaN</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h4 id="defining-the-targets">Defining the Targets</h4><ul>
+<li><strong>Return target:</strong> tomorrow's return (<code>shift(-1)</code>).</li>
+<li><strong>Direction target:</strong> whether tomorrow is up (1) or down (0).</li>
+<li><strong>Volatility target:</strong> realized volatility over the <em>next</em> 21 days, annualized.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">data</span><span class="p">[</span><span class="s1">'target_ret'</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">'ret'</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">data</span><span class="p">[</span><span class="s1">'target_dir'</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">'target_ret'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+<span class="n">data</span><span class="p">[</span><span class="s1">'target_vol'</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">'ret'</span><span class="p">]</span><span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="mi">21</span><span class="p">)</span><span class="o">.</span><span class="n">std</span><span class="p">()</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="o">-</span><span class="mi">21</span><span class="p">)</span> <span class="o">*</span> <span class="n">ANN</span>
+
+<span class="c1"># Drop rows with missing values created by shifting/rolling</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Final dataset shape: </span><span class="si">{</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="n">data</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Final dataset shape: (3688, 14)
+</pre>
+</div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>ret</th>
+<th>ret_lag1</th>
+<th>ret_lag2</th>
+<th>ret_lag3</th>
+<th>ret_lag5</th>
+<th>ma5</th>
+<th>ma21</th>
+<th>mom21</th>
+<th>vol5</th>
+<th>vol21</th>
+<th>vol63</th>
+<th>target_ret</th>
+<th>target_dir</th>
+<th>target_vol</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>2010-04-07</th>
+<td>-0.005877</td>
+<td>0.001684</td>
+<td>0.007928</td>
+<td>0.007414</td>
+<td>0.000043</td>
+<td>0.002759</td>
+<td>0.002086</td>
+<td>0.043812</td>
+<td>7.666855</td>
+<td>6.580531</td>
+<td>13.997103</td>
+<td>0.003374</td>
+<td>1</td>
+<td>20.611468</td>
+</tr>
+<tr>
+<th>2010-04-08</th>
+<td>0.003374</td>
+<td>-0.005877</td>
+<td>0.001684</td>
+<td>0.007928</td>
+<td>-0.003273</td>
+<td>0.001575</td>
+<td>0.001815</td>
+<td>0.038111</td>
+<td>9.833674</td>
+<td>7.103050</td>
+<td>14.052344</td>
+<td>0.006684</td>
+<td>1</td>
+<td>20.992509</td>
+</tr>
+<tr>
+<th>2010-04-09</th>
+<td>0.006684</td>
+<td>0.003374</td>
+<td>-0.005877</td>
+<td>0.001684</td>
+<td>0.007414</td>
+<td>0.002905</td>
+<td>0.001894</td>
+<td>0.039773</td>
+<td>8.852387</td>
+<td>7.123335</td>
+<td>14.062729</td>
+<td>0.001767</td>
+<td>1</td>
+<td>26.438090</td>
+</tr>
+<tr>
+<th>2010-04-12</th>
+<td>0.001767</td>
+<td>0.006684</td>
+<td>0.003374</td>
+<td>-0.005877</td>
+<td>0.007928</td>
+<td>0.002759</td>
+<td>0.001997</td>
+<td>0.041932</td>
+<td>8.630552</td>
+<td>7.261742</td>
+<td>14.098417</td>
+<td>0.000685</td>
+<td>1</td>
+<td>26.423899</td>
+</tr>
+<tr>
+<th>2010-04-13</th>
+<td>0.000685</td>
+<td>0.001767</td>
+<td>0.006684</td>
+<td>0.003374</td>
+<td>0.001684</td>
+<td>0.001526</td>
+<td>0.001888</td>
+<td>0.039657</td>
+<td>7.313627</td>
+<td>7.223691</td>
+<td>14.093344</td>
+<td>0.011150</td>
+<td>1</td>
+<td>26.942706</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># The list of feature columns we'll feed to models</span>
+<span class="n">feature_cols</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'ret_lag1'</span><span class="p">,</span> <span class="s1">'ret_lag2'</span><span class="p">,</span> <span class="s1">'ret_lag3'</span><span class="p">,</span> <span class="s1">'ret_lag5'</span><span class="p">,</span>
+                <span class="s1">'ma5'</span><span class="p">,</span> <span class="s1">'ma21'</span><span class="p">,</span> <span class="s1">'mom21'</span><span class="p">,</span> <span class="s1">'vol5'</span><span class="p">,</span> <span class="s1">'vol21'</span><span class="p">,</span> <span class="s1">'vol63'</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">feature_cols</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>['ret_lag1', 'ret_lag2', 'ret_lag3', 'ret_lag5', 'ma5', 'ma21', 'mom21', 'vol5', 'vol21', 'vol63']
+</pre>
+</div></div>
+<h3 id="train-test-split-for-time-series">Train/Test Split for Time Series</h3>
+
+<ul>
+<li><p>For time series, the train/test split must be <strong>chronological</strong>, never random.</p>
+</li>
+<li><p>A random split would let the model train on future days and predict past days. This is called <strong>look-ahead leakage</strong>; it makes results look good, but they could not have been achieved in real time.</p>
+</li>
+<li><p>We train on the first 80% of the timeline and test on the last 20%.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">split</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.8</span><span class="p">)</span>
+<span class="n">train</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:</span><span class="n">split</span><span class="p">]</span>
+<span class="n">test</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">split</span><span class="p">:]</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Train: </span><span class="si">{</span><span class="n">train</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="si">:</span><span class="s2">%Y-%m</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">train</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">:</span><span class="s2">%Y-%m</span><span class="si">}</span><span class="s2">  (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">train</span><span class="p">)</span><span class="si">}</span><span class="s2"> days)"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Test:  </span><span class="si">{</span><span class="n">test</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="si">:</span><span class="s2">%Y-%m</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">test</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">:</span><span class="s2">%Y-%m</span><span class="si">}</span><span class="s2">  (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">)</span><span class="si">}</span><span class="s2"> days)"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Train: 2010-04 to 2021-12  (2950 days)
+Test:  2021-12 to 2024-11  (738 days)
+</pre>
+</div></div>
+<p><strong>Note:</strong> we do not use scikit-learn's <code>train_test_split</code> here.</p>
+<ul>
+<li><code>train_test_split</code> shuffles by default. That is fine for cross-sectional data but wrong for time series.</li>
+<li>We slice by position instead.</li>
+</ul>
+
+<h3 id="predicting-returns">Predicting Returns</h3>
+
+<ul>
+<li>We first try to predict tomorrow's return with a linear model, using the estimator API.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.linear_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">LinearRegression</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">r2_score</span>
+
+<span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span> <span class="o">=</span> <span class="n">train</span><span class="p">[</span><span class="n">feature_cols</span><span class="p">],</span> <span class="n">train</span><span class="p">[</span><span class="s1">'target_ret'</span><span class="p">]</span>
+<span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <span class="n">test</span><span class="p">[</span><span class="n">feature_cols</span><span class="p">],</span> <span class="n">test</span><span class="p">[</span><span class="s1">'target_ret'</span><span class="p">]</span>
+
+<span class="n">lr</span> <span class="o">=</span> <span class="n">LinearRegression</span><span class="p">()</span>
+<span class="n">lr</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span></code></pre></div><div class="nb-out nb-text">
+<pre>LinearRegression()</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">train_r2</span> <span class="o">=</span> <span class="n">lr</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+<span class="n">test_r2</span> <span class="o">=</span> <span class="n">r2_score</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">lr</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"In-sample  R2: </span><span class="si">{</span><span class="n">train_r2</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Out-of-sample R2: </span><span class="si">{</span><span class="n">test_r2</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>In-sample  R2: 0.0305
+Out-of-sample R2: -0.0297
+</pre>
+</div></div>
+<h4 id="results">Results</h4><ul>
+<li><p>The out-of-sample R-squared is essentially zero (often slightly negative).</p>
+</li>
+<li><p>This is expected under the <strong>efficient-market hypothesis</strong>. If daily returns were easily predictable from past returns, traders would already have arbitraged the pattern away.</p>
+</li>
+<li><p>A negative test R-squared means the model does worse than predicting the mean. Be skeptical of anyone claiming to predict daily returns with high accuracy.</p>
+</li>
+</ul>
+
+<h3 id="regularization-ridge-and-lasso">Regularization: Ridge and Lasso</h3>
+
+<ul>
+<li><p><strong>Regularization</strong> shrinks coefficients toward zero to reduce overfitting. This connects directly to OLS from Lecture 8.</p>
+</li>
+<li><p><strong>Ridge</strong> (L2) shrinks all coefficients smoothly.</p>
+</li>
+<li><p><strong>Lasso</strong> (L1) can set some coefficients exactly to zero, so it also performs variable selection.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.linear_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">Ridge</span><span class="p">,</span> <span class="n">Lasso</span>
+
+<span class="n">ridge</span> <span class="o">=</span> <span class="n">Ridge</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+<span class="n">lasso</span> <span class="o">=</span> <span class="n">Lasso</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.001</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+
+<span class="n">coefs</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+    <span class="s1">'OLS'</span><span class="p">:</span> <span class="n">lr</span><span class="o">.</span><span class="n">coef_</span><span class="p">,</span>
+    <span class="s1">'Ridge'</span><span class="p">:</span> <span class="n">ridge</span><span class="o">.</span><span class="n">coef_</span><span class="p">,</span>
+    <span class="s1">'Lasso'</span><span class="p">:</span> <span class="n">lasso</span><span class="o">.</span><span class="n">coef_</span><span class="p">,</span>
+<span class="p">},</span> <span class="n">index</span><span class="o">=</span><span class="n">feature_cols</span><span class="p">)</span>
+<span class="n">coefs</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>OLS</th>
+<th>Ridge</th>
+<th>Lasso</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>ret_lag1</th>
+<td>0.12904</td>
+<td>0.02648</td>
+<td>0.00000</td>
+</tr>
+<tr>
+<th>ret_lag2</th>
+<td>-0.00400</td>
+<td>-0.00879</td>
+<td>-0.00000</td>
+</tr>
+<tr>
+<th>ret_lag3</th>
+<td>-0.03717</td>
+<td>-0.01388</td>
+<td>-0.00000</td>
+</tr>
+<tr>
+<th>ret_lag5</th>
+<td>-0.07652</td>
+<td>-0.02563</td>
+<td>-0.00000</td>
+</tr>
+<tr>
+<th>ma5</th>
+<td>-0.14649</td>
+<td>-0.00484</td>
+<td>-0.00000</td>
+</tr>
+<tr>
+<th>ma21</th>
+<td>-0.00076</td>
+<td>-0.00059</td>
+<td>-0.00000</td>
+</tr>
+<tr>
+<th>mom21</th>
+<td>-0.01601</td>
+<td>-0.01235</td>
+<td>-0.00000</td>
+</tr>
+<tr>
+<th>vol5</th>
+<td>-0.00014</td>
+<td>-0.00008</td>
+<td>-0.00000</td>
+</tr>
+<tr>
+<th>vol21</th>
+<td>0.00006</td>
+<td>0.00003</td>
+<td>0.00000</td>
+</tr>
+<tr>
+<th>vol63</th>
+<td>0.00011</td>
+<td>0.00009</td>
+<td>0.00004</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<ul>
+<li>Lasso sets many coefficients to zero. When predicting returns it typically keeps almost no features, which matches the near-zero out-of-sample R-squared of the linear model.</li>
+</ul>
+
+<h4 id="choosing-alpha-with-cross-validation">Choosing <code>alpha</code> with Cross-Validation</h4><ul>
+<li><code>LassoCV</code> automatically selects the regularization strength using cross-validation.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.linear_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">LassoCV</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeriesSplit</span>
+
+<span class="n">lasso_cv</span> <span class="o">=</span> <span class="n">LassoCV</span><span class="p">(</span><span class="n">cv</span><span class="o">=</span><span class="n">TimeSeriesSplit</span><span class="p">(</span><span class="mi">5</span><span class="p">),</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">50000</span><span class="p">)</span>
+<span class="n">lasso_cv</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Selected alpha: </span><span class="si">{</span><span class="n">lasso_cv</span><span class="o">.</span><span class="n">alpha_</span><span class="si">:</span><span class="s2">.2e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Non-zero coefficients: </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">lasso_cv</span><span class="o">.</span><span class="n">coef_</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="si">}</span><span class="s2"> of </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">feature_cols</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Selected alpha: 2.89e-03
+Non-zero coefficients: 1 of 10
+</pre>
+</div></div>
+<h3 id="cross-validation-for-time-series">Cross-Validation for Time Series</h3>
+
+<ul>
+<li><p>Ordinary k-fold CV ignores the time order of the data, which is again wrong for time series.</p>
+</li>
+<li><p><code>TimeSeriesSplit</code> creates folds that always train on the past and validate on the future.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <span class="n">cross_val_score</span>
+
+<span class="n">tscv</span> <span class="o">=</span> <span class="n">TimeSeriesSplit</span><span class="p">(</span><span class="n">n_splits</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">scores</span> <span class="o">=</span> <span class="n">cross_val_score</span><span class="p">(</span><span class="n">LinearRegression</span><span class="p">(),</span> <span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span>
+                         <span class="n">cv</span><span class="o">=</span><span class="n">tscv</span><span class="p">,</span> <span class="n">scoring</span><span class="o">=</span><span class="s1">'r2'</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Validation R2 per fold:"</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">scores</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Mean: </span><span class="si">{</span><span class="n">scores</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Validation R2 per fold: [-0.0505 -0.0199 -0.054  -0.0074 -0.0163]
+Mean: -0.0296
+</pre>
+</div></div>
+<ul>
+<li>Each fold's validation set comes after its training set in time. The validation R-squared is near zero in every fold, as it was on the test set.</li>
+</ul>
+
+<h3 id="preprocessing-pipelines">Preprocessing Pipelines</h3>
+
+<ul>
+<li><p>Many models need scaled features. The scaling must be learned on the <strong>training set only</strong>; otherwise test information leaks in.</p>
+</li>
+<li><p>A <code>Pipeline</code> bundles preprocessing and the model so the scaler is fit on each training fold automatically.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_pipeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">StandardScaler</span>
+
+<span class="n">pipe</span> <span class="o">=</span> <span class="n">make_pipeline</span><span class="p">(</span><span class="n">StandardScaler</span><span class="p">(),</span> <span class="n">Ridge</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">1.0</span><span class="p">))</span>
+<span class="n">pipe</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Pipeline test R2: </span><span class="si">{</span><span class="n">pipe</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span><span class="w"> </span><span class="n">y_test</span><span class="p">)</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Pipeline test R2: -0.0296
+</pre>
+</div></div>
+<ul>
+<li>The <code>Pipeline</code> applies <code>StandardScaler</code> and then <code>Ridge</code> as one object, so there is no manual scaling step and the scaler is fit only on the training data.</li>
+</ul>
+
+<h3 id="tree-based-models">Tree-Based Models</h3>
+
+<ul>
+<li><p><strong>Decision trees</strong> split the feature space into regions. They capture nonlinearities and interactions automatically.</p>
+</li>
+<li><p><strong>Random forests</strong> average many trees fit on bootstrapped samples. They are usually more accurate and more stable than a single tree.</p>
+</li>
+<li><p><strong>Gradient boosting</strong> builds trees sequentially, with each new tree correcting the errors of the trees before it. It is often the best performer on tabular data.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.ensemble</span><span class="w"> </span><span class="kn">import</span> <span class="n">RandomForestRegressor</span><span class="p">,</span> <span class="n">GradientBoostingRegressor</span>
+
+<span class="n">rf</span> <span class="o">=</span> <span class="n">RandomForestRegressor</span><span class="p">(</span><span class="n">n_estimators</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">rf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Random Forest (returns) test R2: </span><span class="si">{</span><span class="n">rf</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span><span class="w"> </span><span class="n">y_test</span><span class="p">)</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Random Forest (returns) test R2: -0.0579
+</pre>
+</div></div>
+<ul>
+<li>The random forest does not predict returns out of sample either. A more flexible model cannot find signal that is not in the data.</li>
+</ul>
+
+<h3 id="classification-predicting-direction">Classification: Predicting Direction</h3>
+
+<ul>
+<li><p>Next we check whether the sign of tomorrow's return is easier to predict than its magnitude.</p>
+</li>
+<li><p>This is a <strong>classification</strong> problem (up vs down). We measure accuracy, the fraction of days classified correctly.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.linear_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogisticRegression</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">accuracy_score</span><span class="p">,</span> <span class="n">confusion_matrix</span>
+
+<span class="n">yd_train</span><span class="p">,</span> <span class="n">yd_test</span> <span class="o">=</span> <span class="n">train</span><span class="p">[</span><span class="s1">'target_dir'</span><span class="p">],</span> <span class="n">test</span><span class="p">[</span><span class="s1">'target_dir'</span><span class="p">]</span>
+
+<span class="n">clf</span> <span class="o">=</span> <span class="n">make_pipeline</span><span class="p">(</span><span class="n">StandardScaler</span><span class="p">(),</span> <span class="n">LogisticRegression</span><span class="p">(</span><span class="n">max_iter</span><span class="o">=</span><span class="mi">1000</span><span class="p">))</span>
+<span class="n">clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">yd_train</span><span class="p">)</span>
+
+<span class="n">acc</span> <span class="o">=</span> <span class="n">accuracy_score</span><span class="p">(</span><span class="n">yd_test</span><span class="p">,</span> <span class="n">clf</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Direction accuracy: </span><span class="si">{</span><span class="n">acc</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Baseline (always predict 'up'): </span><span class="si">{</span><span class="n">yd_test</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Direction accuracy: 0.5149
+Baseline (always predict 'up'): 0.5176
+</pre>
+</div></div>
+<h4 id="reading-a-confusion-matrix">Reading a Confusion Matrix</h4><ul>
+<li>The confusion matrix shows correct vs incorrect calls for each class.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">cm</span> <span class="o">=</span> <span class="n">confusion_matrix</span><span class="p">(</span><span class="n">yd_test</span><span class="p">,</span> <span class="n">clf</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">))</span>
+<span class="n">cm_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">cm</span><span class="p">,</span>
+                     <span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="s1">'Actual Down'</span><span class="p">,</span> <span class="s1">'Actual Up'</span><span class="p">],</span>
+                     <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">'Pred Down'</span><span class="p">,</span> <span class="s1">'Pred Up'</span><span class="p">])</span>
+<span class="n">cm_df</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Pred Down</th>
+<th>Pred Up</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>Actual Down</th>
+<td>8</td>
+<td>348</td>
+</tr>
+<tr>
+<th>Actual Up</th>
+<td>10</td>
+<td>372</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<ul>
+<li>Accuracy is close to the base rate (always predicting up), so direction prediction is barely better than a coin flip. As with returns, this is consistent with market efficiency.</li>
+</ul>
+
+<h3 id="predicting-volatility">Predicting Volatility</h3>
+
+<ul>
+<li><p>Volatility clusters, so next month's volatility is predictable from the recent past.</p>
+</li>
+<li><p>We keep the same features and workflow and change the target to <code>target_vol</code>.</p>
+</li>
+<li><p>The standard model for forecasting realized volatility, the <strong>HAR</strong> model, is a linear regression of future volatility on past volatility at several horizons. We start there.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">yv_train</span><span class="p">,</span> <span class="n">yv_test</span> <span class="o">=</span> <span class="n">train</span><span class="p">[</span><span class="s1">'target_vol'</span><span class="p">],</span> <span class="n">test</span><span class="p">[</span><span class="s1">'target_vol'</span><span class="p">]</span>
+
+<span class="c1"># A regularized linear model (HAR-style), in a pipeline with scaling</span>
+<span class="n">vol_lin</span> <span class="o">=</span> <span class="n">make_pipeline</span><span class="p">(</span><span class="n">StandardScaler</span><span class="p">(),</span> <span class="n">Ridge</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">1.0</span><span class="p">))</span>
+<span class="n">vol_lin</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">yv_train</span><span class="p">)</span>
+
+<span class="n">vol_r2</span> <span class="o">=</span> <span class="n">vol_lin</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">yv_test</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Volatility test R2 (linear): </span><span class="si">{</span><span class="n">vol_r2</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"(Compare to the near-zero R2 for returns!)"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Volatility test R2 (linear): 0.4452
+(Compare to the near-zero R2 for returns!)
+</pre>
+</div></div>
+<h4 id="comparison-with-returns">Comparison with Returns</h4><ul>
+<li><p>The test R-squared is much higher than for returns.</p>
+</li>
+<li><p>More generally, financial returns are hard to forecast, while volatility is often forecastable.</p>
+</li>
+</ul>
+
+<h4 id="linear-model-coefficients">Linear Model Coefficients</h4><ul>
+<li>In a linear model with standardized features, the coefficients show which features drive the forecast. We expect the past-volatility features to dominate.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Pull coefficients out of the fitted pipeline</span>
+<span class="n">ridge_step</span> <span class="o">=</span> <span class="n">vol_lin</span><span class="o">.</span><span class="n">named_steps</span><span class="p">[</span><span class="s1">'ridge'</span><span class="p">]</span>
+<span class="n">vol_coefs</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">ridge_step</span><span class="o">.</span><span class="n">coef_</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">feature_cols</span><span class="p">)</span><span class="o">.</span><span class="n">sort_values</span><span class="p">()</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">vol_coefs</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">barh</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'steelblue'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Linear Volatility Model: Standardized Coefficients'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">'Coefficient'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="402" loading="lazy" src="fig-03.png" width="715"/>
+</div></div>
+<h4 id="random-forest-for-volatility">Random Forest for Volatility</h4><ul>
+<li><p>A random forest can also predict volatility, and it reports <strong>feature importances</strong>.</p>
+</li>
+<li><p>Trees <strong>cannot extrapolate</strong>. Their predictions stay within the range of target values seen in training, so if a future crisis brings higher volatility than anything in the training data, a tree will systematically under-predict it. A linear model can extrapolate.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">rf_vol</span> <span class="o">=</span> <span class="n">RandomForestRegressor</span><span class="p">(</span><span class="n">n_estimators</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">rf_vol</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">yv_train</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Volatility test R2 (random forest): </span><span class="si">{</span><span class="n">rf_vol</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span><span class="w"> </span><span class="n">yv_test</span><span class="p">)</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="n">importances</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">rf_vol</span><span class="o">.</span><span class="n">feature_importances_</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">feature_cols</span><span class="p">)</span><span class="o">.</span><span class="n">sort_values</span><span class="p">()</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">importances</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">barh</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'seagreen'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Random Forest: Feature Importance for Volatility'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">'Importance'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Volatility test R2 (random forest): 0.1972
+</pre>
+</div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="402" loading="lazy" src="fig-04.png" width="715"/>
+</div></div>
+<h4 id="visualizing-the-volatility-forecast">Visualizing the Volatility Forecast</h4><ul>
+<li>Plot predicted vs actual volatility on the test set for the linear model.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">pred_vol</span> <span class="o">=</span> <span class="n">vol_lin</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">11</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">yv_test</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">yv_test</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Actual'</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'black'</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">yv_test</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">pred_vol</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Predicted (linear)'</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'red'</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Realized Volatility: Actual vs Linear Prediction (Test Set)'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'Annualized volatility (%)'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="378" loading="lazy" src="fig-05.png" width="946"/>
+</div></div>
+<h3 id="connection-to-garch">Connection to GARCH</h3>
+
+<ul>
+<li><p>In Lecture 8 we modeled volatility structurally with GARCH. Here we predicted it with a data-driven ML model.</p>
+</li>
+<li><p>We now fit a GARCH(1,1) to the S&amp;P 500 returns and compare its conditional volatility with the market's actual ups and downs.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">from</span><span class="w"> </span><span class="nn">arch</span><span class="w"> </span><span class="kn">import</span> <span class="n">arch_model</span>
+
+<span class="c1"># arch expects returns in percent; daily returns are tiny, so scale by 100</span>
+<span class="n">am</span> <span class="o">=</span> <span class="n">arch_model</span><span class="p">(</span><span class="n">returns</span> <span class="o">*</span> <span class="mi">100</span><span class="p">,</span> <span class="n">mean</span><span class="o">=</span><span class="s1">'Constant'</span><span class="p">,</span> <span class="n">vol</span><span class="o">=</span><span class="s1">'GARCH'</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">q</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">garch_res</span> <span class="o">=</span> <span class="n">am</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">disp</span><span class="o">=</span><span class="s1">'off'</span><span class="p">)</span>
+
+<span class="c1"># Annualize the daily conditional volatility to compare with our ML target</span>
+<span class="n">garch_vol</span> <span class="o">=</span> <span class="n">garch_res</span><span class="o">.</span><span class="n">conditional_volatility</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">252</span><span class="p">)</span>
+<span class="n">garch_vol</span><span class="o">.</span><span class="n">tail</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>cond_vol</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>2024-12-23</th>
+<td>18.959831</td>
+</tr>
+<tr>
+<th>2024-12-24</th>
+<td>17.759772</td>
+</tr>
+<tr>
+<th>2024-12-26</th>
+<td>17.494834</td>
+</tr>
+<tr>
+<th>2024-12-27</th>
+<td>15.992890</td>
+</tr>
+<tr>
+<th>2024-12-30</th>
+<td>16.534878</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> float64</label></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">11</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">garch_vol</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">garch_vol</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'purple'</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'GARCH(1,1) Conditional Volatility of the S&amp;P 500 (Annualized %)'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'Annualized volatility (%)'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="378" loading="lazy" src="fig-06.png" width="938"/>
+</div></div>
+<ul>
+<li><p>GARCH is a parametric model with three parameters and strong structure. The random forest is flexible and makes few assumptions.</p>
+</li>
+<li><p>Both capture the fact that volatility is persistent and forecastable. GARCH reflects the inference approach and the random forest reflects the prediction approach.</p>
+</li>
+</ul>
+
+<h3 id="in-class-exercise">In-Class Exercise</h3>
+
+<p><strong>19-1. Add a Feature:</strong></p>
+<ul>
+<li>Add a new feature to <code>data</code> called <code>ret_lag10</code> (the return 10 days ago).</li>
+<li>Use <code>.shift(10)</code> and confirm it appears as a column.</li>
+</ul>
+
+<p><strong>19-2. Random Forest for Returns:</strong></p>
+<ul>
+<li>Fit a <code>RandomForestRegressor</code> to predict <code>target_ret</code> (tomorrow's return) using <code>feature_cols</code>.</li>
+<li>Report the out-of-sample R-squared. Is it meaningfully above zero?</li>
+</ul>
+
+<p><strong>19-3. Regularization Path:</strong></p>
+<ul>
+<li>Fit <code>Lasso</code> to predict <code>target_ret</code> with three different <code>alpha</code> values: 0.0001, 0.001, and 0.01.</li>
+<li>For each, print how many coefficients are non-zero. What happens as <code>alpha</code> grows?</li>
+</ul>
+
+<p><strong>19-4. Gradient Boosting for Volatility:</strong></p>
+<ul>
+<li>Fit a <code>GradientBoostingRegressor</code> to predict <code>target_vol</code>.</li>
+<li>Compare its test R-squared to the random forest's. Which does better?</li>
+</ul>
+
+<p><strong>19-5. Feature Importance:</strong></p>
+<ul>
+<li>From your volatility model in 19-4 (or the random forest), print the three most important features.</li>
+<li>Do the volatility features (<code>vol5</code>, <code>vol21</code>, <code>vol63</code>) dominate, as expected?</li>
+</ul>
+
+<h2 id="ch-20-deep-learning-with-pytorch">Ch 20: Deep Learning with PyTorch</h2>
+
+<ul>
+<li><p><strong>PyTorch</strong> is one of the two dominant deep-learning frameworks (alongside TensorFlow).</p>
+</li>
+<li><p>This chapter gives an exposure-level introduction to tensors, automatic differentiation, and the training loop.</p>
+</li>
+<li><p>For tabular econ/finance problems, gradient boosting (Ch 19) usually performs better than deep learning. Deep learning is most useful for images, text, and sequences, and for very large datasets.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"PyTorch version: </span><span class="si">{</span><span class="n">torch</span><span class="o">.</span><span class="n">__version__</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>PyTorch version: 2.11.0+cpu
+</pre>
+</div></div>
+<h3 id="tensors">Tensors</h3>
+
+<ul>
+<li><p>A <strong>tensor</strong> is PyTorch's core data structure. It is essentially a NumPy array that can run on a GPU and track gradients.</p>
+</li>
+<li><p>If you know NumPy (Lecture 6), you already know most of the tensor API.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Create tensors much like NumPy arrays</span>
+<span class="n">a</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">])</span>
+<span class="n">b</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">4.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">,</span> <span class="mf">6.0</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">a</span> <span class="o">+</span> <span class="n">b</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">a</span> <span class="o">*</span> <span class="n">b</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span></code></pre></div><div class="nb-out nb-stream">
+<pre>tensor([5., 7., 9.])
+tensor([ 4., 10., 18.])
+tensor(2.)
+</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># 2D tensor and its shape</span>
+<span class="n">M</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">],</span> <span class="p">[</span><span class="mf">3.0</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">]])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">M</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Shape:"</span><span class="p">,</span> <span class="n">M</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>tensor([[1., 2.],
+        [3., 4.]])
+Shape: torch.Size([2, 2])
+</pre>
+</div></div>
+<h4 id="converting-between-numpy-and-pytorch">Converting Between NumPy and PyTorch</h4><ul>
+<li><code>torch.from_numpy()</code> converts a NumPy array to a tensor, and <code>.numpy()</code> converts a tensor back to a NumPy array.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">])</span>
+<span class="n">t</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">from_numpy</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span>      <span class="c1"># NumPy -&gt; tensor</span>
+<span class="n">back</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>               <span class="c1"># tensor -&gt; NumPy</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"tensor:"</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"back to numpy:"</span><span class="p">,</span> <span class="n">back</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>tensor: tensor([1., 2., 3.], dtype=torch.float64)
+back to numpy: [1. 2. 3.]
+</pre>
+</div></div>
+<h3 id="autograd-automatic-differentiation">Autograd: Automatic Differentiation</h3>
+
+<ul>
+<li><p>Neural networks are trained by <strong>gradient descent</strong>, and the gradients can be tedious to derive by hand.</p>
+</li>
+<li><p>PyTorch's <strong>autograd</strong> computes them automatically. Set <code>requires_grad=True</code>, do a calculation, then call <code>.backward()</code>.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Compute the derivative of f(x) = x^2 + 2x at x = 3</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">requires_grad</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">x</span>
+<span class="n">y</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>          <span class="c1"># compute dy/dx</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"dy/dx at x=3: </span><span class="si">{</span><span class="n">x</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>   <span class="c1"># analytically 2x + 2 = 8</span></code></pre></div><div class="nb-out nb-stream">
+<pre>dy/dx at x=3: 8.0
+</pre>
+</div></div>
+<ul>
+<li>Network training relies on autograd: PyTorch tracks every operation and can differentiate the whole chain back to the parameters.</li>
+</ul>
+
+<h3 id="building-a-neural-network">Building a Neural Network</h3>
+
+<ul>
+<li><p>A neural network is a stack of linear layers with <strong>nonlinear activations</strong> in between.</p>
+</li>
+<li><p>In PyTorch you define one as a class that subclasses <code>nn.Module</code> (classes were covered in Lecture 5). You implement <code>__init__</code> (define the layers) and <code>forward</code> (define the computation).</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">class</span><span class="w"> </span><span class="nc">VolNet</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_features</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">net</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">n_features</span><span class="p">,</span> <span class="mi">16</span><span class="p">),</span>   <span class="c1"># input -&gt; 16 hidden units</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>                   <span class="c1"># nonlinearity</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span>            <span class="c1"># 16 -&gt; 8</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>             <span class="c1"># 8 -&gt; single output</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">net</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">VolNet</span><span class="p">(</span><span class="n">n_features</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">feature_cols</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">model</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>VolNet(
+  (net): Sequential(
+    (0): Linear(in_features=10, out_features=16, bias=True)
+    (1): ReLU()
+    (2): Linear(in_features=16, out_features=8, bias=True)
+    (3): ReLU()
+    (4): Linear(in_features=8, out_features=1, bias=True)
+  )
+)
+</pre>
+</div></div>
+<ul>
+<li><code>nn.Sequential</code> chains layers; <code>nn.Linear(a, b)</code> is a fully-connected layer; <code>nn.ReLU</code> is the activation. The output layer has one unit because we predict a single number (volatility).</li>
+</ul>
+
+<h3 id="preparing-the-data-as-tensors">Preparing the Data as Tensors</h3>
+
+<ul>
+<li><p>We reuse the volatility prediction task from Ch 19, since volatility (unlike returns) was predictable out of sample.</p>
+</li>
+<li><p>Neural nets train best when both inputs and outputs are standardized. We compute the means and standard deviations on the <strong>training set only</strong> and use them to scale the test features as well.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Standardize features and target using TRAINING statistics only</span>
+<span class="n">X_tr</span> <span class="o">=</span> <span class="n">train</span><span class="p">[</span><span class="n">feature_cols</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">'float32'</span><span class="p">)</span>
+<span class="n">X_te</span> <span class="o">=</span> <span class="n">test</span><span class="p">[</span><span class="n">feature_cols</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">'float32'</span><span class="p">)</span>
+<span class="n">y_tr</span> <span class="o">=</span> <span class="n">train</span><span class="p">[</span><span class="s1">'target_vol'</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">'float32'</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">y_te</span> <span class="o">=</span> <span class="n">test</span><span class="p">[</span><span class="s1">'target_vol'</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">'float32'</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="n">x_mean</span><span class="p">,</span> <span class="n">x_std</span> <span class="o">=</span> <span class="n">X_tr</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">X_tr</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">y_mean</span><span class="p">,</span> <span class="n">y_std</span> <span class="o">=</span> <span class="n">y_tr</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span> <span class="n">y_tr</span><span class="o">.</span><span class="n">std</span><span class="p">()</span>
+
+<span class="n">X_tr_s</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">((</span><span class="n">X_tr</span> <span class="o">-</span> <span class="n">x_mean</span><span class="p">)</span> <span class="o">/</span> <span class="n">x_std</span><span class="p">)</span>
+<span class="n">X_te_s</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">((</span><span class="n">X_te</span> <span class="o">-</span> <span class="n">x_mean</span><span class="p">)</span> <span class="o">/</span> <span class="n">x_std</span><span class="p">)</span>
+<span class="n">y_tr_s</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">((</span><span class="n">y_tr</span> <span class="o">-</span> <span class="n">y_mean</span><span class="p">)</span> <span class="o">/</span> <span class="n">y_std</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Training tensors:"</span><span class="p">,</span> <span class="n">X_tr_s</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">y_tr_s</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Training tensors: torch.Size([2950, 10]) torch.Size([2950, 1])
+</pre>
+</div></div>
+<h3 id="the-training-loop">The Training Loop</h3>
+
+<ul>
+<li><p>Training a network is the same four steps repeated many times (each pass over the data is an <strong>epoch</strong>):</p>
+<ol>
+<li><strong>Forward:</strong> compute predictions.</li>
+<li><strong>Loss:</strong> measure error (here, mean squared error).</li>
+<li><strong>Backward:</strong> compute gradients with autograd.</li>
+<li><strong>Step:</strong> update parameters with the optimizer.</li>
+</ol>
+</li>
+<li><p><code>optimizer.zero_grad()</code> clears old gradients before each step. Forgetting it is a common PyTorch bug.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">model</span> <span class="o">=</span> <span class="n">VolNet</span><span class="p">(</span><span class="n">n_features</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">feature_cols</span><span class="p">))</span>
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+<span class="n">loss_fn</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">MSELoss</span><span class="p">()</span>
+
+<span class="n">losses</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">200</span><span class="p">):</span>
+    <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>          <span class="c1"># 1. clear old gradients</span>
+    <span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">X_tr_s</span><span class="p">)</span>           <span class="c1"># 2. forward pass</span>
+    <span class="n">loss</span> <span class="o">=</span> <span class="n">loss_fn</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">y_tr_s</span><span class="p">)</span>   <span class="c1"># 3. compute loss</span>
+    <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>                <span class="c1"># 4. backward pass (autograd)</span>
+    <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>               <span class="c1"># 5. update parameters</span>
+    <span class="n">losses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">epoch</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="mi">50</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Epoch </span><span class="si">{</span><span class="n">epoch</span><span class="o">+</span><span class="mi">1</span><span class="si">:</span><span class="s2">3d</span><span class="si">}</span><span class="s2">  |  loss = </span><span class="si">{</span><span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Epoch  50  |  loss = 0.6341
+Epoch 100  |  loss = 0.5735
+Epoch 150  |  loss = 0.5202
+Epoch 200  |  loss = 0.4910
+</pre>
+</div></div>
+<h4 id="plotting-the-training-loss">Plotting the Training Loss</h4><ul>
+<li>A decreasing loss curve shows that the network is learning (plotting was covered in Lecture 7).</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">losses</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'steelblue'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Training Loss Over Epochs'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">'Epoch'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'MSE (standardized)'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="402" loading="lazy" src="fig-07.png" width="701"/>
+</div></div>
+<h3 id="evaluating-the-network">Evaluating the Network</h3>
+
+<ul>
+<li><p>We predict on the test set, then un-standardize the predictions back to annualized-percent volatility.</p>
+</li>
+<li><p><code>torch.no_grad()</code> turns off gradient tracking during evaluation, which saves computation.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">r2_score</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+<span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+    <span class="n">pred_s</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">X_te_s</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+
+<span class="c1"># Convert predictions back to the original (annualized %) scale</span>
+<span class="n">nn_pred</span> <span class="o">=</span> <span class="n">pred_s</span> <span class="o">*</span> <span class="n">y_std</span> <span class="o">+</span> <span class="n">y_mean</span>
+<span class="n">nn_r2</span> <span class="o">=</span> <span class="n">r2_score</span><span class="p">(</span><span class="n">y_te</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">nn_pred</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Neural network volatility test R2: </span><span class="si">{</span><span class="n">nn_r2</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Neural network volatility test R2: 0.1285
+</pre>
+</div></div>
+<h4 id="comparing-the-neural-net-to-the-random-forest">Comparing the Neural Net to the Random Forest</h4>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">rf_pred</span> <span class="o">=</span> <span class="n">rf_vol</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">11</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">test</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">y_te</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Actual'</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'black'</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">test</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">rf_pred</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Random Forest'</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'red'</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">test</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">nn_pred</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Neural Net'</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'green'</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Volatility Prediction: Random Forest vs Neural Network'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'Annualized volatility (%)'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="378" loading="lazy" src="fig-08.png" width="946"/>
+</div></div>
+<ul>
+<li><p>On this tabular problem the neural net is not clearly better than the random forest.</p>
+</li>
+<li><p>For tabular econ/finance data, tree ensembles are usually the practical default. Deep learning's advantage appears with unstructured data (text, images) and far larger datasets.</p>
+</li>
+</ul>
+
+<h3 id="when-to-use-deep-learning">When to Use Deep Learning</h3><ul>
+<li><p>Deep learning is rarely needed for a few hundred or a few thousand rows of tabular data. Gradient boosting is simpler and usually as good or better.</p>
+</li>
+<li><p>It is useful when working with:</p>
+<ul>
+<li>Text (central-bank statements, news, filings), using modern language models.</li>
+<li>Images (satellite data, scanned documents).</li>
+<li>Sequences where order and long-range structure matter.</li>
+<li>Very large datasets, where flexible models have an advantage.</li>
+</ul>
+</li>
+<li><p>These applications are built from the same components covered here: tensors, autograd, and the training loop.</p>
+</li>
+</ul>
+
+<h3 id="in-class-exercise-2">In-Class Exercise</h3>
+
+<p><strong>20-1. Tensors and Autograd:</strong></p>
+<ul>
+<li>Create a tensor <code>x = torch.tensor(2.0, requires_grad=True)</code>.</li>
+<li>Compute <code>y = x**3</code> and use <code>.backward()</code> to find <code>dy/dx</code> at x = 2. Confirm it equals 12 (since the derivative of x^3 is 3x^2).</li>
+</ul>
+
+<p><strong>20-2. Build a Network:</strong></p>
+<ul>
+<li>Define a new <code>nn.Module</code> subclass with a single hidden layer of 32 units and a ReLU activation, mapping <code>len(feature_cols)</code> inputs to 1 output.</li>
+<li>Instantiate it and print the model.</li>
+</ul>
+
+<p><strong>20-3. Train It:</strong></p>
+<ul>
+<li>Train your network from 20-2 on the standardized volatility data (<code>X_tr_s</code>, <code>y_tr_s</code>) for 150 epochs with the Adam optimizer and MSE loss.</li>
+<li>Store the per-epoch loss in a list and print the first and last values.</li>
+</ul>
+
+<p><strong>20-4. Evaluate and Plot:</strong></p>
+<ul>
+<li>Plot the training-loss curve from 20-3.</li>
+<li>Then un-standardize the predictions and compute the test-set R-squared. How does it compare to the random forest?</li>
+</ul>
+</div>

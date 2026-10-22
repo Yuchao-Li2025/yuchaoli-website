@@ -1,0 +1,837 @@
+---
+title: "Lecture 1: Getting Started, Variables, and Lists"
+lecture: 1
+weight: 1
+summary: "Google Colab and a local setup; variables, strings, f-strings, and numbers; lists: indexing, updating, sorting, and len()."
+description: "ECON 294A lecture notes by Yuchao Li: getting started with Python in Google Colab, variables and simple data types, and lists, with finance examples."
+notebook: "ECON294A_Lecture1.ipynb"
+---
+<div class="toc"><details><summary accesskey="c" title="(Alt + C)"><span class="details">Contents</span></summary><div class="inner"><ul><li><a href="#what-well-cover" aria-label="What We&#x27;ll Cover">What We&#x27;ll Cover</a></li><li><a href="#ch-1-setting-up-your-environment" aria-label="Ch 1: Setting Up Your Environment">Ch 1: Setting Up Your Environment</a><ul><li><a href="#google-colab" aria-label="Google Colab">Google Colab</a></li><li><a href="#working-on-your-own-computer-optional" aria-label="Working on Your Own Computer (Optional)">Working on Your Own Computer (Optional)</a></li><li><a href="#checking-your-python-version" aria-label="Checking Your Python Version">Checking Your Python Version</a></li><li><a href="#your-first-program" aria-label="Your First Program">Your First Program</a></li><li><a href="#in-class-exercise" aria-label="In-Class Exercise">In-Class Exercise</a></li></ul></li><li><a href="#ch-2-variables-and-simple-data-types" aria-label="Ch 2: Variables and Simple Data Types">Ch 2: Variables and Simple Data Types</a><ul><li><a href="#variables" aria-label="Variables">Variables</a></li><li><a href="#strings" aria-label="Strings">Strings</a></li><li><a href="#numbers-integers-and-floats" aria-label="Numbers: Integers and Floats">Numbers: Integers and Floats</a></li><li><a href="#comments" aria-label="Comments">Comments</a></li><li><a href="#in-class-exercise-2" aria-label="In-Class Exercise">In-Class Exercise</a></li></ul></li><li><a href="#ch-3-introducing-lists" aria-label="Ch 3: Introducing Lists">Ch 3: Introducing Lists</a><ul><li><a href="#creating-a-list" aria-label="Creating a List">Creating a List</a></li><li><a href="#reading-items-by-position" aria-label="Reading Items by Position">Reading Items by Position</a></li><li><a href="#updating-a-list" aria-label="Updating a List">Updating a List</a></li><li><a href="#sorting-reversing-and-counting" aria-label="Sorting, Reversing, and Counting">Sorting, Reversing, and Counting</a></li><li><a href="#when-an-index-is-out-of-range" aria-label="When an Index Is Out of Range">When an Index Is Out of Range</a></li><li><a href="#in-class-exercise-3" aria-label="In-Class Exercise">In-Class Exercise</a></li></ul></li></ul></div></details></div>
+<div class="post-content nb">
+<ul>
+<li><p>Lectures 1-5 cover the Python language. Lectures 6-9 use it to work with financial data.</p>
+</li>
+<li><p>No programming experience is assumed. All examples come from finance: tickers, prices, returns, and portfolios.</p>
+</li>
+<li><p>This lecture covers working in Google Colab, then variables, strings, numbers, and lists.</p>
+</li>
+</ul>
+
+<h3 id="what-well-cover">What We'll Cover</h3><ul>
+<li><p><strong>Ch 1 (Setting Up Your Environment):</strong> Google Colab, running and restarting, an optional local setup, checking your Python version, and a first program.</p>
+</li>
+<li><p><strong>Ch 2 (Variables and Simple Data Types):</strong> variables and naming, strings and string methods, f-strings, integers and floats, constants, and comments.</p>
+</li>
+<li><p><strong>Ch 3 (Introducing Lists):</strong> creating and indexing lists; changing, adding, and removing items; sorting and reversing; and <code>len()</code>.</p>
+</li>
+<li><p>The running example is a small stock watchlist. We clean up ticker symbols, compute position values and returns, and manage a list of holdings. All prices and market values are illustrative, not real quotes.</p>
+</li>
+</ul>
+
+<h2 id="ch-1-setting-up-your-environment">Ch 1: Setting Up Your Environment</h2>
+
+<ul>
+<li><p>To run Python you need an <strong>interpreter</strong> (the program that reads your code and carries it out) and a place to write and save your code.</p>
+</li>
+<li><p>In this course, Google Colab provides both in your web browser, so there is nothing to install.</p>
+</li>
+</ul>
+
+<h3 id="google-colab">Google Colab</h3><ul>
+<li><p><strong>Google Colab</strong> (<a href="https://colab.research.google.com" rel="noopener" target="_blank">colab.research.google.com</a>) is a free Google service that runs Jupyter notebooks on cloud computers. You need only a Google account and a web browser.</p>
+</li>
+<li><p>A <strong>notebook</strong> is a single document that combines explanations, code, and the code's output. This lecture is a notebook; notebook files end in <code>.ipynb</code>.</p>
+</li>
+<li><p>A notebook is made of <strong>cells</strong> of two kinds:</p>
+<ul>
+<li>Code cells contain Python. When you run one, its output appears right below it.</li>
+<li>Text cells contain notes formatted with Markdown (headings, bullets, <strong>bold</strong>, <code>code</code>). The cell you are reading is a text cell.</li>
+</ul>
+</li>
+<li><p>Use the + Code and + Text buttons at the top of the page to add cells. Double-click a text cell to edit it.</p>
+</li>
+<li><p>Python and most of the data packages used later in the course come preinstalled, so everyone in the class works with the same setup.</p>
+</li>
+</ul>
+
+<h4 id="running-code-cells">Running Code Cells</h4><ul>
+<li><p>To run a code cell, click inside it and press Shift + Enter, which runs the cell and moves to the next one. You can also click the ▶ button at the cell's left edge.</p>
+</li>
+<li><p>The first run connects the notebook to a <strong>runtime</strong>, a temporary virtual machine in Google's cloud that executes your code. Connecting takes a few seconds.</p>
+</li>
+<li><p>After a cell runs, a number in brackets such as <code>[4]</code> appears beside it. The numbers record the order in which cells ran.</p>
+</li>
+</ul>
+<p><strong>Note:</strong> Python executes cells in the order you run them, which can differ from the order on the page. A cell that uses something defined in a cell you skipped will fail. If in doubt, restart and run everything from the top (next section).</p>
+
+<h4 id="restarting-the-runtime">Restarting the Runtime</h4><ul>
+<li><p>The runtime keeps in memory everything your cells have created so far. Restarting clears that memory but leaves your code and text unchanged.</p>
+</li>
+<li><p>Restart when a notebook behaves strangely, or to check that it runs from top to bottom without errors. Choose Runtime → Restart session (called "Restart runtime" in older versions of Colab), then rerun your cells one at a time, or all at once with Runtime → Run all.</p>
+</li>
+<li><p>Colab also shuts down a runtime that has been idle for a while. As with a restart, your code and text are kept, but you need to run the cells again.</p>
+</li>
+</ul>
+<p><strong>Note:</strong> A few cells in our notebooks fail on purpose, to show what common errors look like. Each one begins with the line <code># This will fail: ...</code> (a line starting with <code>#</code> is a comment, which Python ignores; more in Ch 2). Runtime → Run all stops at the first such cell; to continue, run the cells after it.</p>
+
+<h4 id="saving-your-own-copy">Saving Your Own Copy</h4><ul>
+<li><p>If you open a course notebook from a link, Colab may not let you save your edits to it, because the file belongs to someone else.</p>
+</li>
+<li><p>First choose File → Save a copy in Drive. Colab puts the copy in a folder named Colab Notebooks in your Google Drive and opens it. Do your work in that copy, which saves automatically.</p>
+</li>
+<li><p>If you downloaded the <code>.ipynb</code> file instead, open it with File → Upload notebook. To download a notebook, use File → Download → Download .ipynb.</p>
+</li>
+</ul>
+
+<h3 id="working-on-your-own-computer-optional">Working on Your Own Computer (Optional)</h3><ul>
+<li><p>Everything in this course runs in Colab, but you can also install Python on your own computer.</p>
+</li>
+<li><p>Install Python from python.org, or install Anaconda, a distribution that bundles Python with JupyterLab and many of the data packages used in Lectures 6-9.</p>
+<ul>
+<li>On Windows, check the box in the python.org installer that adds Python to PATH, so the terminal can find it.</li>
+<li>On macOS, use the command <code>python3</code> after installing; the plain <code>python</code> command may not exist.</li>
+</ul>
+</li>
+<li><p>To run Python in a terminal, open Command Prompt or PowerShell (Windows) or Terminal (macOS) and type <code>python</code> (Windows) or <code>python3</code> (macOS). The <code>&gt;&gt;&gt;</code> prompt means Python is waiting for a line of code; type <code>exit()</code> to leave.</p>
+</li>
+<li><p>You also need a program to write code in. VS Code, with its Python and Jupyter extensions, edits <code>.py</code> script files, runs them with one click, and opens <code>.ipynb</code> notebooks. JupyterLab, included with Anaconda, runs notebooks in your browser using the Python installed on your computer.</p>
+</li>
+</ul>
+
+<h3 id="checking-your-python-version">Checking Your Python Version</h3><ul>
+<li><p>Python adds features with each yearly release (3.10, 3.11, 3.12, ...), and code that uses a newer feature will not run on an older version. This course assumes Python 3.10 or later, which Colab provides.</p>
+</li>
+<li><p>To check the version from code, import the standard-library module <code>sys</code> (modules are covered in Lecture 4) and print <code>sys.version</code>. The leading numbers are the version; the rest describes how this copy of Python was built.</p>
+</li>
+<li><p>In Colab, a line that starts with <code>!</code> is sent to the computer's command line instead of to Python. <code>!python --version</code> reports the version from the command line.</p>
+</li>
+<li><p>The outputs below come from the computer these notes were run on. Your version number may differ; any version from 3.10 on is fine.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">version</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>3.13.16 (main, Oct  1 2026, 15:40:24) [GCC 13.3.0]
+</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="err">!</span><span class="n">python</span> <span class="o">--</span><span class="n">version</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Python 3.13.16
+</pre>
+</div></div>
+<h3 id="your-first-program">Your First Program</h3><ul>
+<li><p><code>print()</code> is a built-in <strong>function</strong>, a named piece of code that does one job. It displays whatever you put between its parentheses.</p>
+</li>
+<li><p>The text between the quotation marks is a <strong>string</strong>, Python's type for text (more in Ch 2).</p>
+</li>
+<li><p>A program is a sequence of lines that Python runs from top to bottom. By tradition, a first program is a single line that prints a greeting:</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="nb">print</span><span class="p">(</span><span class="s2">"Hello, markets!"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Hello, markets!
+</pre>
+</div></div>
+<h3 id="in-class-exercise">In-Class Exercise</h3>
+
+<p><strong>1-1. Your Own Copy:</strong></p>
+<ul>
+<li>Save a copy of this notebook to your Google Drive and work in that copy for the rest of the lecture.</li>
+<li>In the cell below, print a line confirming that your copy is running.</li>
+</ul>
+
+<p><strong>1-2. Version Check:</strong></p>
+<ul>
+<li>Print your runtime's Python version with <code>sys.version</code>.</li>
+<li>In the same cell, add the line <code>!python --version</code>. Do the two outputs report the same version number?</li>
+</ul>
+
+<p><strong>1-3. Hello, Markets:</strong></p>
+<ul>
+<li>Write a program that prints three lines: your name, your field of study, and one company you would like to analyze in this course.</li>
+<li>Restart the session, then run the cell again. Is the output the same?</li>
+</ul>
+
+<h2 id="ch-2-variables-and-simple-data-types">Ch 2: Variables and Simple Data Types</h2>
+
+<ul>
+<li><p>This chapter covers variables and Python's simplest <strong>data types</strong>:</p>
+<ul>
+<li>Strings for text, such as tickers and company names.</li>
+<li>Integers for whole numbers, such as share counts.</li>
+<li>Floats for numbers with a decimal point, such as prices and rates.</li>
+</ul>
+</li>
+<li><p>Later in the chapter we compute a position's value, an intraday return, and an annualized volatility, and print them in a formatted report.</p>
+</li>
+</ul>
+
+<h3 id="variables">Variables</h3><ul>
+<li><p>A <strong>variable</strong> is a name that refers to a value. You create one with an assignment such as <code>ticker = "MSFT"</code>: a name, an equals sign, and a value.</p>
+</li>
+<li><p>The <code>=</code> sign is an instruction to make the name on the left refer to the value on the right. It does not state that the two sides are equal.</p>
+</li>
+<li><p>Assigning to a name that already exists replaces its value. Below, a new quote arrives and <code>price</code> is updated to the latest number:</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">ticker</span> <span class="o">=</span> <span class="s2">"MSFT"</span>
+<span class="n">price</span> <span class="o">=</span> <span class="mf">412.35</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">ticker</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">price</span><span class="p">)</span>
+
+<span class="n">price</span> <span class="o">=</span> <span class="mf">415.85</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">price</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>MSFT
+412.35
+415.85
+</pre>
+</div></div>
+<h4 id="naming-rules-and-conventions">Naming Rules and Conventions</h4><ul>
+<li><p>Python enforces these rules: a name may contain letters, digits, and underscores; it cannot start with a digit or contain spaces; and it cannot be a <strong>keyword</strong> that Python reserves for itself, such as <code>if</code>, <code>for</code>, <code>class</code>, or <code>True</code>.</p>
+</li>
+<li><p>By convention (from the <strong>PEP 8</strong> style guide), variable names are lowercase words joined by underscores, as in <code>closing_price</code> or <code>shares_held</code>.</p>
+</li>
+<li><p>Use names that say what the value is. In finance code, <code>r</code> might mean a return, an interest rate, or a correlation; <code>annual_return</code> can mean only one thing.</p>
+<ul>
+<li>Clear: <code>ticker</code>, <code>closing_price</code>, <code>annual_return</code></li>
+<li>Legal but vague: <code>x</code>, <code>cp</code>, <code>data2</code></li>
+<li>Not allowed: <code>2024_return</code> (starts with a digit), <code>closing price</code> (contains a space), <code>class</code> (a keyword)</li>
+</ul>
+</li>
+</ul>
+<p><strong>Note:</strong> Avoid reusing the names of built-in functions such as <code>print</code>, <code>list</code>, <code>sum</code>, or <code>max</code>. Python allows it, but the original function is then hidden until you restart the runtime.</p>
+
+<h4 id="nameerror-a-misspelled-name">NameError: A Misspelled Name</h4><ul>
+<li><p>Names are <strong>case-sensitive</strong>: <code>price</code>, <code>Price</code>, and <code>PRICE</code> are three different names.</p>
+</li>
+<li><p>Python knows only the names you have assigned. Using any other name, even one that differs by a single capital letter, raises a <code>NameError</code>.</p>
+</li>
+<li><p>To read an error message, start at the bottom. The last line gives the error type and a short explanation, and the arrow <code>----&gt;</code> points to the line that failed.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># This will fail: names are case-sensitive, and `Closing_price` was never assigned</span>
+<span class="n">closing_price</span> <span class="o">=</span> <span class="mf">187.44</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">Closing_price</span><span class="p">)</span></code></pre></div><div class="nb-out nb-error">
+<pre>
+---------------------------------------------------------------------------
+NameError                                 Traceback (most recent call last)
+Cell In[5], line 3
+      1 # This will fail: names are case-sensitive, and `Closing_price` was never assigned
+      2 closing_price = 187.44
+----&gt; 3 print(Closing_price)
+
+NameError: name 'Closing_price' is not defined</pre>
+</div></div>
+<h3 id="strings">Strings</h3><ul>
+<li><p>A <strong>string</strong> is Python's type for text, such as a ticker, a company name, or an exchange code. In code, a string is written between quotes.</p>
+</li>
+<li><p>Single and double quotes both work. These notes use double quotes, which can contain an apostrophe, as in <code>"Moody's"</code>. Inside single quotes, the apostrophe would end the string early and cause a <code>SyntaxError</code>.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">ticker</span> <span class="o">=</span> <span class="s2">"JPM"</span>
+<span class="n">company</span> <span class="o">=</span> <span class="s1">'JPMorgan Chase &amp; Co.'</span>  <span class="c1"># single quotes work too</span>
+<span class="n">rating_agency</span> <span class="o">=</span> <span class="s2">"Moody's Corporation"</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">ticker</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">company</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">rating_agency</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>JPM
+JPMorgan Chase &amp; Co.
+Moody's Corporation
+</pre>
+</div></div>
+<h4 id="joining-strings-and-f-strings">Joining Strings and f-Strings</h4><ul>
+<li><p>The <code>+</code> operator joins strings end to end. This is called <strong>concatenation</strong>.</p>
+</li>
+<li><p>An <strong>f-string</strong> is a string with the letter <code>f</code> in front, such as <code>f"{ticker} closed higher"</code>. When the line runs, Python evaluates the expression inside each pair of braces and inserts the result into the text.</p>
+</li>
+<li><p>f-strings (formally, formatted string literals) are easier to read than a chain of <code>+</code> signs, especially when numbers are involved. This course uses them throughout.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">exchange</span> <span class="o">=</span> <span class="s2">"NYSE"</span>
+<span class="n">ticker</span> <span class="o">=</span> <span class="s2">"KO"</span>
+<span class="n">company</span> <span class="o">=</span> <span class="s2">"Coca-Cola"</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">exchange</span> <span class="o">+</span> <span class="s2">":"</span> <span class="o">+</span> <span class="n">ticker</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">company</span><span class="si">}</span><span class="s2"> trades on the </span><span class="si">{</span><span class="n">exchange</span><span class="si">}</span><span class="s2"> under the ticker </span><span class="si">{</span><span class="n">ticker</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>NYSE:KO
+Coca-Cola trades on the NYSE under the ticker KO.
+</pre>
+</div></div>
+<h4 id="upper-lower-and-title-case">Upper, Lower, and Title Case</h4><ul>
+<li><p>A <strong>method</strong> is a function attached to a value. To call one, write the value (or its variable name), a dot, the method name, and parentheses, as in <code>user_input.upper()</code>. The parentheses are required even when they are empty.</p>
+</li>
+<li><p><code>upper()</code> returns an all-caps copy of a string, the standard form for tickers. A string cannot be changed after it is created, so methods like <code>upper()</code> return a new string instead. To keep the result, assign it to a name.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">user_input</span> <span class="o">=</span> <span class="s2">"nvda"</span>
+<span class="n">ticker</span> <span class="o">=</span> <span class="n">user_input</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">ticker</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">user_input</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>NVDA
+nvda
+</pre>
+</div></div>
+<ul>
+<li>Company names in data feeds and regulatory filings are often in all capitals. <code>title()</code> capitalizes the first letter of each word and lowercases the rest; <code>lower()</code> lowercases everything.</li>
+</ul>
+<p><strong>Note:</strong> <code>title()</code> applies the same rule to every word, so names with a capital letter inside a word come out wrong, as with JPMorgan on the last line below.</p>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">company</span> <span class="o">=</span> <span class="s2">"EXXON MOBIL CORP"</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">company</span><span class="o">.</span><span class="n">title</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">company</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"JPMORGAN CHASE &amp; CO"</span><span class="o">.</span><span class="n">title</span><span class="p">())</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Exxon Mobil Corp
+exxon mobil corp
+Jpmorgan Chase &amp; Co
+</pre>
+</div></div>
+<h4 id="escape-sequences-n-and-t">Escape Sequences: <code>\n</code> and <code>\t</code></h4><ul>
+<li><p>A backslash inside a string starts an <strong>escape sequence</strong>, a short code for a character that is awkward to type:</p>
+<ul>
+<li><code>\n</code> starts a new line.</li>
+<li><code>\t</code> inserts a tab, which lines text up in columns.</li>
+</ul>
+</li>
+<li><p>Together they can lay out a small table. Many data files are organized the same way: one record per line, with a tab or a comma between fields.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="nb">print</span><span class="p">(</span><span class="s2">"Ticker</span><span class="se">\t</span><span class="s2">Price</span><span class="se">\n</span><span class="s2">AAPL</span><span class="se">\t</span><span class="s2">189.50</span><span class="se">\n</span><span class="s2">KO</span><span class="se">\t</span><span class="s2">62.15"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Ticker	Price
+AAPL	189.50
+KO	62.15
+</pre>
+</div></div>
+<h4 id="trimming-stray-spaces">Trimming Stray Spaces</h4><ul>
+<li><p>Text copied from spreadsheets, websites, or forms often has extra spaces, and <code>" MSFT "</code> does not match <code>"MSFT"</code>. A lookup that should succeed can then fail because of characters you cannot see.</p>
+</li>
+<li><p><code>strip()</code> removes <strong>whitespace</strong> (spaces, tabs, and line breaks) from both ends of a string; <code>lstrip()</code> and <code>rstrip()</code> remove it from the left or the right end only. The square brackets below mark where each result begins and ends:</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">raw_ticker</span> <span class="o">=</span> <span class="s2">"   MSFT  "</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">raw_ticker</span><span class="o">.</span><span class="n">lstrip</span><span class="p">()</span><span class="si">}</span><span class="s2">]"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">raw_ticker</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span><span class="si">}</span><span class="s2">]"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">raw_ticker</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="si">}</span><span class="s2">]"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>[MSFT  ]
+[   MSFT]
+[MSFT]
+</pre>
+</div></div>
+<h4 id="removing-and-replacing-text">Removing and Replacing Text</h4><ul>
+<li><p>Tickers often have extra codes attached: an exchange prefix such as <code>NASDAQ:</code>, or a market suffix such as <code>.TO</code> (the Toronto Stock Exchange). <code>removeprefix()</code> and <code>removesuffix()</code> remove that text from the start or end of a string, and return the string unchanged if the text is not there.</p>
+</li>
+<li><p><code>replace(old, new)</code> replaces every occurrence of <code>old</code> with <code>new</code>. For example, data vendors write share classes differently: Berkshire Hathaway's Class B shares appear as <code>BRK.B</code> in some sources and <code>BRK-B</code> in others.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="nb">print</span><span class="p">(</span><span class="s2">"NASDAQ:AAPL"</span><span class="o">.</span><span class="n">removeprefix</span><span class="p">(</span><span class="s2">"NASDAQ:"</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"RY.TO"</span><span class="o">.</span><span class="n">removesuffix</span><span class="p">(</span><span class="s2">".TO"</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"BRK.B"</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"."</span><span class="p">,</span> <span class="s2">"-"</span><span class="p">))</span></code></pre></div><div class="nb-out nb-stream">
+<pre>AAPL
+RY
+BRK-B
+</pre>
+</div></div>
+<h4 id="chaining-methods">Chaining Methods</h4><ul>
+<li><p>Each method above returns a new string, so you can call another string method directly on the result. The calls run from left to right.</p>
+</li>
+<li><p>The cell below cleans a messy ticker in one line. <code>upper()</code> has to come before <code>removeprefix("NASDAQ:")</code>, because the raw text has the prefix in lowercase.</p>
+</li>
+<li><p>Python has many more string methods; the <a href="https://docs.python.org/3/library/stdtypes.html#string-methods" rel="noopener" target="_blank">official documentation</a> lists them all.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">raw</span> <span class="o">=</span> <span class="s2">"  nasdaq:aapl "</span>
+<span class="n">ticker</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="o">.</span><span class="n">removeprefix</span><span class="p">(</span><span class="s2">"NASDAQ:"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">ticker</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>AAPL
+</pre>
+</div></div>
+<h3 id="numbers-integers-and-floats">Numbers: Integers and Floats</h3><ul>
+<li><p>An <strong>integer</strong> (<code>int</code>) is a whole number, such as a share count or the number of trading days in a year.</p>
+</li>
+<li><p>A <strong>float</strong> (floating-point number) can have a fractional part. Prices, interest rates, and returns are stored as floats.</p>
+</li>
+<li><p>The built-in function <code>type()</code> returns a value's type. Multiplying a share count (an integer) by a price (a float) gives a float:</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">shares</span> <span class="o">=</span> <span class="mi">150</span>
+<span class="n">price</span> <span class="o">=</span> <span class="mf">42.75</span>
+<span class="n">position_value</span> <span class="o">=</span> <span class="n">shares</span> <span class="o">*</span> <span class="n">price</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">shares</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">price</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">position_value</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">position_value</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>&lt;class 'int'&gt;
+&lt;class 'float'&gt;
+&lt;class 'float'&gt;
+6412.5
+</pre>
+</div></div>
+<h4 id="arithmetic-and-order-of-operations">Arithmetic and Order of Operations</h4><ul>
+<li><p>Python's arithmetic operators:</p>
+<ul>
+<li><code>+</code>, <code>-</code>, <code>*</code>, <code>/</code> for addition, subtraction, multiplication, and division</li>
+<li><code>**</code> for powers</li>
+<li><code>//</code> for floor division (divide, then round down to a whole number) and <code>%</code> for the remainder</li>
+</ul>
+</li>
+<li><p>Python applies <code>**</code> first, then <code>*</code>, <code>/</code>, <code>//</code>, and <code>%</code>, then <code>+</code> and <code>-</code>. Parentheses override this order.</p>
+</li>
+<li><p>Parentheses matter in compounding formulas. The 10-year growth factor at 5% per year is <code>(1 + 0.05) ** 10</code>; without the parentheses, only <code>0.05</code> is raised to the 10th power:</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="nb">print</span><span class="p">((</span><span class="mi">1</span> <span class="o">+</span> <span class="mf">0.05</span><span class="p">)</span> <span class="o">**</span> <span class="mi">10</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="mf">0.05</span> <span class="o">**</span> <span class="mi">10</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="mi">1000</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="mf">0.05</span><span class="p">)</span> <span class="o">**</span> <span class="mi">10</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>1.628894626777442
+1.0000000000000977
+1628.894626777442
+</pre>
+</div></div>
+<ul>
+<li><p>With the parentheses, a deposit of 1,000 grows to about 1,629 over 10 years; without them, the growth factor is essentially 1.</p>
+</li>
+<li><p><code>//</code> gives the number of whole units that fit, and <code>%</code> gives what is left over. A <strong>round lot</strong> is traditionally 100 shares, so an order for 1,250 shares is 12 round lots plus an odd lot of 50 shares.</p>
+</li>
+<li><p><code>/</code> always returns a float, even when there is no remainder (last line below).</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">order_size</span> <span class="o">=</span> <span class="mi">1250</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">order_size</span> <span class="o">//</span> <span class="mi">100</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">order_size</span> <span class="o">%</span> <span class="mi">100</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="mi">1200</span> <span class="o">/</span> <span class="mi">100</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>12
+50
+12.0
+</pre>
+</div></div>
+<h4 id="floats-are-approximations">Floats Are Approximations</h4><ul>
+<li><p>Floats are stored in binary, and most decimal fractions (0.1, 0.05, 99.95) have no exact binary form, so float arithmetic can be off in the last few digits.</p>
+</li>
+<li><p>Below, a 10-cent bid-ask spread comes out slightly below 0.1. <code>round(x, n)</code> rounds <code>x</code> to <code>n</code> decimal places.</p>
+</li>
+<li><p>For analysis, errors this small are harmless. Keep full precision in calculations and round only what you display; f-string formatting, covered below, does the rounding for you.</p>
+</li>
+</ul>
+<p><strong>Note:</strong> Where every cent must reconcile exactly, as in accounting or order matching, use the standard-library <code>decimal</code> module, which does exact decimal arithmetic.</p>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">bid</span> <span class="o">=</span> <span class="mf">99.95</span>
+<span class="n">ask</span> <span class="o">=</span> <span class="mf">100.05</span>
+<span class="n">spread</span> <span class="o">=</span> <span class="n">ask</span> <span class="o">-</span> <span class="n">bid</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">spread</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">spread</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span></code></pre></div><div class="nb-out nb-stream">
+<pre>0.09999999999999432
+0.1
+</pre>
+</div></div>
+<h4 id="readable-large-numbers">Readable Large Numbers</h4><ul>
+<li><p>Large figures such as market capitalizations are hard to read as a long run of digits. In code, you can group the digits with underscores, as in <code>2_950_000_000_000</code> (2.95 trillion).</p>
+</li>
+<li><p>The underscores appear only in your code. Python stores the plain number, and printing it shows no separators. For thousands separators in output, use an f-string format (covered below).</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">market_cap</span> <span class="o">=</span> <span class="mi">2_950_000_000_000</span>
+<span class="n">shares_outstanding</span> <span class="o">=</span> <span class="mi">15_200_000_000</span>
+<span class="n">implied_price</span> <span class="o">=</span> <span class="n">market_cap</span> <span class="o">/</span> <span class="n">shares_outstanding</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">market_cap</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">implied_price</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>2950000000000
+194.07894736842104
+</pre>
+</div></div>
+<h4 id="assigning-several-variables-at-once">Assigning Several Variables at Once</h4><ul>
+<li><p>Python can assign several variables in one statement: <code>open_price, close = 101.25, 103.00</code> gives <code>open_price</code> the first value and <code>close</code> the second. The two sides must have the same number of items, or Python raises an error.</p>
+</li>
+<li><p>Use this for values that come as a set, such as a trading day's <strong>open, high, low, and close</strong> (OHLC) prices. Below, we compute the day's range (high minus low) and its open-to-close change.</p>
+</li>
+<li><p>We write <code>open_price</code> rather than <code>open</code> because <code>open</code> is already the name of a built-in function, which opens files.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">open_price</span><span class="p">,</span> <span class="n">high</span><span class="p">,</span> <span class="n">low</span><span class="p">,</span> <span class="n">close</span> <span class="o">=</span> <span class="mf">101.25</span><span class="p">,</span> <span class="mf">103.75</span><span class="p">,</span> <span class="mf">100.50</span><span class="p">,</span> <span class="mf">103.00</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">high</span> <span class="o">-</span> <span class="n">low</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">close</span> <span class="o">-</span> <span class="n">open_price</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>3.25
+1.75
+</pre>
+</div></div>
+<h4 id="constants">Constants</h4><ul>
+<li><p>Some numbers are fixed assumptions, such as 252 trading days per year, 12 months per year, or a tax rate. Give such a number an all-caps name and assign it once, near the top of your code.</p>
+</li>
+<li><p>The capitals mark the value as a <strong>constant</strong>, which the rest of the program should read but never reassign. Python does not enforce this; it is a PEP 8 convention.</p>
+</li>
+<li><p>A name such as <code>TRADING_DAYS_PER_YEAR</code> also tells the reader what the number means, which a bare <code>252</code> does not. The cell below annualizes a daily volatility of 1.2% with the square-root-of-time rule (<code>** 0.5</code> takes a square root):</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">TRADING_DAYS_PER_YEAR</span> <span class="o">=</span> <span class="mi">252</span>
+
+<span class="n">daily_vol</span> <span class="o">=</span> <span class="mf">0.012</span>
+<span class="n">annual_vol</span> <span class="o">=</span> <span class="n">daily_vol</span> <span class="o">*</span> <span class="n">TRADING_DAYS_PER_YEAR</span> <span class="o">**</span> <span class="mf">0.5</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">annual_vol</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>0.19049409439665055
+</pre>
+</div></div>
+<h4 id="mixing-text-and-numbers">Mixing Text and Numbers</h4><ul>
+<li><code>+</code> adds two numbers or joins two strings. Given a string and a number, Python does not convert either one; it raises a <code>TypeError</code>, the error for an operation applied to a value of the wrong type:</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># This will fail: `+` cannot join a string and a float</span>
+<span class="n">price</span> <span class="o">=</span> <span class="mf">62.15</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"KO last traded at "</span> <span class="o">+</span> <span class="n">price</span><span class="p">)</span></code></pre></div><div class="nb-out nb-error">
+<pre>
+---------------------------------------------------------------------------
+TypeError                                 Traceback (most recent call last)
+Cell In[21], line 3
+      1 # This will fail: `+` cannot join a string and a float
+      2 price = 62.15
+----&gt; 3 print("KO last traded at " + price)
+
+TypeError: can only concatenate str (not "float") to str</pre>
+</div></div>
+<ul>
+<li><p>There are two fixes: convert the number to a string with <code>str()</code>, or use an f-string, which converts it for you.</p>
+</li>
+<li><p>Conversion also works the other way. Numbers read from a file or typed by a user arrive as strings; <code>float()</code> and <code>int()</code> turn them into numbers you can calculate with.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="nb">print</span><span class="p">(</span><span class="s2">"KO last traded at "</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">price</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"KO last traded at </span><span class="si">{</span><span class="n">price</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="n">price_text</span> <span class="o">=</span> <span class="s2">"62.15"</span>
+<span class="n">shares_text</span> <span class="o">=</span> <span class="s2">"200"</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">price_text</span><span class="p">)</span> <span class="o">*</span> <span class="nb">int</span><span class="p">(</span><span class="n">shares_text</span><span class="p">))</span></code></pre></div><div class="nb-out nb-stream">
+<pre>KO last traded at 62.15
+KO last traded at 62.15
+12430.0
+</pre>
+</div></div>
+<h4 id="formatting-numbers-in-f-strings">Formatting Numbers in f-Strings</h4><ul>
+<li><p>Inside an f-string's braces, a colon followed by a <strong>format specification</strong> controls how a number is displayed:</p>
+<ul>
+<li><code>{x:.2f}</code>: 2 decimal places, for prices</li>
+<li><code>{x:,.2f}</code>: thousands separators and 2 decimals, for dollar amounts</li>
+<li><code>{x:,}</code>: thousands separators, for large whole numbers</li>
+<li><code>{x:.2%}</code>: multiplied by 100 and followed by a percent sign, for returns and rates</li>
+</ul>
+</li>
+<li><p>Formatting changes only how a number is displayed; the stored value stays the same. The braces can also hold a calculation, like the open-to-close return below. The dollar signs in the code are ordinary text; only the braces are special.</p>
+</li>
+<li><p>The cell below prints numbers computed earlier in this chapter with these formats:</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Position value: $</span><span class="si">{</span><span class="n">position_value</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Implied share price: $</span><span class="si">{</span><span class="n">implied_price</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Market cap: $</span><span class="si">{</span><span class="n">market_cap</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Open-to-close return: </span><span class="si">{</span><span class="n">close</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">open_price</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="si">:</span><span class="s2">.2%</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Annualized volatility: </span><span class="si">{</span><span class="n">annual_vol</span><span class="si">:</span><span class="s2">.1%</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Position value: $6,412.50
+Implied share price: $194.08
+Market cap: $2,950,000,000,000
+Open-to-close return: 1.73%
+Annualized volatility: 19.0%
+</pre>
+</div></div>
+<h3 id="comments">Comments</h3><ul>
+<li><p>Text after a <code>#</code> symbol, up to the end of the line, is a <strong>comment</strong>. Python ignores it; comments are written for people reading the code.</p>
+</li>
+<li><p>A comment can be on its own line or at the end of a line of code. PEP 8 asks for at least two spaces before an inline <code>#</code>:</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Coupon payment on a bond that pays interest twice a year</span>
+<span class="n">face_value</span> <span class="o">=</span> <span class="mi">1_000</span>     <span class="c1"># principal repaid at maturity</span>
+<span class="n">coupon_rate</span> <span class="o">=</span> <span class="mf">0.045</span>    <span class="c1"># annual rate, paid in two equal halves</span>
+<span class="n">coupon_payment</span> <span class="o">=</span> <span class="n">face_value</span> <span class="o">*</span> <span class="n">coupon_rate</span> <span class="o">/</span> <span class="mi">2</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Each coupon payment: $</span><span class="si">{</span><span class="n">coupon_payment</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Each coupon payment: $22.50
+</pre>
+</div></div>
+<h4 id="writing-useful-comments">Writing Useful Comments</h4><ul>
+<li><p>A good comment gives information the code cannot: units, assumptions, data sources, and the reason for a choice.</p>
+<ul>
+<li>Weak: <code>fee = 4.95  # set fee to 4.95</code> only repeats the code.</li>
+<li>Useful: <code>fee = 4.95  # flat commission per trade, USD</code> says what the number is.</li>
+</ul>
+</li>
+<li><p>In research code, comments help make the work reproducible: a coauthor or referee should be able to see where each number comes from without asking you.</p>
+</li>
+<li><p>To switch off a line without deleting it, put <code>#</code> in front of it ("comment it out"). In Colab, Ctrl + / (Cmd + / on a Mac) comments or uncomments the selected lines.</p>
+</li>
+</ul>
+
+<h3 id="in-class-exercise-2">In-Class Exercise</h3>
+
+<p><strong>2-1. Clean a Ticker:</strong></p>
+<ul>
+<li>Assign the messy string <code>"  nyse:brk.b "</code> to a variable.</li>
+<li>Use string methods to turn it into <code>BRK-B</code>, and print the result.</li>
+</ul>
+
+<p><strong>2-2. Report Header:</strong></p>
+<ul>
+<li>A data feed gives you <code>company = "ALPHABET INC"</code>, <code>ticker = "googl"</code>, and <code>exchange = "nasdaq"</code>.</li>
+<li>Using a single f-string, print <code>Alphabet Inc (NASDAQ: GOOGL)</code>.</li>
+<li>Hint: the braces of an f-string can hold any expression, including a method call.</li>
+</ul>
+
+<p><strong>2-3. Position Report:</strong></p>
+<ul>
+<li>Store a ticker, a share count, a purchase price, and a current price in variables (made-up values are fine).</li>
+<li>Compute the position's current value, its dollar gain, and its percentage return.</li>
+<li>Print a three-line report: value and gain with thousands separators and 2 decimals, and the return as a percentage with 2 decimals.</li>
+</ul>
+
+<p><strong>2-4. Compound Growth:</strong></p>
+<ul>
+<li>Store an annual interest rate of 4% in a constant <code>ANNUAL_RATE</code>, and a deposit of 10,000 in a variable (write the number as <code>10_000</code>).</li>
+<li>Compute the deposit's value after 30 years with annual compounding, and again with monthly compounding (<code>ANNUAL_RATE / 12</code> per month for <code>12 * 30</code> months).</li>
+<li>Print both values with 2 decimals, and add a comment noting which is larger and why.</li>
+</ul>
+
+<h2 id="ch-3-introducing-lists">Ch 3: Introducing Lists</h2>
+
+<ul>
+<li><p>So far each variable has held one value. A portfolio holds many stocks, and a price history has many observations.</p>
+</li>
+<li><p>A <strong>list</strong> stores many values under one name, in the order you give them. The NumPy arrays and pandas tables in Lectures 6-9 are often created from lists.</p>
+</li>
+</ul>
+
+<h3 id="creating-a-list">Creating a List</h3><ul>
+<li><p>To create a list, write its items inside square brackets <code>[]</code> with commas between them.</p>
+</li>
+<li><p>The cell below creates a watchlist of five tickers and a list of five daily closing prices for one stock, oldest first.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">watchlist</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"AAPL"</span><span class="p">,</span> <span class="s2">"MSFT"</span><span class="p">,</span> <span class="s2">"NVDA"</span><span class="p">,</span> <span class="s2">"AMZN"</span><span class="p">,</span> <span class="s2">"JPM"</span><span class="p">]</span>
+<span class="n">closes</span> <span class="o">=</span> <span class="p">[</span><span class="mf">101.25</span><span class="p">,</span> <span class="mf">102.80</span><span class="p">,</span> <span class="mf">101.95</span><span class="p">,</span> <span class="mf">104.30</span><span class="p">,</span> <span class="mf">105.10</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">watchlist</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">closes</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>['AAPL', 'MSFT', 'NVDA', 'AMZN', 'JPM']
+[101.25, 102.8, 101.95, 104.3, 105.1]
+</pre>
+</div></div>
+<ul>
+<li><p><code>print()</code> shows a list the way you would type it, with brackets, commas, and quotes around strings. Floats are printed without trailing zeros: <code>102.80</code> and <code>102.8</code> are the same number.</p>
+</li>
+<li><p>The string method <code>split()</code> cuts text into a list at each occurrence of a separator. With <code>","</code> as the separator, it turns a line of comma-separated data into a list:</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">line</span> <span class="o">=</span> <span class="s2">"XOM,CVX,COP"</span>
+<span class="n">energy_tickers</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">","</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">energy_tickers</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>['XOM', 'CVX', 'COP']
+</pre>
+</div></div>
+<h3 id="reading-items-by-position">Reading Items by Position</h3><ul>
+<li><p>Each item has a numbered position, its <strong>index</strong>. Square brackets right after a list's name select one item: <code>watchlist[0]</code> means "the item at index 0 of <code>watchlist</code>".</p>
+</li>
+<li><p>Python counts from 0: the first item is at index 0, the second at index 1, and the <em>n</em>-th at index <em>n</em> - 1.</p>
+</li>
+<li><p>Indexing returns the item itself, so <code>watchlist[0]</code> can be used exactly like the string <code>"AAPL"</code>:</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">first</span> <span class="o">=</span> <span class="n">watchlist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">first</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">watchlist</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">first</span><span class="si">}</span><span class="s2"> heads the watchlist; </span><span class="si">{</span><span class="n">watchlist</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2"> is next."</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>AAPL
+NVDA
+AAPL heads the watchlist; MSFT is next.
+</pre>
+</div></div>
+<h4 id="negative-indexes">Negative Indexes</h4><ul>
+<li><p>Negative indexes count from the end of the list: <code>-1</code> is the last item and <code>-2</code> the second to last.</p>
+</li>
+<li><p>In a price list ordered from oldest to newest, <code>closes[-1]</code> is the most recent close and <code>closes[-2]</code> the one before it. Both stay correct as each new day's close is appended. The cell below prints the latest close, the latest daily return, and the return since the first close:</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">latest</span> <span class="o">=</span> <span class="n">closes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">daily_return</span> <span class="o">=</span> <span class="n">closes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="n">closes</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span>
+<span class="n">period_return</span> <span class="o">=</span> <span class="n">closes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="n">closes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Latest close: </span><span class="si">{</span><span class="n">latest</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Latest daily return: </span><span class="si">{</span><span class="n">daily_return</span><span class="si">:</span><span class="s2">.2%</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Return since the first close: </span><span class="si">{</span><span class="n">period_return</span><span class="si">:</span><span class="s2">.2%</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Latest close: 105.10
+Latest daily return: 0.77%
+Return since the first close: 3.80%
+</pre>
+</div></div>
+<h3 id="updating-a-list">Updating a List</h3><ul>
+<li><p>Lists are <strong>mutable</strong>: unlike strings, they can be changed in place. This makes them suitable for data that changes over time, such as the holdings in an account or a price history that grows every day.</p>
+</li>
+<li><p>To replace an item, assign a new value to its index. For example, in 2022 Meta Platforms (formerly Facebook) changed its ticker from <code>FB</code> to <code>META</code>:</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">holdings</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"AAPL"</span><span class="p">,</span> <span class="s2">"FB"</span><span class="p">,</span> <span class="s2">"JPM"</span><span class="p">]</span>
+<span class="n">holdings</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"META"</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">holdings</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>['AAPL', 'META', 'JPM']
+</pre>
+</div></div>
+<h4 id="adding-items-append-and-insert">Adding Items: <code>append()</code> and <code>insert()</code></h4><ul>
+<li><p><code>append()</code> adds an item to the end of a list.</p>
+</li>
+<li><p><code>insert(index, item)</code> places a new item at <code>index</code>; the items from that position on each move up one index.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">holdings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"XOM"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">holdings</span><span class="p">)</span>
+
+<span class="n">holdings</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s2">"KO"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">holdings</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>['AAPL', 'META', 'JPM', 'XOM']
+['KO', 'AAPL', 'META', 'JPM', 'XOM']
+</pre>
+</div></div>
+<ul>
+<li>To collect data as it arrives, start with an empty list, <code>[]</code>, and <code>append()</code> each new value. Below, a large buy order is filled in three parts at slightly different prices:</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">fill_prices</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">fill_prices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mf">187.20</span><span class="p">)</span>
+<span class="n">fill_prices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mf">187.35</span><span class="p">)</span>
+<span class="n">fill_prices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mf">187.10</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">fill_prices</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>[187.2, 187.35, 187.1]
+</pre>
+</div></div>
+<h4 id="removing-items-del-pop-and-remove">Removing Items: <code>del</code>, <code>pop()</code>, and <code>remove()</code></h4><ul>
+<li><p>Python has three ways to remove an item, depending on how you identify it:</p>
+<ul>
+<li>By position: <code>del holdings[i]</code>.</li>
+<li>By position, keeping the item: <code>holdings.pop(i)</code> removes the item at index <code>i</code> and returns it, so you can store it, for example to log the sale. With no index, <code>pop()</code> removes the last item.</li>
+<li>By value: <code>holdings.remove("JPM")</code> removes that ticker wherever it is in the list.</li>
+</ul>
+</li>
+<li><p>Below, we sell the stock at index 1 with <code>del</code>, then sell the last stock in the list with <code>pop()</code>:</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">del</span> <span class="n">holdings</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">holdings</span><span class="p">)</span>
+
+<span class="n">sold</span> <span class="o">=</span> <span class="n">holdings</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Sold </span><span class="si">{</span><span class="n">sold</span><span class="si">}</span><span class="s2">. Holdings: </span><span class="si">{</span><span class="n">holdings</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>['KO', 'META', 'JPM', 'XOM']
+Sold XOM. Holdings: ['KO', 'META', 'JPM']
+</pre>
+</div></div>
+<ul>
+<li>With <code>pop(0)</code>, a list works as a first-in, first-out <strong>queue</strong>, like orders that are processed in the order they arrived:</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">pending_orders</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"BUY 100 KO"</span><span class="p">,</span> <span class="s2">"SELL 50 JPM"</span><span class="p">,</span> <span class="s2">"BUY 25 MSFT"</span><span class="p">]</span>
+<span class="n">next_order</span> <span class="o">=</span> <span class="n">pending_orders</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Processing: </span><span class="si">{</span><span class="n">next_order</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Still pending: </span><span class="si">{</span><span class="n">pending_orders</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Processing: BUY 100 KO
+Still pending: ['SELL 50 JPM', 'BUY 25 MSFT']
+</pre>
+</div></div>
+<ul>
+<li><code>remove()</code> finds the item by value, so you do not need to know its position, which changes as you buy and sell.</li>
+</ul>
+<p><strong>Note:</strong> <code>remove()</code> deletes only the first matching item, as the second list below shows, and raises a <code>ValueError</code> if the item is not in the list.</p>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">holdings</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s2">"META"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">holdings</span><span class="p">)</span>
+
+<span class="n">draft</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"KO"</span><span class="p">,</span> <span class="s2">"JPM"</span><span class="p">,</span> <span class="s2">"KO"</span><span class="p">]</span>  <span class="c1"># KO entered twice by mistake</span>
+<span class="n">draft</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s2">"KO"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">draft</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>['KO', 'JPM']
+['JPM', 'KO']
+</pre>
+</div></div>
+<h3 id="sorting-reversing-and-counting">Sorting, Reversing, and Counting</h3><h4 id="sort-reorder-the-list-itself"><code>sort()</code>: Reorder the List Itself</h4><ul>
+<li><code>sort()</code> rearranges the list itself, or <strong>in place</strong>: strings alphabetically, numbers from smallest to largest. The old order is not kept. For descending order, write <code>reverse=True</code> inside the parentheses.</li>
+</ul>
+<p><strong>Note:</strong> <code>sort()</code> changes the list and returns <code>None</code>, Python's "no value". Writing <code>tickers = tickers.sort()</code> therefore replaces your list with <code>None</code>.</p>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">tickers</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"NVDA"</span><span class="p">,</span> <span class="s2">"KO"</span><span class="p">,</span> <span class="s2">"AMZN"</span><span class="p">,</span> <span class="s2">"XOM"</span><span class="p">,</span> <span class="s2">"JPM"</span><span class="p">]</span>
+<span class="n">tickers</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">tickers</span><span class="p">)</span>
+
+<span class="n">tickers</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">tickers</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>['AMZN', 'JPM', 'KO', 'NVDA', 'XOM']
+['XOM', 'NVDA', 'KO', 'JPM', 'AMZN']
+</pre>
+</div></div>
+<h4 id="sorted-get-a-sorted-copy"><code>sorted()</code>: Get a Sorted Copy</h4><ul>
+<li>The built-in function <code>sorted()</code> returns a new, sorted list and leaves the original unchanged. Use it when the existing order carries information. Below, the returns are in calendar order, oldest year first, and we want to keep that order:</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">annual_returns</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.12</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.08</span><span class="p">,</span> <span class="mf">0.21</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.15</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">annual_returns</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">annual_returns</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">annual_returns</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>[-0.15, -0.08, 0.05, 0.12, 0.21]
+[0.21, 0.12, 0.05, -0.08, -0.15]
+[0.12, -0.08, 0.21, 0.05, -0.15]
+</pre>
+</div></div>
+<p><strong>Note:</strong> Strings sort by character code, and every uppercase letter comes before every lowercase letter. A lowercase ticker therefore sorts after all the uppercase ones, so convert tickers to uppercase with <code>upper()</code> before sorting:</p>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="nb">print</span><span class="p">(</span><span class="nb">sorted</span><span class="p">([</span><span class="s2">"aapl"</span><span class="p">,</span> <span class="s2">"KO"</span><span class="p">,</span> <span class="s2">"MSFT"</span><span class="p">]))</span></code></pre></div><div class="nb-out nb-stream">
+<pre>['KO', 'MSFT', 'aapl']
+</pre>
+</div></div>
+<h4 id="reverse-flip-the-order"><code>reverse()</code>: Flip the Order</h4><ul>
+<li><p><code>reverse()</code> reverses the order of a list in place, without comparing the values.</p>
+</li>
+<li><p>Some data sources deliver price histories newest first. One call to <code>reverse()</code> puts them in chronological order, which return calculations expect. The result matches <code>closes</code> from earlier:</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">price_history</span> <span class="o">=</span> <span class="p">[</span><span class="mf">105.10</span><span class="p">,</span> <span class="mf">104.30</span><span class="p">,</span> <span class="mf">101.95</span><span class="p">,</span> <span class="mf">102.80</span><span class="p">,</span> <span class="mf">101.25</span><span class="p">]</span>  <span class="c1"># newest first</span>
+<span class="n">price_history</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">price_history</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>[101.25, 102.8, 101.95, 104.3, 105.1]
+</pre>
+</div></div>
+<h4 id="len-count-the-items"><code>len()</code>: Count the Items</h4><ul>
+<li>The built-in function <code>len()</code> returns the number of items in a list. For example, an <strong>equal-weighted</strong> portfolio of <em>N</em> stocks puts 1/<em>N</em> of its money in each:</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">n_stocks</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">watchlist</span><span class="p">)</span>
+<span class="n">weight</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">n_stocks</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">n_stocks</span><span class="si">}</span><span class="s2"> stocks, </span><span class="si">{</span><span class="n">weight</span><span class="si">:</span><span class="s2">.0%</span><span class="si">}</span><span class="s2"> in each"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>5 stocks, 20% in each
+</pre>
+</div></div>
+<h3 id="when-an-index-is-out-of-range">When an Index Is Out of Range</h3><ul>
+<li><p>A list of length <em>n</em> has valid indexes 0 to <em>n</em> - 1 counting from the front, and -1 to -<em>n</em> counting from the back. Any other index raises an <code>IndexError</code>.</p>
+</li>
+<li><p>In finance code, this often happens with a <strong>lookback</strong> that reaches further into the past than the data goes. A 5-day return compares the latest close with the close five trading days earlier, which requires 6 closes; <code>closes</code> has only 5.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># This will fail: a 5-day return needs 6 closes, but `closes` holds only 5</span>
+<span class="n">five_day_return</span> <span class="o">=</span> <span class="n">closes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="n">closes</span><span class="p">[</span><span class="o">-</span><span class="mi">6</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span></code></pre></div><div class="nb-out nb-error">
+<pre>
+---------------------------------------------------------------------------
+IndexError                                Traceback (most recent call last)
+Cell In[40], line 2
+      1 # This will fail: a 5-day return needs 6 closes, but `closes` holds only 5
+----&gt; 2 five_day_return = closes[-1] / closes[-6] - 1
+
+IndexError: list index out of range</pre>
+</div></div>
+<ul>
+<li><p>With <em>n</em> closes, you can look back at most <em>n</em> - 1 days from the latest one: here 4 days, to <code>closes[-5]</code>, which is the same item as <code>closes[0]</code>.</p>
+</li>
+<li><p>Check the list's length with <code>len()</code> before looking far back. In Lecture 2, <code>if</code> statements will let your code make that check itself and skip a calculation the data cannot support.</p>
+</li>
+</ul>
+
+<h3 id="in-class-exercise-3">In-Class Exercise</h3>
+
+<p><strong>3-1. Watchlist Basics:</strong></p>
+<ul>
+<li>Create a list of five tickers you would like to follow.</li>
+<li>Print the first, third, and last tickers, using a negative index for the last one.</li>
+<li>Print a sentence that uses one of the tickers in an f-string.</li>
+</ul>
+
+<p><strong>3-2. Price History:</strong></p>
+<ul>
+<li>Create a list of six daily closing prices, oldest first (made-up values are fine).</li>
+<li>Compute the 5-day return (the latest close against the close five days earlier) and the most recent one-day return.</li>
+<li>Print both as percentages with 2 decimals.</li>
+</ul>
+
+<p><strong>3-3. Trading Day:</strong></p>
+<ul>
+<li>Start from <code>portfolio = ["AAPL", "KO", "JPM"]</code>, and print the list after each step.</li>
+<li>Buy <code>"MSFT"</code> (add it at the end) and <code>"XOM"</code> (add it at the front).</li>
+<li>Sell <code>"KO"</code> by value, then sell the last holding with <code>pop()</code> and print a message naming the stock you sold.</li>
+</ul>
+
+<p><strong>3-4. Ranking Returns:</strong></p>
+<ul>
+<li>Store five annual returns, as decimals, in a list.</li>
+<li>Print them from best to worst without changing the original list, then print the original to confirm it is unchanged.</li>
+<li>Use <code>len()</code> to print how many years of data you have, then sort the original list in place and print it.</li>
+</ul>
+</div>

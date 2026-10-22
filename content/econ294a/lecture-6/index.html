@@ -1,0 +1,5413 @@
+---
+title: "Lecture 6: Numerical Computing and Data Wrangling"
+lecture: 6
+weight: 6
+summary: "NumPy arrays, vectorization, and broadcasting; pandas Series and DataFrames, selection, missing data, group-by, merging, and time series."
+description: "ECON 294A lecture notes by Yuchao Li: NumPy and pandas, applied to Fama-French factor data."
+notebook: "ECON294A_Lecture6.ipynb"
+---
+<div class="toc"><details><summary accesskey="c" title="(Alt + C)"><span class="details">Contents</span></summary><div class="inner"><ul><li><a href="#what-well-cover" aria-label="What We&#x27;ll Cover">What We&#x27;ll Cover</a></li><li><a href="#ch-11-numpy" aria-label="Ch 11: NumPy">Ch 11: NumPy</a><ul><li><a href="#importing-numpy" aria-label="Importing NumPy">Importing NumPy</a></li><li><a href="#arrays-vs-python-lists" aria-label="Arrays vs Python Lists">Arrays vs Python Lists</a></li><li><a href="#creating-arrays" aria-label="Creating Arrays">Creating Arrays</a></li><li><a href="#array-attributes" aria-label="Array Attributes">Array Attributes</a></li><li><a href="#data-types-dtype" aria-label="Data Types (dtype)">Data Types (dtype)</a></li><li><a href="#reshape" aria-label="Reshape">Reshape</a></li><li><a href="#indexing-and-slicing" aria-label="Indexing and Slicing">Indexing and Slicing</a></li><li><a href="#vectorized-arithmetic" aria-label="Vectorized Arithmetic">Vectorized Arithmetic</a></li><li><a href="#broadcasting" aria-label="Broadcasting">Broadcasting</a></li><li><a href="#aggregations" aria-label="Aggregations">Aggregations</a></li><li><a href="#random-numbers-np-random" aria-label="Random Numbers (np.random)">Random Numbers (np.random)</a></li><li><a href="#matrix-multiplication" aria-label="Matrix Multiplication">Matrix Multiplication</a></li><li><a href="#in-class-exercise" aria-label="In-Class Exercise">In-Class Exercise</a></li></ul></li><li><a href="#ch-12-pandas" aria-label="Ch 12: Pandas">Ch 12: Pandas</a><ul><li><a href="#importing-pandas" aria-label="Importing Pandas">Importing Pandas</a></li><li><a href="#series" aria-label="Series">Series</a></li><li><a href="#dataframe" aria-label="DataFrame">DataFrame</a></li><li><a href="#reading-and-writing-data" aria-label="Reading and Writing Data">Reading and Writing Data</a></li><li><a href="#inspecting-a-dataframe" aria-label="Inspecting a DataFrame">Inspecting a DataFrame</a></li><li><a href="#selecting-data" aria-label="Selecting Data">Selecting Data</a></li><li><a href="#column-operations" aria-label="Column Operations">Column Operations</a></li><li><a href="#missing-data" aria-label="Missing Data">Missing Data</a></li><li><a href="#sorting" aria-label="Sorting">Sorting</a></li><li><a href="#transformations-apply-map-and-str" aria-label="Transformations: apply, map, and .str">Transformations: apply, map, and .str</a></li><li><a href="#groupby-split-apply-combine" aria-label="GroupBy: Split-Apply-Combine">GroupBy: Split-Apply-Combine</a></li><li><a href="#combining-dataframes" aria-label="Combining DataFrames">Combining DataFrames</a></li><li><a href="#time-series" aria-label="Time Series">Time Series</a></li><li><a href="#reshape-preview-pivot-and-melt" aria-label="Reshape Preview: pivot and melt">Reshape Preview: pivot and melt</a></li><li><a href="#in-class-exercise-2" aria-label="In-Class Exercise">In-Class Exercise</a></li></ul></li></ul></div></details></div>
+<div class="post-content nb">
+<ul>
+<li>Lectures 1-5 covered the Python language. This lecture introduces NumPy for numerical arrays and pandas for tables of data.</li>
+</ul>
+
+<h3 id="what-well-cover">What We'll Cover</h3><ul>
+<li><p><strong>Ch 11 (NumPy):</strong> arrays vs. Python lists, indexing and slicing, vectorized arithmetic and broadcasting, aggregations, random numbers, and matrix multiplication.</p>
+</li>
+<li><p><strong>Ch 12 (Pandas):</strong> Series and DataFrames, reading and writing data, selecting data, missing data, group-by, combining DataFrames, and time series.</p>
+</li>
+<li><p>Our running data in the pandas part is the <strong>Fama-French 5 Factors</strong> from Ken French's data library.</p>
+</li>
+</ul>
+
+<h2 id="ch-11-numpy">Ch 11: NumPy</h2>
+
+<ul>
+<li><p><strong>NumPy</strong> (Numerical Python) is the fundamental package for numerical computing in Python.</p>
+</li>
+<li><p>It provides an N-dimensional array object, along with functions for fast operations on these arrays.</p>
+</li>
+<li><p>Most data analysis libraries you'll use later (<code>pandas</code>, <code>scikit-learn</code>, <code>statsmodels</code>) are built on top of NumPy.</p>
+</li>
+</ul>
+
+<h3 id="importing-numpy">Importing NumPy</h3><ul>
+<li>The conventional alias for NumPy is <code>np</code>.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span></code></pre></div></div>
+<h3 id="arrays-vs-python-lists">Arrays vs Python Lists</h3><ul>
+<li><p>A <strong>NumPy array</strong> stores elements of the same type in a contiguous block of memory.</p>
+</li>
+<li><p>Python lists store <em>pointers</em> to objects scattered in memory.</p>
+</li>
+<li><p>This makes NumPy arrays much faster and more memory-efficient for numerical work.</p>
+</li>
+</ul>
+
+<p><strong>Speed comparison</strong></p>
+<ul>
+<li>We compare the time to square 1 million numbers using a Python list vs a NumPy array.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Using a Python list</span>
+<span class="n">py_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1_000_000</span><span class="p">))</span>
+<span class="o">%</span><span class="n">timeit</span> <span class="p">[</span><span class="n">x</span> <span class="o">**</span> <span class="mi">2</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">py_list</span><span class="p">]</span></code></pre></div><div class="nb-out nb-stream">
+<pre>121 ms ± 35 ms per loop (mean ± std. dev. of 7 runs, 10 loops each)
+</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Using a NumPy array</span>
+<span class="n">np_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1_000_000</span><span class="p">)</span>
+<span class="o">%</span><span class="n">timeit</span> <span class="n">np_arr</span> <span class="o">**</span> <span class="mi">2</span></code></pre></div><div class="nb-out nb-stream">
+<pre>2.07 ms ± 533 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
+</pre>
+</div></div>
+<ul>
+<li>NumPy is typically <strong>10-100x faster</strong> than equivalent pure-Python code.</li>
+</ul>
+
+<h3 id="creating-arrays">Creating Arrays</h3>
+
+<h4 id="from-a-python-list">From a Python List</h4><ul>
+<li>Pass a list to <code>np.array()</code> to create a one-dimensional array.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">])</span>
+<span class="n">arr</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([1, 2, 3, 4, 5])</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="nb">type</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span></code></pre></div><div class="nb-out nb-text">
+<pre>numpy.ndarray</pre>
+</div></div>
+<h4 id="multidimensional-arrays">Multidimensional Arrays</h4><ul>
+<li>Pass a list of lists to create a 2D array (a matrix).</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span>
+                   <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">]])</span>
+<span class="n">matrix</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([[1, 2, 3],
+       [4, 5, 6]])</pre>
+</div></div>
+<h4 id="built-in-array-creation-functions">Built-in Array Creation Functions</h4><ul>
+<li><code>np.zeros(shape)</code> creates an array filled with zeros.</li>
+<li><code>np.ones(shape)</code> creates an array filled with ones.</li>
+<li><code>np.arange(start, stop, step)</code> is like <code>range()</code> but returns an array.</li>
+<li><code>np.linspace(start, stop, num)</code> creates <code>num</code> evenly-spaced values.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([0., 0., 0., 0., 0.])</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([[0., 0., 0.],
+       [0., 0., 0.]])</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([[1., 1., 1.],
+       [1., 1., 1.],
+       [1., 1., 1.]])</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([0, 2, 4, 6, 8])</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([0.  , 0.25, 0.5 , 0.75, 1.  ])</pre>
+</div></div>
+<ul>
+<li><code>np.eye(n)</code> creates an <code>n</code> x <code>n</code> identity matrix.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([[1., 0., 0.],
+       [0., 1., 0.],
+       [0., 0., 1.]])</pre>
+</div></div>
+<h3 id="array-attributes">Array Attributes</h3><ul>
+<li><code>shape</code>: a tuple giving the size in each dimension.</li>
+<li><code>ndim</code>: the number of dimensions.</li>
+<li><code>size</code>: the total number of elements.</li>
+<li><code>dtype</code>: the data type of the elements.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span>
+                   <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">]])</span>
+<span class="n">matrix</span><span class="o">.</span><span class="n">shape</span></code></pre></div><div class="nb-out nb-text">
+<pre>(2, 3)</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">matrix</span><span class="o">.</span><span class="n">ndim</span></code></pre></div><div class="nb-out nb-text">
+<pre>2</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">matrix</span><span class="o">.</span><span class="n">size</span></code></pre></div><div class="nb-out nb-text">
+<pre>6</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">matrix</span><span class="o">.</span><span class="n">dtype</span></code></pre></div><div class="nb-out nb-text">
+<pre>dtype('int64')</pre>
+</div></div>
+<h3 id="data-types-dtype">Data Types (<code>dtype</code>)</h3><ul>
+<li><p>NumPy arrays are <strong>homogeneous</strong>: all elements share one <code>dtype</code>.</p>
+</li>
+<li><p>Common dtypes include <code>int64</code>, <code>float64</code>, <code>bool</code>.</p>
+</li>
+<li><p>You can set the dtype when creating an array.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">'float64'</span><span class="p">)</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([1., 2., 3.])</pre>
+</div></div>
+<ul>
+<li>If you mix types, NumPy will <strong>upcast</strong> to the more general type.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># An int and a float together become floats</span>
+<span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mf">2.5</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([1. , 2.5, 3. ])</pre>
+</div></div>
+<h3 id="reshape">Reshape</h3><ul>
+<li><p><code>reshape()</code> returns an array with the same data but a new shape.</p>
+</li>
+<li><p>The new shape must have the <strong>same total number of elements</strong>.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">12</span><span class="p">)</span>
+<span class="n">arr</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11])</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">arr</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([[ 0,  1,  2,  3],
+       [ 4,  5,  6,  7],
+       [ 8,  9, 10, 11]])</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">arr</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([[ 0,  1,  2,  3,  4,  5],
+       [ 6,  7,  8,  9, 10, 11]])</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">arr</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11])</pre>
+</div></div>
+<ul>
+<li>Using <code>-1</code> tells NumPy to infer that dimension automatically.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">arr</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([[ 0,  1,  2,  3],
+       [ 4,  5,  6,  7],
+       [ 8,  9, 10, 11]])</pre>
+</div></div>
+<p><strong>Note:</strong> Incompatible shapes will raise an error.</p>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># This will fail: 12 elements can't reshape into 5 x 3 = 15</span>
+<span class="n">arr</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span></code></pre></div><div class="nb-out nb-error">
+<pre>
+---------------------------------------------------------------------------
+ValueError                                Traceback (most recent call last)
+/tmp/ipykernel_1707/3981055620.py in &lt;cell line: 0&gt;()
+      1 # This will fail: 12 elements can't reshape into 5 x 3 = 15
+----&gt; 2 arr.reshape(5, 3)
+
+ValueError: cannot reshape array of size 12 into shape (5,3)</pre>
+</div></div>
+<ul>
+<li>You can also <strong>transpose</strong> an array with <code>.T</code>.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="n">mat</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([[0, 1, 2],
+       [3, 4, 5]])</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">mat</span><span class="o">.</span><span class="n">T</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([[0, 3],
+       [1, 4],
+       [2, 5]])</pre>
+</div></div>
+<h3 id="indexing-and-slicing">Indexing and Slicing</h3>
+
+<h4 id="one-dimensional-arrays">One-Dimensional Arrays</h4><ul>
+<li>Indexing and slicing work just like with Python lists.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">50</span><span class="p">])</span>
+<span class="n">arr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></code></pre></div><div class="nb-out nb-text">
+<pre>np.int64(10)</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">arr</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></code></pre></div><div class="nb-out nb-text">
+<pre>np.int64(50)</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">arr</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([20, 30, 40])</pre>
+</div></div>
+<h4 id="two-dimensional-arrays">Two-Dimensional Arrays</h4><ul>
+<li><p>Use <code>arr[row, col]</code> syntax (more concise and computationally efficient than <code>arr[row][col]</code>).</p>
+</li>
+<li><p>Multidimensional slicing along a specific axis requires the <code>arr[row, col]</code> syntax.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span>
+                <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">],</span>
+                <span class="p">[</span><span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">]])</span>
+<span class="n">mat</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span></code></pre></div><div class="nb-out nb-text">
+<pre>np.int64(2)</pre>
+</div></div>
+<ul>
+<li>Use <code>:</code> to select all elements along an axis.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># All rows, column 0</span>
+<span class="n">mat</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([1, 4, 7])</pre>
+</div></div>
+<ul>
+<li>Chained indexing does not work for this use case.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">mat</span><span class="p">[:][</span><span class="mi">0</span><span class="p">]</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([1, 2, 3])</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">mat</span><span class="p">[:]</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([[1, 2, 3],
+       [4, 5, 6],
+       [7, 8, 9]])</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Row 1, all columns</span>
+<span class="n">mat</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([4, 5, 6])</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Top-left 2x2 sub-matrix</span>
+<span class="n">mat</span><span class="p">[:</span><span class="mi">2</span><span class="p">,</span> <span class="p">:</span><span class="mi">2</span><span class="p">]</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([[1, 2],
+       [4, 5]])</pre>
+</div></div>
+<h4 id="boolean-indexing">Boolean Indexing</h4><ul>
+<li>You can index with a Boolean array to filter elements.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">])</span>
+<span class="n">arr</span> <span class="o">&gt;</span> <span class="mi">0</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([ True, False,  True, False,  True])</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">arr</span><span class="p">[</span><span class="n">arr</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([1, 3, 5])</pre>
+</div></div>
+<h3 id="vectorized-arithmetic">Vectorized Arithmetic</h3><ul>
+<li><p>Arithmetic operations on NumPy arrays apply <strong>element-wise</strong> without a <code>for</code> loop.</p>
+</li>
+<li><p>This is called <strong>vectorization</strong>.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">])</span>
+<span class="n">arr</span> <span class="o">+</span> <span class="mi">10</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([11, 12, 13, 14])</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">arr</span> <span class="o">*</span> <span class="mi">2</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([2, 4, 6, 8])</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">arr</span> <span class="o">**</span> <span class="mi">2</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([ 1,  4,  9, 16])</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+<span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">])</span>
+<span class="n">a</span> <span class="o">+</span> <span class="n">b</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([11, 22, 33])</pre>
+</div></div>
+<h3 id="broadcasting">Broadcasting</h3><ul>
+<li><p><strong>Broadcasting</strong> allows NumPy to do arithmetic on arrays with different shapes.</p>
+</li>
+<li><p>NumPy triggers broadcasting automatically during element-wise arithmetic operations by evaluating the <code>.shape</code> attributes of the arrays involved.</p>
+</li>
+<li><p>The smaller array is "stretched" across the larger one, without actually copying memory.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># A 2x3 matrix plus a 1D array of length 3</span>
+<span class="n">mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span>
+                <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">]])</span>
+<span class="n">row</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">])</span>
+
+<span class="n">mat</span> <span class="o">+</span> <span class="n">row</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([[11, 22, 33],
+       [14, 25, 36]])</pre>
+</div></div>
+<ul>
+<li>The 1D array <code>row</code> is broadcast across each row of <code>mat</code>.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Column-wise broadcasting using a 2x1 array</span>
+<span class="n">col</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">100</span><span class="p">],</span>
+                <span class="p">[</span><span class="mi">200</span><span class="p">]])</span>
+
+<span class="n">mat</span> <span class="o">+</span> <span class="n">col</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([[101, 102, 103],
+       [204, 205, 206]])</pre>
+</div></div>
+<h3 id="aggregations">Aggregations</h3><ul>
+<li>NumPy provides fast functions to summarize arrays: <code>sum</code>, <code>mean</code>, <code>std</code>, <code>min</code>, <code>max</code>, <code>median</code>, etc.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">])</span>
+<span class="n">arr</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span></code></pre></div><div class="nb-out nb-text">
+<pre>np.int64(15)</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">arr</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span></code></pre></div><div class="nb-out nb-text">
+<pre>np.float64(3.0)</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">arr</span><span class="o">.</span><span class="n">std</span><span class="p">()</span></code></pre></div><div class="nb-out nb-text">
+<pre>np.float64(1.4142135623730951)</pre>
+</div></div>
+<h4 id="the-axis-argument">The <code>axis</code> Argument</h4><ul>
+<li><p>For multi-dimensional arrays, the <code>axis</code> argument controls <strong>which dimension to collapse</strong>.</p>
+</li>
+<li><p><code>axis=0</code> collapses rows (Vertical Sum: one value per column).</p>
+</li>
+<li><p><code>axis=1</code> collapses columns (Horizontal Sum: one value per row).</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span>
+                <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">]])</span>
+<span class="n">mat</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span></code></pre></div><div class="nb-out nb-text">
+<pre>np.int64(21)</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Sum down each column</span>
+<span class="n">mat</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([5, 7, 9])</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Sum across each row</span>
+<span class="n">mat</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([ 6, 15])</pre>
+</div></div>
+<h3 id="random-numbers-np-random">Random Numbers (<code>np.random</code>)</h3>
+
+<h4 id="setting-a-seed">Setting a Seed</h4><ul>
+<li><p>For reproducible results, set a <strong>random seed</strong> before generating random numbers.</p>
+</li>
+<li><p>Why "42"?</p>
+<ul>
+<li><p>Technically, any integer works as a seed (0, 1, 12345, etc.).</p>
+</li>
+<li><p>42 is the "Answer to the Ultimate Question of Life, the Universe, and Everything" in The Hitchhiker's Guide to the Galaxy.</p>
+</li>
+</ul>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span></code></pre></div></div>
+<h4 id="generating-random-numbers">Generating Random Numbers</h4><ul>
+<li><code>np.random.rand(d0, d1, ...)</code>: uniform on [0, 1).</li>
+<li><code>np.random.randn(d0, d1, ...)</code>: standard normal (mean 0, std 1).</li>
+<li><code>np.random.randint(low, high, size)</code>: random integers from [low, high).</li>
+<li><code>np.random.choice(a, size)</code>: sample from an array.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([0.37454012, 0.95071431, 0.73199394])</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([[-1.11188012,  0.31890218,  0.27904129],
+       [ 1.01051528, -0.58087813, -0.52516981]])</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([20, 32, 75, 57, 21])</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Sample 4 items from a list</span>
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">([</span><span class="s1">'AAPL'</span><span class="p">,</span> <span class="s1">'GOOG'</span><span class="p">,</span> <span class="s1">'MSFT'</span><span class="p">,</span> <span class="s1">'AMZN'</span><span class="p">,</span> <span class="s1">'META'</span><span class="p">],</span> <span class="n">size</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span></code></pre></div><div class="nb-out nb-text">
+<pre>array(['META', 'AMZN', 'AAPL', 'AAPL'], dtype='&lt;U4')</pre>
+</div></div>
+<h3 id="matrix-multiplication">Matrix Multiplication</h3><ul>
+<li><p>For element-wise multiplication, use <code>*</code>.</p>
+</li>
+<li><p>For <strong>matrix multiplication</strong> (dot product), use the <code>@</code> operator or <code>np.dot()</code>.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+              <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]])</span>
+<span class="n">B</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">],</span>
+              <span class="p">[</span><span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">]])</span>
+
+<span class="c1"># Element-wise multiplication</span>
+<span class="n">A</span> <span class="o">*</span> <span class="n">B</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([[ 5, 12],
+       [21, 32]])</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Matrix multiplication</span>
+<span class="n">A</span> <span class="o">@</span> <span class="n">B</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([[19, 22],
+       [43, 50]])</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Equivalent to:</span>
+<span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([[19, 22],
+       [43, 50]])</pre>
+</div></div>
+<ul>
+<li>This is essential for linear regression, portfolio math, and many other applications you'll see in econ.</li>
+</ul>
+
+<h3 id="in-class-exercise">In-Class Exercise</h3>
+
+<p><strong>11-1. Array Creation:</strong></p>
+<ul>
+<li>Create a 1D NumPy array containing the integers from 10 to 30 (inclusive) using <code>np.arange()</code>.</li>
+<li>Print its <code>shape</code>, <code>ndim</code>, and <code>dtype</code>.</li>
+</ul>
+
+<p><strong>11-2. Reshape:</strong></p>
+<ul>
+<li>Take your array from 11-1 and reshape it into a 3 x 7 matrix.</li>
+<li>Then transpose it and print the result.</li>
+</ul>
+
+<p><strong>11-3. Simulating Returns:</strong></p>
+<ul>
+<li>Set the random seed to 0.</li>
+<li>Use <code>np.random.randn(252)</code> to simulate 252 daily returns (one trading year) with mean 0 and std 1.</li>
+<li>Compute and print the mean, standard deviation, and maximum of these simulated returns.</li>
+</ul>
+
+<p><strong>11-4. Boolean Filtering:</strong></p>
+<ul>
+<li>Using your simulated returns from 11-3, count how many of the returns were <em>negative</em> using a Boolean filter.</li>
+<li>Hint: a Boolean array can be summed because <code>True</code> counts as 1.</li>
+</ul>
+
+<p><strong>11-5. Matrix Multiplication:</strong></p>
+<ul>
+<li>Create two 2 x 2 matrices: <code>X = [[1, 2], [3, 4]]</code> and <code>Y = [[2, 0], [1, 2]]</code>.</li>
+<li>Compute their matrix product using <code>@</code>.</li>
+<li>Then compute their element-wise product using <code>*</code>. Compare the two results.</li>
+</ul>
+
+<h2 id="ch-12-pandas">Ch 12: Pandas</h2>
+
+<ul>
+<li><p><strong>pandas</strong> is the main library for working with tabular data in Python.</p>
+</li>
+<li><p>It provides two main data structures: the 1D <code>Series</code> and the 2D <code>DataFrame</code>.</p>
+</li>
+<li><p>Think of a <code>DataFrame</code> as a spreadsheet or SQL table you can manipulate with code.</p>
+</li>
+<li><p>Pandas is built on NumPy, so most NumPy concepts (vectorization, broadcasting) carry over.</p>
+</li>
+</ul>
+
+<h3 id="importing-pandas">Importing Pandas</h3><ul>
+<li>The conventional alias for pandas is <code>pd</code>.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span></code></pre></div></div>
+<h3 id="series">Series</h3><ul>
+<li><p>A <code>Series</code> is a <strong>one-dimensional</strong> labeled array, like a single column of a spreadsheet.</p>
+</li>
+<li><p>Every value has a label (its <strong>index</strong>), and all values share a <code>dtype</code>.</p>
+</li>
+</ul>
+
+<h4 id="creating-a-series">Creating a Series</h4><ul>
+<li>The simplest way to create a <code>Series</code> is from a list.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">prices</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">([</span><span class="mf">150.2</span><span class="p">,</span> <span class="mf">2800.5</span><span class="p">,</span> <span class="mf">305.7</span><span class="p">,</span> <span class="mf">3300.1</span><span class="p">])</span>
+<span class="n">prices</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>150.2</td>
+</tr>
+<tr>
+<th>1</th>
+<td>2800.5</td>
+</tr>
+<tr>
+<th>2</th>
+<td>305.7</td>
+</tr>
+<tr>
+<th>3</th>
+<td>3300.1</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> float64</label></div></div>
+<ul>
+<li>The numbers on the left are the <strong>index</strong> (auto-assigned 0, 1, 2, ... by default).</li>
+</ul>
+
+<ul>
+<li>The numbers on the right are the <strong>values</strong>.</li>
+</ul>
+
+<h4 id="custom-index">Custom Index</h4><ul>
+<li>You can provide a custom index when you create the <code>Series</code>.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">prices</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">([</span><span class="mf">150.2</span><span class="p">,</span> <span class="mf">2800.5</span><span class="p">,</span> <span class="mf">305.7</span><span class="p">,</span> <span class="mf">3300.1</span><span class="p">],</span>
+                   <span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="s1">'AAPL'</span><span class="p">,</span> <span class="s1">'GOOG'</span><span class="p">,</span> <span class="s1">'MSFT'</span><span class="p">,</span> <span class="s1">'AMZN'</span><span class="p">])</span>
+<span class="n">prices</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>AAPL</th>
+<td>150.2</td>
+</tr>
+<tr>
+<th>GOOG</th>
+<td>2800.5</td>
+</tr>
+<tr>
+<th>MSFT</th>
+<td>305.7</td>
+</tr>
+<tr>
+<th>AMZN</th>
+<td>3300.1</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> float64</label></div></div>
+<h4 id="creating-a-series-from-a-dictionary">Creating a Series from a Dictionary</h4><ul>
+<li>A dictionary's keys become the index, and the values become the data.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">mkt_caps</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">({</span>
+    <span class="s1">'AAPL'</span><span class="p">:</span> <span class="mi">2_900_000</span><span class="p">,</span>
+    <span class="s1">'GOOG'</span><span class="p">:</span> <span class="mi">1_700_000</span><span class="p">,</span>
+    <span class="s1">'MSFT'</span><span class="p">:</span> <span class="mi">2_500_000</span><span class="p">,</span>
+    <span class="s1">'AMZN'</span><span class="p">:</span> <span class="mi">1_400_000</span><span class="p">,</span>
+<span class="p">})</span>
+<span class="n">mkt_caps</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>AAPL</th>
+<td>2900000</td>
+</tr>
+<tr>
+<th>GOOG</th>
+<td>1700000</td>
+</tr>
+<tr>
+<th>MSFT</th>
+<td>2500000</td>
+</tr>
+<tr>
+<th>AMZN</th>
+<td>1400000</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> int64</label></div></div>
+<h4 id="accessing-values">Accessing Values</h4><ul>
+<li>You can index a <code>Series</code> by label or by position.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">prices</span><span class="p">[</span><span class="s1">'AAPL'</span><span class="p">]</span></code></pre></div><div class="nb-out nb-text">
+<pre>np.float64(150.2)</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">prices</span><span class="p">[[</span><span class="s1">'AAPL'</span><span class="p">,</span> <span class="s1">'MSFT'</span><span class="p">]]</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>AAPL</th>
+<td>150.2</td>
+</tr>
+<tr>
+<th>MSFT</th>
+<td>305.7</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> float64</label></div></div>
+<h4 id="series-attributes">Series Attributes</h4><ul>
+<li><code>values</code>: the underlying NumPy array.</li>
+<li><code>index</code>: the labels.</li>
+<li><code>dtype</code>: the element data type.</li>
+<li><code>name</code>: an optional name for the Series.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">prices</span><span class="o">.</span><span class="n">values</span></code></pre></div><div class="nb-out nb-text">
+<pre>array([ 150.2, 2800.5,  305.7, 3300.1])</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">prices</span><span class="o">.</span><span class="n">index</span></code></pre></div><div class="nb-out nb-text">
+<pre>Index(['AAPL', 'GOOG', 'MSFT', 'AMZN'], dtype='object')</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">prices</span><span class="o">.</span><span class="n">dtype</span></code></pre></div><div class="nb-out nb-text">
+<pre>dtype('float64')</pre>
+</div></div>
+<ul>
+<li>You can give a <code>Series</code> a name, which becomes its column header inside a <code>DataFrame</code>.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">prices</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">'price'</span>
+<span class="n">prices</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>price</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>AAPL</th>
+<td>150.2</td>
+</tr>
+<tr>
+<th>GOOG</th>
+<td>2800.5</td>
+</tr>
+<tr>
+<th>MSFT</th>
+<td>305.7</td>
+</tr>
+<tr>
+<th>AMZN</th>
+<td>3300.1</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> float64</label></div></div>
+<h3 id="dataframe">DataFrame</h3><ul>
+<li><p>A <code>DataFrame</code> is a <strong>two-dimensional</strong> labeled table: rows and columns, each with an index.</p>
+</li>
+<li><p>Each column is a <code>Series</code>. Columns can have different dtypes.</p>
+</li>
+</ul>
+
+<h4 id="creating-a-dataframe-from-a-dictionary-of-lists">Creating a DataFrame from a Dictionary of Lists</h4><ul>
+<li>Each key becomes a column name; each list becomes the column's values.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">'ticker'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'AAPL'</span><span class="p">,</span> <span class="s1">'GOOG'</span><span class="p">,</span> <span class="s1">'MSFT'</span><span class="p">,</span> <span class="s1">'AMZN'</span><span class="p">],</span>
+    <span class="s1">'price'</span><span class="p">:</span>  <span class="p">[</span><span class="mf">150.2</span><span class="p">,</span> <span class="mf">2800.5</span><span class="p">,</span> <span class="mf">305.7</span><span class="p">,</span> <span class="mf">3300.1</span><span class="p">],</span>
+    <span class="s1">'sector'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'Tech'</span><span class="p">,</span> <span class="s1">'Tech'</span><span class="p">,</span> <span class="s1">'Tech'</span><span class="p">,</span> <span class="s1">'Consumer'</span><span class="p">],</span>
+<span class="p">}</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<span class="n">df</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>ticker</th>
+<th>price</th>
+<th>sector</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>AAPL</td>
+<td>150.2</td>
+<td>Tech</td>
+</tr>
+<tr>
+<th>1</th>
+<td>GOOG</td>
+<td>2800.5</td>
+<td>Tech</td>
+</tr>
+<tr>
+<th>2</th>
+<td>MSFT</td>
+<td>305.7</td>
+<td>Tech</td>
+</tr>
+<tr>
+<th>3</th>
+<td>AMZN</td>
+<td>3300.1</td>
+<td>Consumer</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h4 id="creating-a-dataframe-from-a-list-of-dictionaries">Creating a DataFrame from a List of Dictionaries</h4><ul>
+<li>Each dictionary becomes a row.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">rows</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span><span class="s1">'ticker'</span><span class="p">:</span> <span class="s1">'AAPL'</span><span class="p">,</span> <span class="s1">'price'</span><span class="p">:</span> <span class="mf">150.2</span><span class="p">,</span> <span class="s1">'sector'</span><span class="p">:</span> <span class="s1">'Tech'</span><span class="p">},</span>
+    <span class="p">{</span><span class="s1">'ticker'</span><span class="p">:</span> <span class="s1">'GOOG'</span><span class="p">,</span> <span class="s1">'price'</span><span class="p">:</span> <span class="mf">2800.5</span><span class="p">,</span> <span class="s1">'sector'</span><span class="p">:</span> <span class="s1">'Tech'</span><span class="p">},</span>
+    <span class="p">{</span><span class="s1">'ticker'</span><span class="p">:</span> <span class="s1">'MSFT'</span><span class="p">,</span> <span class="s1">'price'</span><span class="p">:</span> <span class="mf">305.7</span><span class="p">,</span> <span class="s1">'sector'</span><span class="p">:</span> <span class="s1">'Tech'</span><span class="p">},</span>
+<span class="p">]</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>ticker</th>
+<th>price</th>
+<th>sector</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>AAPL</td>
+<td>150.2</td>
+<td>Tech</td>
+</tr>
+<tr>
+<th>1</th>
+<td>GOOG</td>
+<td>2800.5</td>
+<td>Tech</td>
+</tr>
+<tr>
+<th>2</th>
+<td>MSFT</td>
+<td>305.7</td>
+<td>Tech</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h4 id="creating-a-dataframe-from-a-numpy-array">Creating a DataFrame from a NumPy Array</h4><ul>
+<li>Useful for numerical data. Supply your own <code>columns</code> and (optionally) <code>index</code>.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">returns</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span> <span class="o">/</span> <span class="mi">100</span>  <span class="c1"># daily returns ~1% scale</span>
+
+<span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">returns</span><span class="p">,</span>
+             <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">'AAPL'</span><span class="p">,</span> <span class="s1">'GOOG'</span><span class="p">,</span> <span class="s1">'MSFT'</span><span class="p">],</span>
+             <span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="s1">'Mon'</span><span class="p">,</span> <span class="s1">'Tue'</span><span class="p">,</span> <span class="s1">'Wed'</span><span class="p">,</span> <span class="s1">'Thu'</span><span class="p">,</span> <span class="s1">'Fri'</span><span class="p">])</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>AAPL</th>
+<th>GOOG</th>
+<th>MSFT</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>Mon</th>
+<td>0.004967</td>
+<td>-0.001383</td>
+<td>0.006477</td>
+</tr>
+<tr>
+<th>Tue</th>
+<td>0.015230</td>
+<td>-0.002342</td>
+<td>-0.002341</td>
+</tr>
+<tr>
+<th>Wed</th>
+<td>0.015792</td>
+<td>0.007674</td>
+<td>-0.004695</td>
+</tr>
+<tr>
+<th>Thu</th>
+<td>0.005426</td>
+<td>-0.004634</td>
+<td>-0.004657</td>
+</tr>
+<tr>
+<th>Fri</th>
+<td>0.002420</td>
+<td>-0.019133</td>
+<td>-0.017249</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h4 id="setting-an-index-column">Setting an Index Column</h4><ul>
+<li>Use <code>set_index()</code> to promote an existing column to be the row index.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">'ticker'</span><span class="p">)</span>
+<span class="n">df</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>price</th>
+<th>sector</th>
+</tr>
+<tr>
+<th>ticker</th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>AAPL</th>
+<td>150.2</td>
+<td>Tech</td>
+</tr>
+<tr>
+<th>GOOG</th>
+<td>2800.5</td>
+<td>Tech</td>
+</tr>
+<tr>
+<th>MSFT</th>
+<td>305.7</td>
+<td>Tech</td>
+</tr>
+<tr>
+<th>AMZN</th>
+<td>3300.1</td>
+<td>Consumer</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<ul>
+<li>The DataFrame is now indexed by ticker symbol.</li>
+</ul>
+
+<h4 id="dataframe-attributes">DataFrame Attributes</h4><ul>
+<li><code>shape</code>: (n_rows, n_cols)</li>
+<li><code>columns</code>: column labels</li>
+<li><code>index</code>: row labels</li>
+<li><code>dtypes</code>: dtype of each column</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">df</span><span class="o">.</span><span class="n">shape</span></code></pre></div><div class="nb-out nb-text">
+<pre>(4, 2)</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">df</span><span class="o">.</span><span class="n">columns</span></code></pre></div><div class="nb-out nb-text">
+<pre>Index(['price', 'sector'], dtype='object')</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">df</span><span class="o">.</span><span class="n">index</span></code></pre></div><div class="nb-out nb-text">
+<pre>Index(['AAPL', 'GOOG', 'MSFT', 'AMZN'], dtype='object', name='ticker')</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">df</span><span class="o">.</span><span class="n">dtypes</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>price</th>
+<td>float64</td>
+</tr>
+<tr>
+<th>sector</th>
+<td>object</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> object</label></div></div>
+<h3 id="reading-and-writing-data">Reading and Writing Data</h3><ul>
+<li><p>Pandas can read and write a wide variety of file formats: CSV, Excel, JSON, Parquet, SQL, and more.</p>
+</li>
+<li><p>The most common is <code>read_csv()</code> for comma-separated values files.</p>
+</li>
+</ul>
+
+<ul>
+<li><p>We'll try <code>pandas-datareader</code> first, which provides a clean Python API to Ken French's library.</p>
+</li>
+<li><p>We include a <strong>fallback</strong> that downloads the CSV directly, in case package versions don't line up.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Install pandas-datareader if not already available (Colab usually has it)</span>
+<span class="err">!</span><span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">q</span> <span class="n">pandas</span><span class="o">-</span><span class="n">datareader</span></code></pre></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">import</span><span class="w"> </span><span class="nn">io</span><span class="o">,</span><span class="w"> </span><span class="nn">zipfile</span><span class="o">,</span><span class="w"> </span><span class="nn">urllib.request</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="c1"># Try pandas-datareader first (the cleanest path)</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">pandas_datareader.data</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">web</span>
+    <span class="n">ff</span> <span class="o">=</span> <span class="n">web</span><span class="o">.</span><span class="n">DataReader</span><span class="p">(</span><span class="s1">'F-F_Research_Data_5_Factors_2x3'</span><span class="p">,</span>
+                        <span class="s1">'famafrench'</span><span class="p">,</span>
+                        <span class="n">start</span><span class="o">=</span><span class="s1">'1990-01-01'</span><span class="p">,</span>
+                        <span class="n">end</span><span class="o">=</span><span class="s1">'2023-12-31'</span><span class="p">)</span>
+    <span class="n">ff5</span> <span class="o">=</span> <span class="n">ff</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Loaded via pandas-datareader: </span><span class="si">{</span><span class="n">ff5</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="c1"># Fallback: download the CSV zip directly from Ken French's website</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"pandas-datareader failed (</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">); falling back to direct download."</span><span class="p">)</span>
+    <span class="n">url</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/"</span>
+           <span class="s2">"ftp/F-F_Research_Data_5_Factors_2x3_CSV.zip"</span><span class="p">)</span>
+    <span class="n">req</span> <span class="o">=</span> <span class="n">urllib</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">Request</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s1">'User-Agent'</span><span class="p">:</span> <span class="s1">'Mozilla/5.0'</span><span class="p">})</span>
+    <span class="k">with</span> <span class="n">urllib</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">urlopen</span><span class="p">(</span><span class="n">req</span><span class="p">)</span> <span class="k">as</span> <span class="n">r</span><span class="p">:</span>
+        <span class="n">zip_bytes</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="k">with</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">zip_bytes</span><span class="p">))</span> <span class="k">as</span> <span class="n">z</span><span class="p">:</span>
+        <span class="n">csv_name</span> <span class="o">=</span> <span class="n">z</span><span class="o">.</span><span class="n">namelist</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">with</span> <span class="n">z</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">csv_name</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">raw</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">'latin1'</span><span class="p">)</span>
+
+    <span class="c1"># The file has a text header; monthly data starts after a blank-line break.</span>
+    <span class="c1"># Find the first line that begins with a 6-digit YYYYMM and parse from there.</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ln</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+                 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ln</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">6</span> <span class="ow">and</span> <span class="n">ln</span><span class="p">[:</span><span class="mi">6</span><span class="p">]</span><span class="o">.</span><span class="n">isdigit</span><span class="p">())</span>
+    <span class="n">end</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">))</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="mi">6</span> <span class="ow">and</span> <span class="n">lines</span><span class="p">[</span><span class="n">i</span><span class="p">][:</span><span class="mi">6</span><span class="p">]</span><span class="o">.</span><span class="n">isdigit</span><span class="p">())),</span>
+               <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">))</span>
+    <span class="n">monthly_csv</span> <span class="o">=</span> <span class="s2">"Date,Mkt-RF,SMB,HML,RMW,CMA,RF</span><span class="se">\n</span><span class="s2">"</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">])</span>
+    <span class="n">ff5</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">StringIO</span><span class="p">(</span><span class="n">monthly_csv</span><span class="p">),</span> <span class="n">index_col</span><span class="o">=</span><span class="s1">'Date'</span><span class="p">)</span>
+    <span class="n">ff5</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">ff5</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">'%Y%m'</span><span class="p">)</span><span class="o">.</span><span class="n">to_period</span><span class="p">(</span><span class="s1">'M'</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Loaded via direct download: </span><span class="si">{</span><span class="n">ff5</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Loaded via pandas-datareader: (408, 6)
+</pre>
+</div></div>
+<ul>
+<li>The download cell stores the monthly data in <code>ff5</code>.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="nb">type</span><span class="p">(</span><span class="n">ff5</span><span class="p">)</span></code></pre></div><div class="nb-out nb-html"><div style="max-width:800px; border: 1px solid var(--colab-border-color);">
+<pre style="white-space: initial; background:
+         var(--colab-secondary-surface-color); padding: 8px 12px;
+         border-bottom: 1px solid var(--colab-border-color);"><b>pandas.core.frame.DataFrame</b><br/>def __init__(data=None, index: Axes | None=None, columns: Axes | None=None, dtype: Dtype | None=None, copy: bool | None=None) -&gt; None</pre><pre class="function-repr-contents function-repr-contents-collapsed" style=""><a class="filepath" href="#" style="display:none">/usr/local/lib/python3.13/dist-packages/pandas/core/frame.py</a>Two-dimensional, size-mutable, potentially heterogeneous tabular data.
+
+Data structure also contains labeled axes (rows and columns).
+Arithmetic operations align on both row and column labels. Can be
+thought of as a dict-like container for Series objects. The primary
+pandas data structure.
+
+Parameters
+----------
+data : ndarray (structured or homogeneous), Iterable, dict, or DataFrame
+    Dict can contain Series, arrays, constants, dataclass or list-like objects. If
+    data is a dict, column order follows insertion-order. If a dict contains Series
+    which have an index defined, it is aligned by its index. This alignment also
+    occurs if data is a Series or a DataFrame itself. Alignment is done on
+    Series/DataFrame inputs.
+
+    If data is a list of dicts, column order follows insertion-order.
+
+index : Index or array-like
+    Index to use for resulting frame. Will default to RangeIndex if
+    no indexing information part of input data and no index provided.
+columns : Index or array-like
+    Column labels to use for resulting frame when data does not have them,
+    defaulting to RangeIndex(0, 1, 2, ..., n). If data contains column labels,
+    will perform column selection instead.
+dtype : dtype, default None
+    Data type to force. Only a single dtype is allowed. If None, infer.
+copy : bool or None, default None
+    Copy data from inputs.
+    For dict data, the default of None behaves like ``copy=True``.  For DataFrame
+    or 2d ndarray input, the default of None behaves like ``copy=False``.
+    If data is a dict containing one or more Series (possibly of different dtypes),
+    ``copy=False`` will ensure that these inputs are not copied.
+
+    .. versionchanged:: 1.3.0
+
+See Also
+--------
+DataFrame.from_records : Constructor from tuples, also record arrays.
+DataFrame.from_dict : From dicts of Series, arrays, or dicts.
+read_csv : Read a comma-separated values (csv) file into DataFrame.
+read_table : Read general delimited file into DataFrame.
+read_clipboard : Read text from clipboard into DataFrame.
+
+Notes
+-----
+Please reference the :ref:`User Guide &lt;basics.dataframe&gt;` for more information.
+
+Examples
+--------
+Constructing DataFrame from a dictionary.
+
+&gt;&gt;&gt; d = {'col1': [1, 2], 'col2': [3, 4]}
+&gt;&gt;&gt; df = pd.DataFrame(data=d)
+&gt;&gt;&gt; df
+   col1  col2
+0     1     3
+1     2     4
+
+Notice that the inferred dtype is int64.
+
+&gt;&gt;&gt; df.dtypes
+col1    int64
+col2    int64
+dtype: object
+
+To enforce a single dtype:
+
+&gt;&gt;&gt; df = pd.DataFrame(data=d, dtype=np.int8)
+&gt;&gt;&gt; df.dtypes
+col1    int8
+col2    int8
+dtype: object
+
+Constructing DataFrame from a dictionary including Series:
+
+&gt;&gt;&gt; d = {'col1': [0, 1, 2, 3], 'col2': pd.Series([2, 3], index=[2, 3])}
+&gt;&gt;&gt; pd.DataFrame(data=d, index=[0, 1, 2, 3])
+   col1  col2
+0     0   NaN
+1     1   NaN
+2     2   2.0
+3     3   3.0
+
+Constructing DataFrame from numpy ndarray:
+
+&gt;&gt;&gt; df2 = pd.DataFrame(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]),
+...                    columns=['a', 'b', 'c'])
+&gt;&gt;&gt; df2
+   a  b  c
+0  1  2  3
+1  4  5  6
+2  7  8  9
+
+Constructing DataFrame from a numpy ndarray that has labeled columns:
+
+&gt;&gt;&gt; data = np.array([(1, 2, 3), (4, 5, 6), (7, 8, 9)],
+...                 dtype=[("a", "i4"), ("b", "i4"), ("c", "i4")])
+&gt;&gt;&gt; df3 = pd.DataFrame(data, columns=['c', 'a'])
+...
+&gt;&gt;&gt; df3
+   c  a
+0  3  1
+1  6  4
+2  9  7
+
+Constructing DataFrame from dataclass:
+
+&gt;&gt;&gt; from dataclasses import make_dataclass
+&gt;&gt;&gt; Point = make_dataclass("Point", [("x", int), ("y", int)])
+&gt;&gt;&gt; pd.DataFrame([Point(0, 0), Point(0, 3), Point(2, 3)])
+   x  y
+0  0  0
+1  0  3
+2  2  3
+
+Constructing DataFrame from Series/DataFrame:
+
+&gt;&gt;&gt; ser = pd.Series([1, 2, 3], index=["a", "b", "c"])
+&gt;&gt;&gt; df = pd.DataFrame(data=ser, index=["a", "c"])
+&gt;&gt;&gt; df
+   0
+a  1
+c  3
+
+&gt;&gt;&gt; df1 = pd.DataFrame([1, 2, 3], index=["a", "b", "c"], columns=["x"])
+&gt;&gt;&gt; df2 = pd.DataFrame(data=df1, index=["a", "c"])
+&gt;&gt;&gt; df2
+   x
+a  1
+c  3</pre>
+</div></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">ff5</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+<th>SMB</th>
+<th>HML</th>
+<th>RMW</th>
+<th>CMA</th>
+<th>RF</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990-01</th>
+<td>-7.80</td>
+<td>-1.21</td>
+<td>0.83</td>
+<td>-1.12</td>
+<td>1.40</td>
+<td>0.57</td>
+</tr>
+<tr>
+<th>1990-02</th>
+<td>1.11</td>
+<td>1.15</td>
+<td>0.65</td>
+<td>-0.04</td>
+<td>-0.61</td>
+<td>0.57</td>
+</tr>
+<tr>
+<th>1990-03</th>
+<td>1.83</td>
+<td>1.59</td>
+<td>-2.90</td>
+<td>1.99</td>
+<td>-0.94</td>
+<td>0.64</td>
+</tr>
+<tr>
+<th>1990-04</th>
+<td>-3.36</td>
+<td>-0.35</td>
+<td>-2.57</td>
+<td>1.78</td>
+<td>-1.00</td>
+<td>0.69</td>
+</tr>
+<tr>
+<th>1990-05</th>
+<td>8.44</td>
+<td>-2.41</td>
+<td>-3.89</td>
+<td>1.68</td>
+<td>-1.63</td>
+<td>0.68</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<ul>
+<li>Values are in <strong>percent</strong> (so <code>1.5</code> means a 1.5% return).</li>
+</ul>
+
+<h4 id="writing-to-csv">Writing to CSV</h4><ul>
+<li>Use <code>to_csv()</code> to save a DataFrame as a CSV file.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">ff5</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="s1">'ff5_factors.csv'</span><span class="p">)</span></code></pre></div></div>
+<h4 id="reading-from-csv">Reading from CSV</h4><ul>
+<li><p>Use <code>read_csv()</code> to read a CSV file back.</p>
+</li>
+<li><p>The first column is treated as a regular column by default. Use <code>index_col=0</code> to make it the index.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">ff5</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s1">'ff5_factors.csv'</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">ff5</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+<th>SMB</th>
+<th>HML</th>
+<th>RMW</th>
+<th>CMA</th>
+<th>RF</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990-01</th>
+<td>-7.80</td>
+<td>-1.21</td>
+<td>0.83</td>
+<td>-1.12</td>
+<td>1.40</td>
+<td>0.57</td>
+</tr>
+<tr>
+<th>1990-02</th>
+<td>1.11</td>
+<td>1.15</td>
+<td>0.65</td>
+<td>-0.04</td>
+<td>-0.61</td>
+<td>0.57</td>
+</tr>
+<tr>
+<th>1990-03</th>
+<td>1.83</td>
+<td>1.59</td>
+<td>-2.90</td>
+<td>1.99</td>
+<td>-0.94</td>
+<td>0.64</td>
+</tr>
+<tr>
+<th>1990-04</th>
+<td>-3.36</td>
+<td>-0.35</td>
+<td>-2.57</td>
+<td>1.78</td>
+<td>-1.00</td>
+<td>0.69</td>
+</tr>
+<tr>
+<th>1990-05</th>
+<td>8.44</td>
+<td>-2.41</td>
+<td>-3.89</td>
+<td>1.68</td>
+<td>-1.63</td>
+<td>0.68</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h4 id="other-file-formats">Other File Formats</h4><ul>
+<li><p><code>pd.read_excel('file.xlsx')</code> reads Excel files (requires <code>openpyxl</code>).</p>
+</li>
+<li><p><code>pd.read_json('file.json')</code> reads JSON files (recall Ch 10).</p>
+</li>
+<li><p><code>pd.read_parquet('file.parquet')</code> reads efficient Parquet files.</p>
+</li>
+<li><p>Each has a matching <code>to_...()</code> writer method.</p>
+</li>
+</ul>
+
+<h3 id="inspecting-a-dataframe">Inspecting a DataFrame</h3><ul>
+<li>Always start by looking at your data with a few quick diagnostic methods.</li>
+</ul>
+
+<h4 id="head-and-tail"><code>head()</code> and <code>tail()</code></h4>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># First 5 rows by default</span>
+<span class="n">ff5</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+<th>SMB</th>
+<th>HML</th>
+<th>RMW</th>
+<th>CMA</th>
+<th>RF</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990-01</th>
+<td>-7.80</td>
+<td>-1.21</td>
+<td>0.83</td>
+<td>-1.12</td>
+<td>1.40</td>
+<td>0.57</td>
+</tr>
+<tr>
+<th>1990-02</th>
+<td>1.11</td>
+<td>1.15</td>
+<td>0.65</td>
+<td>-0.04</td>
+<td>-0.61</td>
+<td>0.57</td>
+</tr>
+<tr>
+<th>1990-03</th>
+<td>1.83</td>
+<td>1.59</td>
+<td>-2.90</td>
+<td>1.99</td>
+<td>-0.94</td>
+<td>0.64</td>
+</tr>
+<tr>
+<th>1990-04</th>
+<td>-3.36</td>
+<td>-0.35</td>
+<td>-2.57</td>
+<td>1.78</td>
+<td>-1.00</td>
+<td>0.69</td>
+</tr>
+<tr>
+<th>1990-05</th>
+<td>8.44</td>
+<td>-2.41</td>
+<td>-3.89</td>
+<td>1.68</td>
+<td>-1.63</td>
+<td>0.68</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Last 3 rows</span>
+<span class="n">ff5</span><span class="o">.</span><span class="n">tail</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+<th>SMB</th>
+<th>HML</th>
+<th>RMW</th>
+<th>CMA</th>
+<th>RF</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>2023-10</th>
+<td>-3.15</td>
+<td>-4.03</td>
+<td>0.22</td>
+<td>2.42</td>
+<td>-0.72</td>
+<td>0.47</td>
+</tr>
+<tr>
+<th>2023-11</th>
+<td>8.88</td>
+<td>-0.18</td>
+<td>1.66</td>
+<td>-3.72</td>
+<td>-1.22</td>
+<td>0.44</td>
+</tr>
+<tr>
+<th>2023-12</th>
+<td>4.85</td>
+<td>7.25</td>
+<td>4.87</td>
+<td>-2.96</td>
+<td>1.19</td>
+<td>0.43</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h4 id="shape-columns-index-dtypes"><code>shape</code>, <code>columns</code>, <code>index</code>, <code>dtypes</code></h4>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">ff5</span><span class="o">.</span><span class="n">shape</span></code></pre></div><div class="nb-out nb-text">
+<pre>(408, 6)</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">ff5</span><span class="o">.</span><span class="n">columns</span></code></pre></div><div class="nb-out nb-text">
+<pre>Index(['Mkt-RF', 'SMB', 'HML', 'RMW', 'CMA', 'RF'], dtype='object')</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">ff5</span><span class="o">.</span><span class="n">dtypes</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>Mkt-RF</th>
+<td>float64</td>
+</tr>
+<tr>
+<th>SMB</th>
+<td>float64</td>
+</tr>
+<tr>
+<th>HML</th>
+<td>float64</td>
+</tr>
+<tr>
+<th>RMW</th>
+<td>float64</td>
+</tr>
+<tr>
+<th>CMA</th>
+<td>float64</td>
+</tr>
+<tr>
+<th>RF</th>
+<td>float64</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> object</label></div></div>
+<h4 id="info"><code>info()</code></h4><ul>
+<li>A compact summary: row count, column count, dtypes, and non-null counts.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">ff5</span><span class="o">.</span><span class="n">info</span><span class="p">()</span></code></pre></div><div class="nb-out nb-stream">
+<pre>&lt;class 'pandas.core.frame.DataFrame'&gt;
+Index: 408 entries, 1990-01 to 2023-12
+Data columns (total 6 columns):
+ #   Column  Non-Null Count  Dtype  
+---  ------  --------------  -----  
+ 0   Mkt-RF  408 non-null    float64
+ 1   SMB     408 non-null    float64
+ 2   HML     408 non-null    float64
+ 3   RMW     408 non-null    float64
+ 4   CMA     408 non-null    float64
+ 5   RF      408 non-null    float64
+dtypes: float64(6)
+memory usage: 22.3+ KB
+</pre>
+</div></div>
+<h4 id="describe"><code>describe()</code></h4><ul>
+<li>Summary statistics for each numeric column: count, mean, std, min, quartiles, max.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">ff5</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+<th>SMB</th>
+<th>HML</th>
+<th>RMW</th>
+<th>CMA</th>
+<th>RF</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>count</th>
+<td>408.000000</td>
+<td>408.000000</td>
+<td>408.000000</td>
+<td>408.000000</td>
+<td>408.000000</td>
+<td>408.000000</td>
+</tr>
+<tr>
+<th>mean</th>
+<td>0.707279</td>
+<td>0.117034</td>
+<td>0.151569</td>
+<td>0.375270</td>
+<td>0.197917</td>
+<td>0.213725</td>
+</tr>
+<tr>
+<th>std</th>
+<td>4.448067</td>
+<td>3.046912</td>
+<td>3.248474</td>
+<td>2.626859</td>
+<td>2.176679</td>
+<td>0.188014</td>
+</tr>
+<tr>
+<th>min</th>
+<td>-17.200000</td>
+<td>-15.530000</td>
+<td>-13.830000</td>
+<td>-18.930000</td>
+<td>-7.060000</td>
+<td>0.000000</td>
+</tr>
+<tr>
+<th>25%</th>
+<td>-1.960000</td>
+<td>-1.820000</td>
+<td>-1.670000</td>
+<td>-0.915000</td>
+<td>-1.070000</td>
+<td>0.010000</td>
+</tr>
+<tr>
+<th>50%</th>
+<td>1.185000</td>
+<td>0.045000</td>
+<td>-0.070000</td>
+<td>0.345000</td>
+<td>-0.020000</td>
+<td>0.180000</td>
+</tr>
+<tr>
+<th>75%</th>
+<td>3.430000</td>
+<td>1.912500</td>
+<td>1.670000</td>
+<td>1.487500</td>
+<td>1.410000</td>
+<td>0.390000</td>
+</tr>
+<tr>
+<th>max</th>
+<td>13.580000</td>
+<td>18.540000</td>
+<td>12.860000</td>
+<td>13.040000</td>
+<td>9.000000</td>
+<td>0.690000</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h4 id="value-counts"><code>value_counts()</code></h4><ul>
+<li>For a single column (Series), counts occurrences of each unique value.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Add a 'decade' label column to demonstrate</span>
+<span class="n">ff5_demo</span> <span class="o">=</span> <span class="n">ff5</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">ff5_demo</span><span class="p">[</span><span class="s1">'decade'</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">ff5_demo</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span> <span class="o">+</span> <span class="s1">'0s'</span><span class="p">)</span>
+<span class="n">ff5_demo</span><span class="p">[</span><span class="s1">'decade'</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>count</th>
+</tr>
+<tr>
+<th>decade</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990s</th>
+<td>120</td>
+</tr>
+<tr>
+<th>2000s</th>
+<td>120</td>
+</tr>
+<tr>
+<th>2010s</th>
+<td>120</td>
+</tr>
+<tr>
+<th>2020s</th>
+<td>48</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> int64</label></div></div>
+<h3 id="selecting-data">Selecting Data</h3>
+
+<h4 id="selecting-columns">Selecting Columns</h4><ul>
+<li>Use bracket notation with the column name to get a single column (a <code>Series</code>).</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">ff5</span><span class="p">[</span><span class="s1">'Mkt-RF'</span><span class="p">]</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990-01</th>
+<td>-7.80</td>
+</tr>
+<tr>
+<th>1990-02</th>
+<td>1.11</td>
+</tr>
+<tr>
+<th>1990-03</th>
+<td>1.83</td>
+</tr>
+<tr>
+<th>1990-04</th>
+<td>-3.36</td>
+</tr>
+<tr>
+<th>1990-05</th>
+<td>8.44</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> float64</label></div></div>
+<ul>
+<li>Pass a <strong>list</strong> of column names to get a DataFrame with multiple columns.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">ff5</span><span class="p">[[</span><span class="s1">'Mkt-RF'</span><span class="p">,</span> <span class="s1">'SMB'</span><span class="p">,</span> <span class="s1">'HML'</span><span class="p">]]</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+<th>SMB</th>
+<th>HML</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990-01</th>
+<td>-7.80</td>
+<td>-1.21</td>
+<td>0.83</td>
+</tr>
+<tr>
+<th>1990-02</th>
+<td>1.11</td>
+<td>1.15</td>
+<td>0.65</td>
+</tr>
+<tr>
+<th>1990-03</th>
+<td>1.83</td>
+<td>1.59</td>
+<td>-2.90</td>
+</tr>
+<tr>
+<th>1990-04</th>
+<td>-3.36</td>
+<td>-0.35</td>
+<td>-2.57</td>
+</tr>
+<tr>
+<th>1990-05</th>
+<td>8.44</td>
+<td>-2.41</td>
+<td>-3.89</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<p><strong>Note:</strong> You can also use attribute access (<code>ff5.SMB</code>), but it only works for valid Python identifiers, so <code>df.Mkt-RF</code> would fail because of the hyphen.</p>
+
+<h4 id="selecting-rows-with-loc-and-iloc">Selecting Rows with <code>.loc</code> and <code>.iloc</code></h4><ul>
+<li><code>.loc[label]</code>: select rows by <strong>label</strong> (index value).</li>
+<li><code>.iloc[position]</code>: select rows by <strong>integer position</strong>.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Select a specific row by its index label</span>
+<span class="n">ff5</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s1">'1990-01'</span><span class="p">]</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>1990-01</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>Mkt-RF</th>
+<td>-7.80</td>
+</tr>
+<tr>
+<th>SMB</th>
+<td>-1.21</td>
+</tr>
+<tr>
+<th>HML</th>
+<td>0.83</td>
+</tr>
+<tr>
+<th>RMW</th>
+<td>-1.12</td>
+</tr>
+<tr>
+<th>CMA</th>
+<td>1.40</td>
+</tr>
+<tr>
+<th>RF</th>
+<td>0.57</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> float64</label></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Select by position: the first row</span>
+<span class="n">ff5</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>1990-01</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>Mkt-RF</th>
+<td>-7.80</td>
+</tr>
+<tr>
+<th>SMB</th>
+<td>-1.21</td>
+</tr>
+<tr>
+<th>HML</th>
+<td>0.83</td>
+</tr>
+<tr>
+<th>RMW</th>
+<td>-1.12</td>
+</tr>
+<tr>
+<th>CMA</th>
+<td>1.40</td>
+</tr>
+<tr>
+<th>RF</th>
+<td>0.57</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> float64</label></div></div>
+<h4 id="slicing-with-loc-and-iloc">Slicing with <code>.loc</code> and <code>.iloc</code></h4>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># .loc slicing is INCLUSIVE of the endpoint</span>
+<span class="n">ff5</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s1">'2020-01'</span><span class="p">:</span><span class="s1">'2020-06'</span><span class="p">]</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+<th>SMB</th>
+<th>HML</th>
+<th>RMW</th>
+<th>CMA</th>
+<th>RF</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>2020-01</th>
+<td>-0.09</td>
+<td>-4.37</td>
+<td>-6.22</td>
+<td>-1.19</td>
+<td>-2.19</td>
+<td>0.13</td>
+</tr>
+<tr>
+<th>2020-02</th>
+<td>-8.15</td>
+<td>0.08</td>
+<td>-3.82</td>
+<td>-1.43</td>
+<td>-2.53</td>
+<td>0.12</td>
+</tr>
+<tr>
+<th>2020-03</th>
+<td>-13.35</td>
+<td>-8.18</td>
+<td>-13.83</td>
+<td>-1.61</td>
+<td>1.19</td>
+<td>0.12</td>
+</tr>
+<tr>
+<th>2020-04</th>
+<td>13.58</td>
+<td>2.57</td>
+<td>-1.34</td>
+<td>2.76</td>
+<td>-1.02</td>
+<td>0.00</td>
+</tr>
+<tr>
+<th>2020-05</th>
+<td>5.59</td>
+<td>1.92</td>
+<td>-5.00</td>
+<td>0.96</td>
+<td>-3.16</td>
+<td>0.01</td>
+</tr>
+<tr>
+<th>2020-06</th>
+<td>2.44</td>
+<td>1.95</td>
+<td>-2.17</td>
+<td>0.14</td>
+<td>0.55</td>
+<td>0.01</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># .iloc slicing is EXCLUSIVE of the endpoint (like Python lists)</span>
+<span class="n">ff5</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">5</span><span class="p">]</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+<th>SMB</th>
+<th>HML</th>
+<th>RMW</th>
+<th>CMA</th>
+<th>RF</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990-01</th>
+<td>-7.80</td>
+<td>-1.21</td>
+<td>0.83</td>
+<td>-1.12</td>
+<td>1.40</td>
+<td>0.57</td>
+</tr>
+<tr>
+<th>1990-02</th>
+<td>1.11</td>
+<td>1.15</td>
+<td>0.65</td>
+<td>-0.04</td>
+<td>-0.61</td>
+<td>0.57</td>
+</tr>
+<tr>
+<th>1990-03</th>
+<td>1.83</td>
+<td>1.59</td>
+<td>-2.90</td>
+<td>1.99</td>
+<td>-0.94</td>
+<td>0.64</td>
+</tr>
+<tr>
+<th>1990-04</th>
+<td>-3.36</td>
+<td>-0.35</td>
+<td>-2.57</td>
+<td>1.78</td>
+<td>-1.00</td>
+<td>0.69</td>
+</tr>
+<tr>
+<th>1990-05</th>
+<td>8.44</td>
+<td>-2.41</td>
+<td>-3.89</td>
+<td>1.68</td>
+<td>-1.63</td>
+<td>0.68</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h4 id="selecting-rows-and-columns-together">Selecting Rows and Columns Together</h4>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># All rows in 2020, just the market and SMB factors</span>
+<span class="n">ff5</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s1">'2020-01'</span><span class="p">:</span><span class="s1">'2020-12'</span><span class="p">,</span> <span class="p">[</span><span class="s1">'Mkt-RF'</span><span class="p">,</span> <span class="s1">'SMB'</span><span class="p">]]</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+<th>SMB</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>2020-01</th>
+<td>-0.09</td>
+<td>-4.37</td>
+</tr>
+<tr>
+<th>2020-02</th>
+<td>-8.15</td>
+<td>0.08</td>
+</tr>
+<tr>
+<th>2020-03</th>
+<td>-13.35</td>
+<td>-8.18</td>
+</tr>
+<tr>
+<th>2020-04</th>
+<td>13.58</td>
+<td>2.57</td>
+</tr>
+<tr>
+<th>2020-05</th>
+<td>5.59</td>
+<td>1.92</td>
+</tr>
+<tr>
+<th>2020-06</th>
+<td>2.44</td>
+<td>1.95</td>
+</tr>
+<tr>
+<th>2020-07</th>
+<td>5.83</td>
+<td>-3.19</td>
+</tr>
+<tr>
+<th>2020-08</th>
+<td>7.62</td>
+<td>-0.89</td>
+</tr>
+<tr>
+<th>2020-09</th>
+<td>-3.64</td>
+<td>-0.01</td>
+</tr>
+<tr>
+<th>2020-10</th>
+<td>-2.08</td>
+<td>4.67</td>
+</tr>
+<tr>
+<th>2020-11</th>
+<td>12.44</td>
+<td>7.12</td>
+</tr>
+<tr>
+<th>2020-12</th>
+<td>4.63</td>
+<td>4.93</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># First 3 rows, first 2 columns</span>
+<span class="n">ff5</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:</span><span class="mi">3</span><span class="p">,</span> <span class="p">:</span><span class="mi">2</span><span class="p">]</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+<th>SMB</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990-01</th>
+<td>-7.80</td>
+<td>-1.21</td>
+</tr>
+<tr>
+<th>1990-02</th>
+<td>1.11</td>
+<td>1.15</td>
+</tr>
+<tr>
+<th>1990-03</th>
+<td>1.83</td>
+<td>1.59</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h4 id="boolean-filtering">Boolean Filtering</h4><ul>
+<li>A Boolean Series (one True/False per row) can be used to select rows.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Months where the market beat the risk-free rate by more than 5%</span>
+<span class="n">mask</span> <span class="o">=</span> <span class="n">ff5</span><span class="p">[</span><span class="s1">'Mkt-RF'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">5</span>
+<span class="n">mask</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990-01</th>
+<td>False</td>
+</tr>
+<tr>
+<th>1990-02</th>
+<td>False</td>
+</tr>
+<tr>
+<th>1990-03</th>
+<td>False</td>
+</tr>
+<tr>
+<th>1990-04</th>
+<td>False</td>
+</tr>
+<tr>
+<th>1990-05</th>
+<td>True</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> bool</label></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">ff5</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+<th>SMB</th>
+<th>HML</th>
+<th>RMW</th>
+<th>CMA</th>
+<th>RF</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990-05</th>
+<td>8.44</td>
+<td>-2.41</td>
+<td>-3.89</td>
+<td>1.68</td>
+<td>-1.63</td>
+<td>0.68</td>
+</tr>
+<tr>
+<th>1990-11</th>
+<td>6.35</td>
+<td>0.02</td>
+<td>-2.97</td>
+<td>0.58</td>
+<td>-4.71</td>
+<td>0.57</td>
+</tr>
+<tr>
+<th>1991-02</th>
+<td>7.21</td>
+<td>4.02</td>
+<td>-0.62</td>
+<td>-0.06</td>
+<td>-0.34</td>
+<td>0.48</td>
+</tr>
+<tr>
+<th>1991-12</th>
+<td>10.86</td>
+<td>-2.41</td>
+<td>-4.23</td>
+<td>3.67</td>
+<td>-3.14</td>
+<td>0.38</td>
+</tr>
+<tr>
+<th>1996-09</th>
+<td>5.01</td>
+<td>-1.41</td>
+<td>-2.75</td>
+<td>1.31</td>
+<td>-2.12</td>
+<td>0.44</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<ul>
+<li>Combine conditions with <code>&amp;</code> (and), <code>|</code> (or), <code>~</code> (not). <strong>Wrap each condition in parentheses.</strong></li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Up market AND value premium positive</span>
+<span class="n">ff5</span><span class="p">[(</span><span class="n">ff5</span><span class="p">[</span><span class="s1">'Mkt-RF'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">ff5</span><span class="p">[</span><span class="s1">'HML'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)]</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+<th>SMB</th>
+<th>HML</th>
+<th>RMW</th>
+<th>CMA</th>
+<th>RF</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990-02</th>
+<td>1.11</td>
+<td>1.15</td>
+<td>0.65</td>
+<td>-0.04</td>
+<td>-0.61</td>
+<td>0.57</td>
+</tr>
+<tr>
+<th>1992-02</th>
+<td>1.09</td>
+<td>1.30</td>
+<td>6.51</td>
+<td>0.07</td>
+<td>2.25</td>
+<td>0.28</td>
+</tr>
+<tr>
+<th>1992-04</th>
+<td>1.09</td>
+<td>-5.75</td>
+<td>4.36</td>
+<td>1.65</td>
+<td>2.40</td>
+<td>0.32</td>
+</tr>
+<tr>
+<th>1992-05</th>
+<td>0.30</td>
+<td>0.20</td>
+<td>1.11</td>
+<td>-0.91</td>
+<td>0.49</td>
+<td>0.28</td>
+</tr>
+<tr>
+<th>1992-12</th>
+<td>1.53</td>
+<td>1.65</td>
+<td>2.64</td>
+<td>-0.52</td>
+<td>0.83</td>
+<td>0.28</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<p><strong>Note:</strong> Forgetting the parentheses will raise an error because Python's <code>and</code>/<code>or</code> don't work element-wise on Series.</p>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># This will fail</span>
+<span class="n">ff5</span><span class="p">[</span><span class="n">ff5</span><span class="p">[</span><span class="s1">'Mkt-RF'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">ff5</span><span class="p">[</span><span class="s1">'HML'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span></code></pre></div><div class="nb-out nb-error">
+<pre>
+---------------------------------------------------------------------------
+ValueError                                Traceback (most recent call last)
+/tmp/ipykernel_1707/2254064072.py in &lt;cell line: 0&gt;()
+      1 # This will fail
+----&gt; 2 ff5[ff5['Mkt-RF'] &gt; 0 and ff5['HML'] &gt; 0]
+
+/usr/local/lib/python3.13/dist-packages/pandas/core/generic.py in __nonzero__(self)
+   1575     @final
+   1576     def __nonzero__(self) -&gt; NoReturn:
+-&gt; 1577         raise ValueError(
+   1578             f"The truth value of a {type(self).__name__} is ambiguous. "
+   1579             "Use a.empty, a.bool(), a.item(), a.any() or a.all()."
+
+ValueError: The truth value of a Series is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().</pre>
+</div></div>
+<h4 id="isin"><code>isin()</code></h4><ul>
+<li>Check whether each value is in a given list.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Suppose we have a column with categories</span>
+<span class="n">ff5_demo</span> <span class="o">=</span> <span class="n">ff5</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">ff5_demo</span><span class="p">[</span><span class="s1">'decade'</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">ff5_demo</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span> <span class="o">+</span> <span class="s1">'0s'</span><span class="p">)</span>
+
+<span class="n">ff5_demo</span><span class="p">[</span><span class="n">ff5_demo</span><span class="p">[</span><span class="s1">'decade'</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">([</span><span class="s1">'1990s'</span><span class="p">,</span> <span class="s1">'2000s'</span><span class="p">])]</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+<th>SMB</th>
+<th>HML</th>
+<th>RMW</th>
+<th>CMA</th>
+<th>RF</th>
+<th>decade</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990-01</th>
+<td>-7.80</td>
+<td>-1.21</td>
+<td>0.83</td>
+<td>-1.12</td>
+<td>1.40</td>
+<td>0.57</td>
+<td>1990s</td>
+</tr>
+<tr>
+<th>1990-02</th>
+<td>1.11</td>
+<td>1.15</td>
+<td>0.65</td>
+<td>-0.04</td>
+<td>-0.61</td>
+<td>0.57</td>
+<td>1990s</td>
+</tr>
+<tr>
+<th>1990-03</th>
+<td>1.83</td>
+<td>1.59</td>
+<td>-2.90</td>
+<td>1.99</td>
+<td>-0.94</td>
+<td>0.64</td>
+<td>1990s</td>
+</tr>
+<tr>
+<th>1990-04</th>
+<td>-3.36</td>
+<td>-0.35</td>
+<td>-2.57</td>
+<td>1.78</td>
+<td>-1.00</td>
+<td>0.69</td>
+<td>1990s</td>
+</tr>
+<tr>
+<th>1990-05</th>
+<td>8.44</td>
+<td>-2.41</td>
+<td>-3.89</td>
+<td>1.68</td>
+<td>-1.63</td>
+<td>0.68</td>
+<td>1990s</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h4 id="between"><code>between()</code></h4><ul>
+<li>Select rows where a column's value falls in a range (inclusive on both ends).</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Months with moderate market returns (1% to 3%)</span>
+<span class="n">ff5</span><span class="p">[</span><span class="n">ff5</span><span class="p">[</span><span class="s1">'Mkt-RF'</span><span class="p">]</span><span class="o">.</span><span class="n">between</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)]</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+<th>SMB</th>
+<th>HML</th>
+<th>RMW</th>
+<th>CMA</th>
+<th>RF</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990-02</th>
+<td>1.11</td>
+<td>1.15</td>
+<td>0.65</td>
+<td>-0.04</td>
+<td>-0.61</td>
+<td>0.57</td>
+</tr>
+<tr>
+<th>1990-03</th>
+<td>1.83</td>
+<td>1.59</td>
+<td>-2.90</td>
+<td>1.99</td>
+<td>-0.94</td>
+<td>0.64</td>
+</tr>
+<tr>
+<th>1990-12</th>
+<td>2.48</td>
+<td>0.60</td>
+<td>-1.57</td>
+<td>2.66</td>
+<td>-1.98</td>
+<td>0.60</td>
+</tr>
+<tr>
+<th>1991-03</th>
+<td>2.67</td>
+<td>3.81</td>
+<td>-1.30</td>
+<td>-0.52</td>
+<td>-0.99</td>
+<td>0.44</td>
+</tr>
+<tr>
+<th>1991-08</th>
+<td>2.32</td>
+<td>1.42</td>
+<td>-0.79</td>
+<td>0.85</td>
+<td>-0.32</td>
+<td>0.46</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h4 id="query"><code>query()</code></h4><ul>
+<li>A string-based filter that can be easier to read for complex conditions.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">ff5</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">'`Mkt-RF` &gt; 5 and SMB &gt; 0'</span><span class="p">)</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div></div>
+<ul>
+<li>Note the backticks around <code>Mkt-RF</code> because of the hyphen in the column name.</li>
+</ul>
+
+<h3 id="column-operations">Column Operations</h3>
+
+<h4 id="adding-a-new-column">Adding a New Column</h4><ul>
+<li>Assigning to <code>df['new_col']</code> creates a new column.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Compute the total of the five factors for each month</span>
+<span class="n">ff5_demo</span> <span class="o">=</span> <span class="n">ff5</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">ff5_demo</span><span class="p">[</span><span class="s1">'Total'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ff5_demo</span><span class="p">[[</span><span class="s1">'Mkt-RF'</span><span class="p">,</span> <span class="s1">'SMB'</span><span class="p">,</span> <span class="s1">'HML'</span><span class="p">,</span> <span class="s1">'RMW'</span><span class="p">,</span> <span class="s1">'CMA'</span><span class="p">]]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ff5_demo</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+<th>SMB</th>
+<th>HML</th>
+<th>RMW</th>
+<th>CMA</th>
+<th>RF</th>
+<th>Total</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990-01</th>
+<td>-7.80</td>
+<td>-1.21</td>
+<td>0.83</td>
+<td>-1.12</td>
+<td>1.40</td>
+<td>0.57</td>
+<td>-7.90</td>
+</tr>
+<tr>
+<th>1990-02</th>
+<td>1.11</td>
+<td>1.15</td>
+<td>0.65</td>
+<td>-0.04</td>
+<td>-0.61</td>
+<td>0.57</td>
+<td>2.26</td>
+</tr>
+<tr>
+<th>1990-03</th>
+<td>1.83</td>
+<td>1.59</td>
+<td>-2.90</td>
+<td>1.99</td>
+<td>-0.94</td>
+<td>0.64</td>
+<td>1.57</td>
+</tr>
+<tr>
+<th>1990-04</th>
+<td>-3.36</td>
+<td>-0.35</td>
+<td>-2.57</td>
+<td>1.78</td>
+<td>-1.00</td>
+<td>0.69</td>
+<td>-5.50</td>
+</tr>
+<tr>
+<th>1990-05</th>
+<td>8.44</td>
+<td>-2.41</td>
+<td>-3.89</td>
+<td>1.68</td>
+<td>-1.63</td>
+<td>0.68</td>
+<td>2.19</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h4 id="assign-for-chaining"><code>assign()</code> for Chaining</h4><ul>
+<li><p><code>assign()</code> returns a <strong>new</strong> DataFrame with the added column, leaving the original untouched.</p>
+</li>
+<li><p>Useful when you want to chain operations.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">ff5</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="n">Mkt_squared</span><span class="o">=</span><span class="k">lambda</span> <span class="n">d</span><span class="p">:</span> <span class="n">d</span><span class="p">[</span><span class="s1">'Mkt-RF'</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+<th>SMB</th>
+<th>HML</th>
+<th>RMW</th>
+<th>CMA</th>
+<th>RF</th>
+<th>Mkt_squared</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990-01</th>
+<td>-7.80</td>
+<td>-1.21</td>
+<td>0.83</td>
+<td>-1.12</td>
+<td>1.40</td>
+<td>0.57</td>
+<td>60.8400</td>
+</tr>
+<tr>
+<th>1990-02</th>
+<td>1.11</td>
+<td>1.15</td>
+<td>0.65</td>
+<td>-0.04</td>
+<td>-0.61</td>
+<td>0.57</td>
+<td>1.2321</td>
+</tr>
+<tr>
+<th>1990-03</th>
+<td>1.83</td>
+<td>1.59</td>
+<td>-2.90</td>
+<td>1.99</td>
+<td>-0.94</td>
+<td>0.64</td>
+<td>3.3489</td>
+</tr>
+<tr>
+<th>1990-04</th>
+<td>-3.36</td>
+<td>-0.35</td>
+<td>-2.57</td>
+<td>1.78</td>
+<td>-1.00</td>
+<td>0.69</td>
+<td>11.2896</td>
+</tr>
+<tr>
+<th>1990-05</th>
+<td>8.44</td>
+<td>-2.41</td>
+<td>-3.89</td>
+<td>1.68</td>
+<td>-1.63</td>
+<td>0.68</td>
+<td>71.2336</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h4 id="dropping-columns">Dropping Columns</h4><ul>
+<li>Use <code>drop()</code> with <code>columns=...</code> to remove one or more columns.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">ff5_demo</span> <span class="o">=</span> <span class="n">ff5</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">ff5_demo</span> <span class="o">=</span> <span class="n">ff5_demo</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">'RF'</span><span class="p">])</span>
+<span class="n">ff5_demo</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+<th>SMB</th>
+<th>HML</th>
+<th>RMW</th>
+<th>CMA</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990-01</th>
+<td>-7.80</td>
+<td>-1.21</td>
+<td>0.83</td>
+<td>-1.12</td>
+<td>1.40</td>
+</tr>
+<tr>
+<th>1990-02</th>
+<td>1.11</td>
+<td>1.15</td>
+<td>0.65</td>
+<td>-0.04</td>
+<td>-0.61</td>
+</tr>
+<tr>
+<th>1990-03</th>
+<td>1.83</td>
+<td>1.59</td>
+<td>-2.90</td>
+<td>1.99</td>
+<td>-0.94</td>
+</tr>
+<tr>
+<th>1990-04</th>
+<td>-3.36</td>
+<td>-0.35</td>
+<td>-2.57</td>
+<td>1.78</td>
+<td>-1.00</td>
+</tr>
+<tr>
+<th>1990-05</th>
+<td>8.44</td>
+<td>-2.41</td>
+<td>-3.89</td>
+<td>1.68</td>
+<td>-1.63</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<ul>
+<li>You can also drop rows: <code>df.drop(index=['1990-01', '1990-02'])</code>.</li>
+</ul>
+
+<h4 id="renaming-columns">Renaming Columns</h4><ul>
+<li>Use <code>rename(columns={...})</code> with a dictionary mapping old to new names.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">ff5</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">'Mkt-RF'</span><span class="p">:</span> <span class="s1">'mkt_rf'</span><span class="p">,</span> <span class="s1">'RF'</span><span class="p">:</span> <span class="s1">'rf'</span><span class="p">})</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>mkt_rf</th>
+<th>SMB</th>
+<th>HML</th>
+<th>RMW</th>
+<th>CMA</th>
+<th>rf</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990-01</th>
+<td>-7.80</td>
+<td>-1.21</td>
+<td>0.83</td>
+<td>-1.12</td>
+<td>1.40</td>
+<td>0.57</td>
+</tr>
+<tr>
+<th>1990-02</th>
+<td>1.11</td>
+<td>1.15</td>
+<td>0.65</td>
+<td>-0.04</td>
+<td>-0.61</td>
+<td>0.57</td>
+</tr>
+<tr>
+<th>1990-03</th>
+<td>1.83</td>
+<td>1.59</td>
+<td>-2.90</td>
+<td>1.99</td>
+<td>-0.94</td>
+<td>0.64</td>
+</tr>
+<tr>
+<th>1990-04</th>
+<td>-3.36</td>
+<td>-0.35</td>
+<td>-2.57</td>
+<td>1.78</td>
+<td>-1.00</td>
+<td>0.69</td>
+</tr>
+<tr>
+<th>1990-05</th>
+<td>8.44</td>
+<td>-2.41</td>
+<td>-3.89</td>
+<td>1.68</td>
+<td>-1.63</td>
+<td>0.68</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h3 id="missing-data">Missing Data</h3><ul>
+<li><p>Real datasets almost always have missing values.</p>
+</li>
+<li><p>Pandas represents missing data as <code>NaN</code> (Not a Number), borrowed from NumPy.</p>
+</li>
+</ul>
+
+<h4 id="creating-a-toy-dataset-with-missing-values">Creating a Toy Dataset with Missing Values</h4>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">toy</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+    <span class="s1">'firm'</span><span class="p">:</span>     <span class="p">[</span><span class="s1">'A'</span><span class="p">,</span> <span class="s1">'B'</span><span class="p">,</span> <span class="s1">'C'</span><span class="p">,</span> <span class="s1">'D'</span><span class="p">],</span>
+    <span class="s1">'revenue'</span><span class="p">:</span>  <span class="p">[</span><span class="mi">100</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="mi">150</span><span class="p">,</span> <span class="mi">200</span><span class="p">],</span>
+    <span class="s1">'profit'</span><span class="p">:</span>   <span class="p">[</span><span class="mi">20</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="mi">40</span><span class="p">],</span>
+    <span class="s1">'industry'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'Tech'</span><span class="p">,</span> <span class="s1">'Tech'</span><span class="p">,</span> <span class="s1">'Auto'</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span>
+<span class="p">})</span>
+<span class="n">toy</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>firm</th>
+<th>revenue</th>
+<th>profit</th>
+<th>industry</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>A</td>
+<td>100.0</td>
+<td>20.0</td>
+<td>Tech</td>
+</tr>
+<tr>
+<th>1</th>
+<td>B</td>
+<td>NaN</td>
+<td>15.0</td>
+<td>Tech</td>
+</tr>
+<tr>
+<th>2</th>
+<td>C</td>
+<td>150.0</td>
+<td>NaN</td>
+<td>Auto</td>
+</tr>
+<tr>
+<th>3</th>
+<td>D</td>
+<td>200.0</td>
+<td>40.0</td>
+<td>None</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h4 id="detecting-missing-values">Detecting Missing Values</h4><ul>
+<li><code>isna()</code> returns a Boolean DataFrame: <code>True</code> where the value is missing.</li>
+<li><code>notna()</code> is the opposite.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">toy</span><span class="o">.</span><span class="n">isna</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>firm</th>
+<th>revenue</th>
+<th>profit</th>
+<th>industry</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+</tr>
+<tr>
+<th>1</th>
+<td>False</td>
+<td>True</td>
+<td>False</td>
+<td>False</td>
+</tr>
+<tr>
+<th>2</th>
+<td>False</td>
+<td>False</td>
+<td>True</td>
+<td>False</td>
+</tr>
+<tr>
+<th>3</th>
+<td>False</td>
+<td>False</td>
+<td>False</td>
+<td>True</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Count missing values per column</span>
+<span class="n">toy</span><span class="o">.</span><span class="n">isna</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>firm</th>
+<td>0</td>
+</tr>
+<tr>
+<th>revenue</th>
+<td>1</td>
+</tr>
+<tr>
+<th>profit</th>
+<td>1</td>
+</tr>
+<tr>
+<th>industry</th>
+<td>1</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> int64</label></div></div>
+<h4 id="dropping-missing-values">Dropping Missing Values</h4><ul>
+<li><code>dropna()</code> removes rows that contain <em>any</em> NaN by default.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">toy</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>firm</th>
+<th>revenue</th>
+<th>profit</th>
+<th>industry</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>A</td>
+<td>100.0</td>
+<td>20.0</td>
+<td>Tech</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Only drop rows where ALL values are missing</span>
+<span class="n">toy</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">how</span><span class="o">=</span><span class="s1">'all'</span><span class="p">)</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>firm</th>
+<th>revenue</th>
+<th>profit</th>
+<th>industry</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>A</td>
+<td>100.0</td>
+<td>20.0</td>
+<td>Tech</td>
+</tr>
+<tr>
+<th>1</th>
+<td>B</td>
+<td>NaN</td>
+<td>15.0</td>
+<td>Tech</td>
+</tr>
+<tr>
+<th>2</th>
+<td>C</td>
+<td>150.0</td>
+<td>NaN</td>
+<td>Auto</td>
+</tr>
+<tr>
+<th>3</th>
+<td>D</td>
+<td>200.0</td>
+<td>40.0</td>
+<td>None</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Drop rows where a specific column is missing</span>
+<span class="n">toy</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="s1">'revenue'</span><span class="p">])</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>firm</th>
+<th>revenue</th>
+<th>profit</th>
+<th>industry</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>A</td>
+<td>100.0</td>
+<td>20.0</td>
+<td>Tech</td>
+</tr>
+<tr>
+<th>2</th>
+<td>C</td>
+<td>150.0</td>
+<td>NaN</td>
+<td>Auto</td>
+</tr>
+<tr>
+<th>3</th>
+<td>D</td>
+<td>200.0</td>
+<td>40.0</td>
+<td>None</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h4 id="filling-missing-values">Filling Missing Values</h4><ul>
+<li><code>fillna(value)</code> replaces all NaN with a constant.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">toy</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>firm</th>
+<th>revenue</th>
+<th>profit</th>
+<th>industry</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>A</td>
+<td>100.0</td>
+<td>20.0</td>
+<td>Tech</td>
+</tr>
+<tr>
+<th>1</th>
+<td>B</td>
+<td>0.0</td>
+<td>15.0</td>
+<td>Tech</td>
+</tr>
+<tr>
+<th>2</th>
+<td>C</td>
+<td>150.0</td>
+<td>0.0</td>
+<td>Auto</td>
+</tr>
+<tr>
+<th>3</th>
+<td>D</td>
+<td>200.0</td>
+<td>40.0</td>
+<td>0</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<ul>
+<li>You can fill different columns with different values.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">toy</span><span class="o">.</span><span class="n">fillna</span><span class="p">({</span><span class="s1">'revenue'</span><span class="p">:</span> <span class="n">toy</span><span class="p">[</span><span class="s1">'revenue'</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span>
+            <span class="s1">'profit'</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s1">'industry'</span><span class="p">:</span> <span class="s1">'Unknown'</span><span class="p">})</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>firm</th>
+<th>revenue</th>
+<th>profit</th>
+<th>industry</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>A</td>
+<td>100.0</td>
+<td>20.0</td>
+<td>Tech</td>
+</tr>
+<tr>
+<th>1</th>
+<td>B</td>
+<td>150.0</td>
+<td>15.0</td>
+<td>Tech</td>
+</tr>
+<tr>
+<th>2</th>
+<td>C</td>
+<td>150.0</td>
+<td>0.0</td>
+<td>Auto</td>
+</tr>
+<tr>
+<th>3</th>
+<td>D</td>
+<td>200.0</td>
+<td>40.0</td>
+<td>Unknown</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<ul>
+<li><code>ffill()</code> (forward-fill) propagates the <strong>last valid</strong> value forward.</li>
+</ul>
+
+<ul>
+<li><code>bfill()</code> (backward-fill) uses the <strong>next valid</strong> value.</li>
+</ul>
+
+<ul>
+<li>These are especially useful for time series data.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">toy</span><span class="p">[</span><span class="s1">'revenue'</span><span class="p">]</span><span class="o">.</span><span class="n">ffill</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>revenue</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>100.0</td>
+</tr>
+<tr>
+<th>1</th>
+<td>100.0</td>
+</tr>
+<tr>
+<th>2</th>
+<td>150.0</td>
+</tr>
+<tr>
+<th>3</th>
+<td>200.0</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> float64</label></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">toy</span><span class="p">[</span><span class="s1">'profit'</span><span class="p">]</span><span class="o">.</span><span class="n">bfill</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>profit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>20.0</td>
+</tr>
+<tr>
+<th>1</th>
+<td>15.0</td>
+</tr>
+<tr>
+<th>2</th>
+<td>40.0</td>
+</tr>
+<tr>
+<th>3</th>
+<td>40.0</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> float64</label></div></div>
+<h3 id="sorting">Sorting</h3>
+
+<h4 id="sort-values"><code>sort_values()</code></h4><ul>
+<li>Sort rows by the values in one or more columns.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Best market months</span>
+<span class="n">ff5</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s1">'Mkt-RF'</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+<th>SMB</th>
+<th>HML</th>
+<th>RMW</th>
+<th>CMA</th>
+<th>RF</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>2020-04</th>
+<td>13.58</td>
+<td>2.57</td>
+<td>-1.34</td>
+<td>2.76</td>
+<td>-1.02</td>
+<td>0.00</td>
+</tr>
+<tr>
+<th>2020-11</th>
+<td>12.44</td>
+<td>7.12</td>
+<td>2.09</td>
+<td>-2.25</td>
+<td>1.28</td>
+<td>0.01</td>
+</tr>
+<tr>
+<th>2011-10</th>
+<td>11.34</td>
+<td>3.25</td>
+<td>0.06</td>
+<td>-2.25</td>
+<td>-0.72</td>
+<td>0.00</td>
+</tr>
+<tr>
+<th>1991-12</th>
+<td>10.86</td>
+<td>-2.41</td>
+<td>-4.23</td>
+<td>3.67</td>
+<td>-3.14</td>
+<td>0.38</td>
+</tr>
+<tr>
+<th>2009-04</th>
+<td>10.17</td>
+<td>7.08</td>
+<td>5.37</td>
+<td>1.32</td>
+<td>0.33</td>
+<td>0.01</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Sort by two columns</span>
+<span class="n">ff5</span><span class="o">.</span><span class="n">sort_values</span><span class="p">([</span><span class="s1">'Mkt-RF'</span><span class="p">,</span> <span class="s1">'SMB'</span><span class="p">],</span> <span class="n">ascending</span><span class="o">=</span><span class="p">[</span><span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">])</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+<th>SMB</th>
+<th>HML</th>
+<th>RMW</th>
+<th>CMA</th>
+<th>RF</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>2020-04</th>
+<td>13.58</td>
+<td>2.57</td>
+<td>-1.34</td>
+<td>2.76</td>
+<td>-1.02</td>
+<td>0.00</td>
+</tr>
+<tr>
+<th>2020-11</th>
+<td>12.44</td>
+<td>7.12</td>
+<td>2.09</td>
+<td>-2.25</td>
+<td>1.28</td>
+<td>0.01</td>
+</tr>
+<tr>
+<th>2011-10</th>
+<td>11.34</td>
+<td>3.25</td>
+<td>0.06</td>
+<td>-2.25</td>
+<td>-0.72</td>
+<td>0.00</td>
+</tr>
+<tr>
+<th>1991-12</th>
+<td>10.86</td>
+<td>-2.41</td>
+<td>-4.23</td>
+<td>3.67</td>
+<td>-3.14</td>
+<td>0.38</td>
+</tr>
+<tr>
+<th>2009-04</th>
+<td>10.17</td>
+<td>7.08</td>
+<td>5.37</td>
+<td>1.32</td>
+<td>0.33</td>
+<td>0.01</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h4 id="sort-index"><code>sort_index()</code></h4><ul>
+<li>Sort by the index (useful after operations that shuffle rows).</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">ff5</span><span class="o">.</span><span class="n">sort_index</span><span class="p">()</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+<th>SMB</th>
+<th>HML</th>
+<th>RMW</th>
+<th>CMA</th>
+<th>RF</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990-01</th>
+<td>-7.80</td>
+<td>-1.21</td>
+<td>0.83</td>
+<td>-1.12</td>
+<td>1.40</td>
+<td>0.57</td>
+</tr>
+<tr>
+<th>1990-02</th>
+<td>1.11</td>
+<td>1.15</td>
+<td>0.65</td>
+<td>-0.04</td>
+<td>-0.61</td>
+<td>0.57</td>
+</tr>
+<tr>
+<th>1990-03</th>
+<td>1.83</td>
+<td>1.59</td>
+<td>-2.90</td>
+<td>1.99</td>
+<td>-0.94</td>
+<td>0.64</td>
+</tr>
+<tr>
+<th>1990-04</th>
+<td>-3.36</td>
+<td>-0.35</td>
+<td>-2.57</td>
+<td>1.78</td>
+<td>-1.00</td>
+<td>0.69</td>
+</tr>
+<tr>
+<th>1990-05</th>
+<td>8.44</td>
+<td>-2.41</td>
+<td>-3.89</td>
+<td>1.68</td>
+<td>-1.63</td>
+<td>0.68</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h3 id="transformations-apply-map-and-str">Transformations: <code>apply</code>, <code>map</code>, and <code>.str</code></h3>
+
+<h4 id="apply-on-a-series"><code>apply()</code> on a Series</h4><ul>
+<li><code>apply()</code> runs a function on each element (or each row/column for a DataFrame).</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Convert factor returns from percent to decimal</span>
+<span class="n">ff5</span><span class="p">[</span><span class="s1">'Mkt-RF'</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">/</span> <span class="mi">100</span><span class="p">)</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990-01</th>
+<td>-0.0780</td>
+</tr>
+<tr>
+<th>1990-02</th>
+<td>0.0111</td>
+</tr>
+<tr>
+<th>1990-03</th>
+<td>0.0183</td>
+</tr>
+<tr>
+<th>1990-04</th>
+<td>-0.0336</td>
+</tr>
+<tr>
+<th>1990-05</th>
+<td>0.0844</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> float64</label></div></div>
+<ul>
+<li>For simple element-wise math, vectorized operations (<code>ff5['Mkt-RF'] / 100</code>) are faster than <code>apply()</code>. Use <code>apply()</code> for more complex logic.</li>
+</ul>
+
+<h4 id="apply-on-a-dataframe"><code>apply()</code> on a DataFrame</h4><ul>
+<li>By default <code>apply()</code> operates <strong>column-wise</strong> (each column is passed in as a Series).</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Range (max - min) of each column</span>
+<span class="n">ff5</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">col</span><span class="p">:</span> <span class="n">col</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">-</span> <span class="n">col</span><span class="o">.</span><span class="n">min</span><span class="p">())</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>Mkt-RF</th>
+<td>30.78</td>
+</tr>
+<tr>
+<th>SMB</th>
+<td>34.07</td>
+</tr>
+<tr>
+<th>HML</th>
+<td>26.69</td>
+</tr>
+<tr>
+<th>RMW</th>
+<td>31.97</td>
+</tr>
+<tr>
+<th>CMA</th>
+<td>16.06</td>
+</tr>
+<tr>
+<th>RF</th>
+<td>0.69</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> float64</label></div></div>
+<h4 id="map-on-a-series"><code>map()</code> on a Series</h4><ul>
+<li><code>map()</code> substitutes each value using a dictionary or function. It is handy for recoding labels.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Label whether each month was an 'up' or 'down' market</span>
+<span class="n">signs</span> <span class="o">=</span> <span class="n">ff5</span><span class="p">[</span><span class="s1">'Mkt-RF'</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="s1">'up'</span> <span class="k">if</span> <span class="n">x</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="s1">'down'</span><span class="p">)</span>
+<span class="n">signs</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990-01</th>
+<td>down</td>
+</tr>
+<tr>
+<th>1990-02</th>
+<td>up</td>
+</tr>
+<tr>
+<th>1990-03</th>
+<td>up</td>
+</tr>
+<tr>
+<th>1990-04</th>
+<td>down</td>
+</tr>
+<tr>
+<th>1990-05</th>
+<td>up</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> object</label></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Map labels to numeric flags</span>
+<span class="n">signs</span><span class="o">.</span><span class="n">map</span><span class="p">({</span><span class="s1">'up'</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">'down'</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990-01</th>
+<td>0</td>
+</tr>
+<tr>
+<th>1990-02</th>
+<td>1</td>
+</tr>
+<tr>
+<th>1990-03</th>
+<td>1</td>
+</tr>
+<tr>
+<th>1990-04</th>
+<td>0</td>
+</tr>
+<tr>
+<th>1990-05</th>
+<td>1</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> int64</label></div></div>
+<h4 id="the-str-accessor">The <code>.str</code> Accessor</h4><ul>
+<li>The <code>.str</code> accessor on a string Series gives you vectorized string methods.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">tickers</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">([</span><span class="s1">'aapl'</span><span class="p">,</span> <span class="s1">'goog'</span><span class="p">,</span> <span class="s1">'msft'</span><span class="p">,</span> <span class="s1">'amzn'</span><span class="p">])</span>
+<span class="n">tickers</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>AAPL</td>
+</tr>
+<tr>
+<th>1</th>
+<td>GOOG</td>
+</tr>
+<tr>
+<th>2</th>
+<td>MSFT</td>
+</tr>
+<tr>
+<th>3</th>
+<td>AMZN</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> object</label></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">tickers</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">'a'</span><span class="p">)</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>True</td>
+</tr>
+<tr>
+<th>1</th>
+<td>False</td>
+</tr>
+<tr>
+<th>2</th>
+<td>False</td>
+</tr>
+<tr>
+<th>3</th>
+<td>True</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> bool</label></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">tickers</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">len</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>4</td>
+</tr>
+<tr>
+<th>1</th>
+<td>4</td>
+</tr>
+<tr>
+<th>2</th>
+<td>4</td>
+</tr>
+<tr>
+<th>3</th>
+<td>4</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> int64</label></div></div>
+<h3 id="groupby-split-apply-combine">GroupBy: Split-Apply-Combine</h3><ul>
+<li><p><code>groupby()</code> is one of the most commonly used tools in pandas, especially for panel data.</p>
+</li>
+<li><p>The pattern has three steps:</p>
+<ol>
+<li><strong>Split</strong> the data into groups based on some key.</li>
+<li><strong>Apply</strong> a function to each group.</li>
+<li><strong>Combine</strong> the results into a new DataFrame.</li>
+</ol>
+</li>
+</ul>
+
+<h4 id="a-simple-example">A Simple Example</h4><ul>
+<li>We add a <code>decade</code> column to the FF data, then group by decade.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">ff5_g</span> <span class="o">=</span> <span class="n">ff5</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">ff5_g</span><span class="p">[</span><span class="s1">'decade'</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">ff5_g</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span> <span class="o">+</span> <span class="s1">'0s'</span><span class="p">)</span>
+<span class="n">ff5_g</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+<th>SMB</th>
+<th>HML</th>
+<th>RMW</th>
+<th>CMA</th>
+<th>RF</th>
+<th>decade</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990-01</th>
+<td>-7.80</td>
+<td>-1.21</td>
+<td>0.83</td>
+<td>-1.12</td>
+<td>1.40</td>
+<td>0.57</td>
+<td>1990s</td>
+</tr>
+<tr>
+<th>1990-02</th>
+<td>1.11</td>
+<td>1.15</td>
+<td>0.65</td>
+<td>-0.04</td>
+<td>-0.61</td>
+<td>0.57</td>
+<td>1990s</td>
+</tr>
+<tr>
+<th>1990-03</th>
+<td>1.83</td>
+<td>1.59</td>
+<td>-2.90</td>
+<td>1.99</td>
+<td>-0.94</td>
+<td>0.64</td>
+<td>1990s</td>
+</tr>
+<tr>
+<th>1990-04</th>
+<td>-3.36</td>
+<td>-0.35</td>
+<td>-2.57</td>
+<td>1.78</td>
+<td>-1.00</td>
+<td>0.69</td>
+<td>1990s</td>
+</tr>
+<tr>
+<th>1990-05</th>
+<td>8.44</td>
+<td>-2.41</td>
+<td>-3.89</td>
+<td>1.68</td>
+<td>-1.63</td>
+<td>0.68</td>
+<td>1990s</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Group by decade</span>
+<span class="n">grouped</span> <span class="o">=</span> <span class="n">ff5_g</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">'decade'</span><span class="p">)</span>
+<span class="n">grouped</span></code></pre></div><div class="nb-out nb-text">
+<pre>&lt;pandas.core.groupby.generic.DataFrameGroupBy object at 0x7fbb31155400&gt;</pre>
+</div></div>
+<ul>
+<li><code>groupby</code> returns a <em>lazy</em> object. Nothing has been computed yet.</li>
+</ul>
+
+<h4 id="aggregating-groups">Aggregating Groups</h4><ul>
+<li>Apply an aggregation like <code>mean()</code>, <code>sum()</code>, <code>std()</code>, or <code>count()</code> to compute one value per group.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Average factor returns in each decade</span>
+<span class="n">grouped</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+<th>SMB</th>
+<th>HML</th>
+<th>RMW</th>
+<th>CMA</th>
+<th>RF</th>
+</tr>
+<tr>
+<th>decade</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990s</th>
+<td>1.066917</td>
+<td>-0.171833</td>
+<td>0.004333</td>
+<td>0.192833</td>
+<td>0.013333</td>
+<td>0.401583</td>
+</tr>
+<tr>
+<th>2000s</th>
+<td>-0.142083</td>
+<td>0.588167</td>
+<td>0.662417</td>
+<td>0.692417</td>
+<td>0.553417</td>
+<td>0.226667</td>
+</tr>
+<tr>
+<th>2010s</th>
+<td>1.095167</td>
+<td>-0.029667</td>
+<td>-0.195667</td>
+<td>0.112750</td>
+<td>0.016250</td>
+<td>0.042667</td>
+</tr>
+<tr>
+<th>2020s</th>
+<td>0.961875</td>
+<td>0.028125</td>
+<td>0.110625</td>
+<td>0.694792</td>
+<td>0.224792</td>
+<td>0.139375</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># How many months in each decade?</span>
+<span class="n">grouped</span><span class="o">.</span><span class="n">size</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>0</th>
+</tr>
+<tr>
+<th>decade</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990s</th>
+<td>120</td>
+</tr>
+<tr>
+<th>2000s</th>
+<td>120</td>
+</tr>
+<tr>
+<th>2010s</th>
+<td>120</td>
+</tr>
+<tr>
+<th>2020s</th>
+<td>48</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> int64</label></div></div>
+<h4 id="selecting-columns-in-a-groupby">Selecting Columns in a GroupBy</h4>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Just the market premium, by decade</span>
+<span class="n">ff5_g</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">'decade'</span><span class="p">)[</span><span class="s1">'Mkt-RF'</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+</tr>
+<tr>
+<th>decade</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990s</th>
+<td>1.066917</td>
+</tr>
+<tr>
+<th>2000s</th>
+<td>-0.142083</td>
+</tr>
+<tr>
+<th>2010s</th>
+<td>1.095167</td>
+</tr>
+<tr>
+<th>2020s</th>
+<td>0.961875</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> float64</label></div></div>
+<h4 id="multiple-aggregations-with-agg">Multiple Aggregations with <code>agg()</code></h4><ul>
+<li>Pass a list of functions to compute several statistics at once.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">ff5_g</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">'decade'</span><span class="p">)[</span><span class="s1">'Mkt-RF'</span><span class="p">]</span><span class="o">.</span><span class="n">agg</span><span class="p">([</span><span class="s1">'mean'</span><span class="p">,</span> <span class="s1">'std'</span><span class="p">,</span> <span class="s1">'min'</span><span class="p">,</span> <span class="s1">'max'</span><span class="p">])</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>mean</th>
+<th>std</th>
+<th>min</th>
+<th>max</th>
+</tr>
+<tr>
+<th>decade</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990s</th>
+<td>1.066917</td>
+<td>3.985834</td>
+<td>-16.05</td>
+<td>10.86</td>
+</tr>
+<tr>
+<th>2000s</th>
+<td>-0.142083</td>
+<td>4.804752</td>
+<td>-17.20</td>
+<td>10.17</td>
+</tr>
+<tr>
+<th>2010s</th>
+<td>1.095167</td>
+<td>3.739019</td>
+<td>-9.55</td>
+<td>11.34</td>
+</tr>
+<tr>
+<th>2020s</th>
+<td>0.961875</td>
+<td>5.885397</td>
+<td>-13.35</td>
+<td>13.58</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h4 id="different-aggregations-for-different-columns">Different Aggregations for Different Columns</h4>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">ff5_g</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">'decade'</span><span class="p">)</span><span class="o">.</span><span class="n">agg</span><span class="p">({</span>
+    <span class="s1">'Mkt-RF'</span><span class="p">:</span> <span class="s1">'mean'</span><span class="p">,</span>
+    <span class="s1">'SMB'</span><span class="p">:</span>    <span class="s1">'std'</span><span class="p">,</span>
+    <span class="s1">'HML'</span><span class="p">:</span>    <span class="p">[</span><span class="s1">'mean'</span><span class="p">,</span> <span class="s1">'std'</span><span class="p">],</span>
+<span class="p">})</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+<th>SMB</th>
+<th colspan="2" halign="left">HML</th>
+</tr>
+<tr>
+<th></th>
+<th>mean</th>
+<th>std</th>
+<th>mean</th>
+<th>std</th>
+</tr>
+<tr>
+<th>decade</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990s</th>
+<td>1.066917</td>
+<td>2.888407</td>
+<td>0.004333</td>
+<td>2.605241</td>
+</tr>
+<tr>
+<th>2000s</th>
+<td>-0.142083</td>
+<td>3.656525</td>
+<td>0.662417</td>
+<td>3.688049</td>
+</tr>
+<tr>
+<th>2010s</th>
+<td>1.095167</td>
+<td>2.278449</td>
+<td>-0.195667</td>
+<td>2.278873</td>
+</tr>
+<tr>
+<th>2020s</th>
+<td>0.961875</td>
+<td>3.380858</td>
+<td>0.110625</td>
+<td>5.057430</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h4 id="grouping-by-multiple-columns">Grouping by Multiple Columns</h4>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Make a 'sign' column for market direction and group on (decade, sign)</span>
+<span class="n">ff5_g</span><span class="p">[</span><span class="s1">'mkt_sign'</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">ff5_g</span><span class="p">[</span><span class="s1">'Mkt-RF'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">'up'</span><span class="p">,</span> <span class="s1">'down'</span><span class="p">)</span>
+<span class="n">ff5_g</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s1">'decade'</span><span class="p">,</span> <span class="s1">'mkt_sign'</span><span class="p">])[</span><span class="s1">'Mkt-RF'</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th>Mkt-RF</th>
+</tr>
+<tr>
+<th>decade</th>
+<th>mkt_sign</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th rowspan="2" valign="top">1990s</th>
+<th>down</th>
+<td>-3.318250</td>
+</tr>
+<tr>
+<th>up</th>
+<td>3.259500</td>
+</tr>
+<tr>
+<th rowspan="2" valign="top">2000s</th>
+<th>down</th>
+<td>-4.380943</td>
+</tr>
+<tr>
+<th>up</th>
+<td>3.211045</td>
+</tr>
+<tr>
+<th rowspan="2" valign="top">2010s</th>
+<th>down</th>
+<td>-3.289167</td>
+</tr>
+<tr>
+<th>up</th>
+<td>2.974167</td>
+</tr>
+<tr>
+<th rowspan="2" valign="top">2020s</th>
+<th>down</th>
+<td>-4.636500</td>
+</tr>
+<tr>
+<th>up</th>
+<td>4.960714</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> float64</label></div></div>
+<h4 id="transform-broadcast-group-aggregates-back"><code>transform()</code>: Broadcast Group Aggregates Back</h4><ul>
+<li><p><code>transform()</code> returns a result with the <strong>same shape</strong> as the input: each row gets the value for <em>its</em> group.</p>
+</li>
+<li><p>Typical uses include <strong>within-group demeaning</strong> (fixed effects) and standardizing by group.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Compute each month's market return minus its decade's mean</span>
+<span class="n">decade_mean</span> <span class="o">=</span> <span class="n">ff5_g</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">'decade'</span><span class="p">)[</span><span class="s1">'Mkt-RF'</span><span class="p">]</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="s1">'mean'</span><span class="p">)</span>
+<span class="n">ff5_g</span><span class="p">[</span><span class="s1">'Mkt-RF_demeaned'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ff5_g</span><span class="p">[</span><span class="s1">'Mkt-RF'</span><span class="p">]</span> <span class="o">-</span> <span class="n">decade_mean</span>
+<span class="n">ff5_g</span><span class="p">[[</span><span class="s1">'Mkt-RF'</span><span class="p">,</span> <span class="s1">'decade'</span><span class="p">,</span> <span class="s1">'Mkt-RF_demeaned'</span><span class="p">]]</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+<th>decade</th>
+<th>Mkt-RF_demeaned</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990-01</th>
+<td>-7.80</td>
+<td>1990s</td>
+<td>-8.866917</td>
+</tr>
+<tr>
+<th>1990-02</th>
+<td>1.11</td>
+<td>1990s</td>
+<td>0.043083</td>
+</tr>
+<tr>
+<th>1990-03</th>
+<td>1.83</td>
+<td>1990s</td>
+<td>0.763083</td>
+</tr>
+<tr>
+<th>1990-04</th>
+<td>-3.36</td>
+<td>1990s</td>
+<td>-4.426917</td>
+</tr>
+<tr>
+<th>1990-05</th>
+<td>8.44</td>
+<td>1990s</td>
+<td>7.373083</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<ul>
+<li>This is exactly the <strong>within-transformation</strong> used in panel-data fixed-effects estimation.</li>
+</ul>
+
+<h3 id="combining-dataframes">Combining DataFrames</h3>
+
+<h4 id="concat"><code>concat()</code></h4><ul>
+<li><p><code>pd.concat([df1, df2])</code> stacks DataFrames along an axis.</p>
+</li>
+<li><p><code>axis=0</code> (default) stacks vertically (more rows).</p>
+</li>
+<li><p><code>axis=1</code> joins horizontally (more columns).</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">a</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">'x'</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="s1">'y'</span><span class="p">:</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]})</span>
+<span class="n">b</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">'x'</span><span class="p">:</span> <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">],</span> <span class="s1">'y'</span><span class="p">:</span> <span class="p">[</span><span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">]})</span>
+
+<span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">])</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>x</th>
+<th>y</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>1</td>
+<td>3</td>
+</tr>
+<tr>
+<th>1</th>
+<td>2</td>
+<td>4</td>
+</tr>
+<tr>
+<th>0</th>
+<td>5</td>
+<td>7</td>
+</tr>
+<tr>
+<th>1</th>
+<td>6</td>
+<td>8</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Reset the index to get clean row labels</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">],</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>x</th>
+<th>y</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>1</td>
+<td>3</td>
+</tr>
+<tr>
+<th>1</th>
+<td>2</td>
+<td>4</td>
+</tr>
+<tr>
+<th>2</th>
+<td>5</td>
+<td>7</td>
+</tr>
+<tr>
+<th>3</th>
+<td>6</td>
+<td>8</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Stacking horizontally</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>x</th>
+<th>y</th>
+<th>x</th>
+<th>y</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>1</td>
+<td>3</td>
+<td>5</td>
+<td>7</td>
+</tr>
+<tr>
+<th>1</th>
+<td>2</td>
+<td>4</td>
+<td>6</td>
+<td>8</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h4 id="merge-sql-style-joins"><code>merge()</code>: SQL-Style Joins</h4><ul>
+<li><code>merge()</code> combines two DataFrames using one or more <strong>key columns</strong>, like a SQL JOIN.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">firms</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+    <span class="s1">'ticker'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'AAPL'</span><span class="p">,</span> <span class="s1">'GOOG'</span><span class="p">,</span> <span class="s1">'MSFT'</span><span class="p">,</span> <span class="s1">'TSLA'</span><span class="p">],</span>
+    <span class="s1">'sector'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'Tech'</span><span class="p">,</span> <span class="s1">'Tech'</span><span class="p">,</span> <span class="s1">'Tech'</span><span class="p">,</span> <span class="s1">'Auto'</span><span class="p">],</span>
+<span class="p">})</span>
+
+<span class="n">returns</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+    <span class="s1">'ticker'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'AAPL'</span><span class="p">,</span> <span class="s1">'GOOG'</span><span class="p">,</span> <span class="s1">'MSFT'</span><span class="p">,</span> <span class="s1">'AMZN'</span><span class="p">],</span>
+    <span class="s1">'ret'</span><span class="p">:</span>    <span class="p">[</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">,</span> <span class="mf">0.03</span><span class="p">,</span> <span class="mf">0.04</span><span class="p">],</span>
+<span class="p">})</span></code></pre></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Inner join: only tickers in BOTH frames</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">firms</span><span class="p">,</span> <span class="n">returns</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="s1">'ticker'</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">'inner'</span><span class="p">)</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>ticker</th>
+<th>sector</th>
+<th>ret</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>AAPL</td>
+<td>Tech</td>
+<td>0.05</td>
+</tr>
+<tr>
+<th>1</th>
+<td>GOOG</td>
+<td>Tech</td>
+<td>0.02</td>
+</tr>
+<tr>
+<th>2</th>
+<td>MSFT</td>
+<td>Tech</td>
+<td>0.03</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Left join: keep ALL rows from firms; fill missing with NaN</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">firms</span><span class="p">,</span> <span class="n">returns</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="s1">'ticker'</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">'left'</span><span class="p">)</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>ticker</th>
+<th>sector</th>
+<th>ret</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>AAPL</td>
+<td>Tech</td>
+<td>0.05</td>
+</tr>
+<tr>
+<th>1</th>
+<td>GOOG</td>
+<td>Tech</td>
+<td>0.02</td>
+</tr>
+<tr>
+<th>2</th>
+<td>MSFT</td>
+<td>Tech</td>
+<td>0.03</td>
+</tr>
+<tr>
+<th>3</th>
+<td>TSLA</td>
+<td>Auto</td>
+<td>NaN</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Right join: keep all rows from returns</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">firms</span><span class="p">,</span> <span class="n">returns</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="s1">'ticker'</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">'right'</span><span class="p">)</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>ticker</th>
+<th>sector</th>
+<th>ret</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>AAPL</td>
+<td>Tech</td>
+<td>0.05</td>
+</tr>
+<tr>
+<th>1</th>
+<td>GOOG</td>
+<td>Tech</td>
+<td>0.02</td>
+</tr>
+<tr>
+<th>2</th>
+<td>MSFT</td>
+<td>Tech</td>
+<td>0.03</td>
+</tr>
+<tr>
+<th>3</th>
+<td>AMZN</td>
+<td>NaN</td>
+<td>0.04</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Outer join: keep everything from both</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">firms</span><span class="p">,</span> <span class="n">returns</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="s1">'ticker'</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">'outer'</span><span class="p">)</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>ticker</th>
+<th>sector</th>
+<th>ret</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>AAPL</td>
+<td>Tech</td>
+<td>0.05</td>
+</tr>
+<tr>
+<th>1</th>
+<td>AMZN</td>
+<td>NaN</td>
+<td>0.04</td>
+</tr>
+<tr>
+<th>2</th>
+<td>GOOG</td>
+<td>Tech</td>
+<td>0.02</td>
+</tr>
+<tr>
+<th>3</th>
+<td>MSFT</td>
+<td>Tech</td>
+<td>0.03</td>
+</tr>
+<tr>
+<th>4</th>
+<td>TSLA</td>
+<td>Auto</td>
+<td>NaN</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<p><strong>Merging on different column names:</strong></p>
+<ul>
+<li>Use <code>left_on</code> and <code>right_on</code> when the key columns have different names in the two frames.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Suppose one frame calls it 'ticker' and another 'symbol'</span>
+<span class="n">returns_alt</span> <span class="o">=</span> <span class="n">returns</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">'ticker'</span><span class="p">:</span> <span class="s1">'symbol'</span><span class="p">})</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">firms</span><span class="p">,</span> <span class="n">returns_alt</span><span class="p">,</span> <span class="n">left_on</span><span class="o">=</span><span class="s1">'ticker'</span><span class="p">,</span> <span class="n">right_on</span><span class="o">=</span><span class="s1">'symbol'</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">'inner'</span><span class="p">)</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>ticker</th>
+<th>sector</th>
+<th>symbol</th>
+<th>ret</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>AAPL</td>
+<td>Tech</td>
+<td>AAPL</td>
+<td>0.05</td>
+</tr>
+<tr>
+<th>1</th>
+<td>GOOG</td>
+<td>Tech</td>
+<td>GOOG</td>
+<td>0.02</td>
+</tr>
+<tr>
+<th>2</th>
+<td>MSFT</td>
+<td>Tech</td>
+<td>MSFT</td>
+<td>0.03</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h3 id="time-series">Time Series</h3><ul>
+<li><p>Financial and economic data is typically indexed by date.</p>
+</li>
+<li><p>Pandas has rich tools for working with dates: parsing, resampling, rolling windows, and more.</p>
+</li>
+</ul>
+
+<h4 id="converting-strings-to-dates">Converting Strings to Dates</h4><ul>
+<li>The FF index is currently strings like <code>'1990-01'</code>. Convert it to a real <code>DatetimeIndex</code>.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">ff5</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">ff5</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">'%Y-%m'</span><span class="p">)</span>
+<span class="n">ff5</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+<th>SMB</th>
+<th>HML</th>
+<th>RMW</th>
+<th>CMA</th>
+<th>RF</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990-01-01</th>
+<td>-7.80</td>
+<td>-1.21</td>
+<td>0.83</td>
+<td>-1.12</td>
+<td>1.40</td>
+<td>0.57</td>
+</tr>
+<tr>
+<th>1990-02-01</th>
+<td>1.11</td>
+<td>1.15</td>
+<td>0.65</td>
+<td>-0.04</td>
+<td>-0.61</td>
+<td>0.57</td>
+</tr>
+<tr>
+<th>1990-03-01</th>
+<td>1.83</td>
+<td>1.59</td>
+<td>-2.90</td>
+<td>1.99</td>
+<td>-0.94</td>
+<td>0.64</td>
+</tr>
+<tr>
+<th>1990-04-01</th>
+<td>-3.36</td>
+<td>-0.35</td>
+<td>-2.57</td>
+<td>1.78</td>
+<td>-1.00</td>
+<td>0.69</td>
+</tr>
+<tr>
+<th>1990-05-01</th>
+<td>8.44</td>
+<td>-2.41</td>
+<td>-3.89</td>
+<td>1.68</td>
+<td>-1.63</td>
+<td>0.68</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">ff5</span><span class="o">.</span><span class="n">index</span></code></pre></div><div class="nb-out nb-text">
+<pre>DatetimeIndex(['1990-01-01', '1990-02-01', '1990-03-01', '1990-04-01',
+               '1990-05-01', '1990-06-01', '1990-07-01', '1990-08-01',
+               '1990-09-01', '1990-10-01',
+               ...
+               '2023-03-01', '2023-04-01', '2023-05-01', '2023-06-01',
+               '2023-07-01', '2023-08-01', '2023-09-01', '2023-10-01',
+               '2023-11-01', '2023-12-01'],
+              dtype='datetime64[ns]', name='Date', length=408, freq=None)</pre>
+</div></div>
+<h4 id="selecting-by-date">Selecting by Date</h4><ul>
+<li>With a <code>DatetimeIndex</code>, you can slice with date strings.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># All of 2020</span>
+<span class="n">ff5</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s1">'2020'</span><span class="p">]</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+<th>SMB</th>
+<th>HML</th>
+<th>RMW</th>
+<th>CMA</th>
+<th>RF</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>2020-01-01</th>
+<td>-0.09</td>
+<td>-4.37</td>
+<td>-6.22</td>
+<td>-1.19</td>
+<td>-2.19</td>
+<td>0.13</td>
+</tr>
+<tr>
+<th>2020-02-01</th>
+<td>-8.15</td>
+<td>0.08</td>
+<td>-3.82</td>
+<td>-1.43</td>
+<td>-2.53</td>
+<td>0.12</td>
+</tr>
+<tr>
+<th>2020-03-01</th>
+<td>-13.35</td>
+<td>-8.18</td>
+<td>-13.83</td>
+<td>-1.61</td>
+<td>1.19</td>
+<td>0.12</td>
+</tr>
+<tr>
+<th>2020-04-01</th>
+<td>13.58</td>
+<td>2.57</td>
+<td>-1.34</td>
+<td>2.76</td>
+<td>-1.02</td>
+<td>0.00</td>
+</tr>
+<tr>
+<th>2020-05-01</th>
+<td>5.59</td>
+<td>1.92</td>
+<td>-5.00</td>
+<td>0.96</td>
+<td>-3.16</td>
+<td>0.01</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># A specific date range</span>
+<span class="n">ff5</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s1">'2008-01'</span><span class="p">:</span><span class="s1">'2009-12'</span><span class="p">]</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+<th>SMB</th>
+<th>HML</th>
+<th>RMW</th>
+<th>CMA</th>
+<th>RF</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>2008-01-01</th>
+<td>-6.32</td>
+<td>-0.59</td>
+<td>4.02</td>
+<td>2.10</td>
+<td>2.07</td>
+<td>0.21</td>
+</tr>
+<tr>
+<th>2008-02-01</th>
+<td>-3.09</td>
+<td>-0.62</td>
+<td>-0.71</td>
+<td>1.07</td>
+<td>-0.98</td>
+<td>0.13</td>
+</tr>
+<tr>
+<th>2008-03-01</th>
+<td>-0.94</td>
+<td>0.64</td>
+<td>0.34</td>
+<td>0.87</td>
+<td>0.47</td>
+<td>0.17</td>
+</tr>
+<tr>
+<th>2008-04-01</th>
+<td>4.61</td>
+<td>-1.20</td>
+<td>-0.99</td>
+<td>1.84</td>
+<td>-2.57</td>
+<td>0.18</td>
+</tr>
+<tr>
+<th>2008-05-01</th>
+<td>1.87</td>
+<td>3.01</td>
+<td>-1.57</td>
+<td>0.94</td>
+<td>0.14</td>
+<td>0.18</td>
+</tr>
+<tr>
+<th>2008-06-01</th>
+<td>-8.43</td>
+<td>1.16</td>
+<td>-2.49</td>
+<td>4.97</td>
+<td>-0.69</td>
+<td>0.17</td>
+</tr>
+<tr>
+<th>2008-07-01</th>
+<td>-0.75</td>
+<td>3.73</td>
+<td>5.21</td>
+<td>-1.40</td>
+<td>0.99</td>
+<td>0.15</td>
+</tr>
+<tr>
+<th>2008-08-01</th>
+<td>1.53</td>
+<td>3.27</td>
+<td>1.51</td>
+<td>1.82</td>
+<td>0.67</td>
+<td>0.13</td>
+</tr>
+<tr>
+<th>2008-09-01</th>
+<td>-9.35</td>
+<td>0.37</td>
+<td>5.65</td>
+<td>2.23</td>
+<td>1.72</td>
+<td>0.15</td>
+</tr>
+<tr>
+<th>2008-10-01</th>
+<td>-17.20</td>
+<td>-3.04</td>
+<td>-1.92</td>
+<td>2.73</td>
+<td>1.46</td>
+<td>0.08</td>
+</tr>
+<tr>
+<th>2008-11-01</th>
+<td>-7.74</td>
+<td>-3.97</td>
+<td>-6.21</td>
+<td>4.65</td>
+<td>2.44</td>
+<td>0.03</td>
+</tr>
+<tr>
+<th>2008-12-01</th>
+<td>1.77</td>
+<td>3.30</td>
+<td>0.02</td>
+<td>0.11</td>
+<td>-1.56</td>
+<td>0.00</td>
+</tr>
+<tr>
+<th>2009-01-01</th>
+<td>-8.09</td>
+<td>-2.12</td>
+<td>-11.01</td>
+<td>0.32</td>
+<td>-1.24</td>
+<td>0.00</td>
+</tr>
+<tr>
+<th>2009-02-01</th>
+<td>-10.14</td>
+<td>-1.17</td>
+<td>-6.59</td>
+<td>1.05</td>
+<td>-0.60</td>
+<td>0.01</td>
+</tr>
+<tr>
+<th>2009-03-01</th>
+<td>9.01</td>
+<td>0.61</td>
+<td>3.47</td>
+<td>-2.57</td>
+<td>-2.04</td>
+<td>0.02</td>
+</tr>
+<tr>
+<th>2009-04-01</th>
+<td>10.17</td>
+<td>7.08</td>
+<td>5.37</td>
+<td>1.32</td>
+<td>0.33</td>
+<td>0.01</td>
+</tr>
+<tr>
+<th>2009-05-01</th>
+<td>5.20</td>
+<td>-2.27</td>
+<td>0.43</td>
+<td>-0.94</td>
+<td>-2.00</td>
+<td>0.00</td>
+</tr>
+<tr>
+<th>2009-06-01</th>
+<td>0.42</td>
+<td>2.28</td>
+<td>-2.78</td>
+<td>-1.39</td>
+<td>-0.36</td>
+<td>0.01</td>
+</tr>
+<tr>
+<th>2009-07-01</th>
+<td>7.74</td>
+<td>2.30</td>
+<td>4.89</td>
+<td>-0.26</td>
+<td>3.08</td>
+<td>0.01</td>
+</tr>
+<tr>
+<th>2009-08-01</th>
+<td>3.33</td>
+<td>-0.10</td>
+<td>7.60</td>
+<td>-2.85</td>
+<td>3.28</td>
+<td>0.01</td>
+</tr>
+<tr>
+<th>2009-09-01</th>
+<td>4.08</td>
+<td>2.72</td>
+<td>1.15</td>
+<td>1.15</td>
+<td>0.34</td>
+<td>0.01</td>
+</tr>
+<tr>
+<th>2009-10-01</th>
+<td>-2.55</td>
+<td>-4.85</td>
+<td>-4.17</td>
+<td>4.22</td>
+<td>-1.48</td>
+<td>0.00</td>
+</tr>
+<tr>
+<th>2009-11-01</th>
+<td>5.58</td>
+<td>-2.76</td>
+<td>-0.33</td>
+<td>0.90</td>
+<td>0.00</td>
+<td>0.00</td>
+</tr>
+<tr>
+<th>2009-12-01</th>
+<td>2.74</td>
+<td>6.14</td>
+<td>-0.11</td>
+<td>0.71</td>
+<td>-0.06</td>
+<td>0.01</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h4 id="resample-time-based-aggregation"><code>resample()</code>: Time-Based Aggregation</h4><ul>
+<li><p><code>resample()</code> is like <code>groupby()</code> for time series: it groups rows by a time frequency.</p>
+</li>
+<li><p>Common frequencies: <code>'D'</code> daily, <code>'W'</code> weekly, <code>'ME'</code> month-end, <code>'QE'</code> quarter-end, <code>'YE'</code> year-end.</p>
+</li>
+<li><p>(Older pandas versions used <code>'M'</code>, <code>'Q'</code>, <code>'Y'</code>. The newer aliases ending in <code>E</code> are explicit and forward-compatible.)</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Aggregate monthly factors up to annual averages</span>
+<span class="n">ff5</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="s1">'YE'</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+<th>SMB</th>
+<th>HML</th>
+<th>RMW</th>
+<th>CMA</th>
+<th>RF</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990-12-31</th>
+<td>-1.007500</td>
+<td>-1.252500</td>
+<td>-1.020833</td>
+<td>0.763333</td>
+<td>-0.023333</td>
+<td>0.630833</td>
+</tr>
+<tr>
+<th>1991-12-31</th>
+<td>2.160000</td>
+<td>1.004167</td>
+<td>-0.925000</td>
+<td>0.754167</td>
+<td>-0.969167</td>
+<td>0.455000</td>
+</tr>
+<tr>
+<th>1992-12-31</th>
+<td>0.515000</td>
+<td>0.695000</td>
+<td>1.727500</td>
+<td>0.513333</td>
+<td>0.517500</td>
+<td>0.287500</td>
+</tr>
+<tr>
+<th>1993-12-31</th>
+<td>0.664167</td>
+<td>0.490833</td>
+<td>1.239167</td>
+<td>-0.535000</td>
+<td>0.877500</td>
+<td>0.238333</td>
+</tr>
+<tr>
+<th>1994-12-31</th>
+<td>-0.292500</td>
+<td>-0.186667</td>
+<td>-0.085833</td>
+<td>0.498333</td>
+<td>0.313333</td>
+<td>0.320000</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Sum monthly returns within each year (approximate annual return)</span>
+<span class="n">ff5</span><span class="p">[[</span><span class="s1">'Mkt-RF'</span><span class="p">,</span> <span class="s1">'SMB'</span><span class="p">,</span> <span class="s1">'HML'</span><span class="p">]]</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="s1">'YE'</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+<th>SMB</th>
+<th>HML</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990-12-31</th>
+<td>-12.09</td>
+<td>-15.03</td>
+<td>-12.25</td>
+</tr>
+<tr>
+<th>1991-12-31</th>
+<td>25.92</td>
+<td>12.05</td>
+<td>-11.10</td>
+</tr>
+<tr>
+<th>1992-12-31</th>
+<td>6.18</td>
+<td>8.34</td>
+<td>20.73</td>
+</tr>
+<tr>
+<th>1993-12-31</th>
+<td>7.97</td>
+<td>5.89</td>
+<td>14.87</td>
+</tr>
+<tr>
+<th>1994-12-31</th>
+<td>-3.51</td>
+<td>-2.24</td>
+<td>-1.03</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h4 id="rolling-windows">Rolling Windows</h4><ul>
+<li><code>rolling(window=k)</code> creates a sliding window of size <code>k</code> for moving statistics.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># 12-month rolling mean of the market premium</span>
+<span class="n">ff5</span><span class="p">[</span><span class="s1">'Mkt-RF'</span><span class="p">]</span><span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="n">window</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990-01-01</th>
+<td>NaN</td>
+</tr>
+<tr>
+<th>1990-02-01</th>
+<td>NaN</td>
+</tr>
+<tr>
+<th>1990-03-01</th>
+<td>NaN</td>
+</tr>
+<tr>
+<th>1990-04-01</th>
+<td>NaN</td>
+</tr>
+<tr>
+<th>1990-05-01</th>
+<td>NaN</td>
+</tr>
+<tr>
+<th>1990-06-01</th>
+<td>NaN</td>
+</tr>
+<tr>
+<th>1990-07-01</th>
+<td>NaN</td>
+</tr>
+<tr>
+<th>1990-08-01</th>
+<td>NaN</td>
+</tr>
+<tr>
+<th>1990-09-01</th>
+<td>NaN</td>
+</tr>
+<tr>
+<th>1990-10-01</th>
+<td>NaN</td>
+</tr>
+<tr>
+<th>1990-11-01</th>
+<td>NaN</td>
+</tr>
+<tr>
+<th>1990-12-01</th>
+<td>-1.007500</td>
+</tr>
+<tr>
+<th>1991-01-01</th>
+<td>0.033333</td>
+</tr>
+<tr>
+<th>1991-02-01</th>
+<td>0.541667</td>
+</tr>
+<tr>
+<th>1991-03-01</th>
+<td>0.611667</td>
+</tr>
+<tr>
+<th>1991-04-01</th>
+<td>0.867500</td>
+</tr>
+<tr>
+<th>1991-05-01</th>
+<td>0.469167</td>
+</tr>
+<tr>
+<th>1991-06-01</th>
+<td>0.148333</td>
+</tr>
+<tr>
+<th>1991-07-01</th>
+<td>0.660000</td>
+</tr>
+<tr>
+<th>1991-08-01</th>
+<td>1.697500</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> float64</label></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># 12-month rolling volatility</span>
+<span class="n">ff5</span><span class="p">[</span><span class="s1">'Mkt-RF'</span><span class="p">]</span><span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="n">window</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span><span class="o">.</span><span class="n">std</span><span class="p">()</span><span class="o">.</span><span class="n">tail</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>2023-08-01</th>
+<td>5.350784</td>
+</tr>
+<tr>
+<th>2023-09-01</th>
+<td>4.726037</td>
+</tr>
+<tr>
+<th>2023-10-01</th>
+<td>4.396233</td>
+</tr>
+<tr>
+<th>2023-11-01</th>
+<td>4.905420</td>
+</tr>
+<tr>
+<th>2023-12-01</th>
+<td>4.475456</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> float64</label></div></div>
+<ul>
+<li>The first <code>window-1</code> rows are <code>NaN</code> because there aren't enough prior observations.</li>
+</ul>
+
+<h4 id="pct-change-computing-returns"><code>pct_change()</code>: Computing Returns</h4><ul>
+<li><p><code>pct_change()</code> computes the percent change between consecutive rows.</p>
+</li>
+<li><p>This is the standard way to turn a price series into a return series.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Build a synthetic 'price' series by treating the risk-free rate as a deposit</span>
+<span class="c1"># (Just for illustration of pct_change)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">prices</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="mi">100</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span> <span class="o">/</span> <span class="mi">100</span><span class="p">)</span><span class="o">.</span><span class="n">cumprod</span><span class="p">())</span>
+<span class="n">prices</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>100.496714</td>
+</tr>
+<tr>
+<th>1</th>
+<td>100.357763</td>
+</tr>
+<tr>
+<th>2</th>
+<td>101.007769</td>
+</tr>
+<tr>
+<th>3</th>
+<td>102.546147</td>
+</tr>
+<tr>
+<th>4</th>
+<td>102.306032</td>
+</tr>
+<tr>
+<th>5</th>
+<td>102.066496</td>
+</tr>
+<tr>
+<th>6</th>
+<td>103.678343</td>
+</tr>
+<tr>
+<th>7</th>
+<td>104.474007</td>
+</tr>
+<tr>
+<th>8</th>
+<td>103.983528</td>
+</tr>
+<tr>
+<th>9</th>
+<td>104.547701</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> float64</label></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">prices</span><span class="o">.</span><span class="n">pct_change</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>NaN</td>
+</tr>
+<tr>
+<th>1</th>
+<td>-0.001383</td>
+</tr>
+<tr>
+<th>2</th>
+<td>0.006477</td>
+</tr>
+<tr>
+<th>3</th>
+<td>0.015230</td>
+</tr>
+<tr>
+<th>4</th>
+<td>-0.002342</td>
+</tr>
+<tr>
+<th>5</th>
+<td>-0.002341</td>
+</tr>
+<tr>
+<th>6</th>
+<td>0.015792</td>
+</tr>
+<tr>
+<th>7</th>
+<td>0.007674</td>
+</tr>
+<tr>
+<th>8</th>
+<td>-0.004695</td>
+</tr>
+<tr>
+<th>9</th>
+<td>0.005426</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> float64</label></div></div>
+<ul>
+<li>The first value is <code>NaN</code> because there's no prior price to compare to.</li>
+</ul>
+
+<h3 id="reshape-preview-pivot-and-melt">Reshape Preview: <code>pivot</code> and <code>melt</code></h3><ul>
+<li><p>Data can be in wide format (one row per entity, columns for each variable/period) or long format (one row per observation).</p>
+</li>
+<li><p><code>pivot</code> and <code>melt</code> convert between the two.</p>
+</li>
+</ul>
+
+<h4 id="a-long-format-toy-dataset">A Long-Format Toy Dataset</h4>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">long</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+    <span class="s1">'year'</span><span class="p">:</span>   <span class="p">[</span><span class="mi">2020</span><span class="p">,</span> <span class="mi">2020</span><span class="p">,</span> <span class="mi">2021</span><span class="p">,</span> <span class="mi">2021</span><span class="p">,</span> <span class="mi">2022</span><span class="p">,</span> <span class="mi">2022</span><span class="p">],</span>
+    <span class="s1">'firm'</span><span class="p">:</span>   <span class="p">[</span><span class="s1">'A'</span><span class="p">,</span>  <span class="s1">'B'</span><span class="p">,</span>  <span class="s1">'A'</span><span class="p">,</span>  <span class="s1">'B'</span><span class="p">,</span>  <span class="s1">'A'</span><span class="p">,</span>  <span class="s1">'B'</span><span class="p">],</span>
+    <span class="s1">'profit'</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span>   <span class="mi">15</span><span class="p">,</span>   <span class="mi">12</span><span class="p">,</span>   <span class="mi">18</span><span class="p">,</span>   <span class="mi">14</span><span class="p">,</span>   <span class="mi">20</span><span class="p">],</span>
+<span class="p">})</span>
+<span class="n">long</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>year</th>
+<th>firm</th>
+<th>profit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>2020</td>
+<td>A</td>
+<td>10</td>
+</tr>
+<tr>
+<th>1</th>
+<td>2020</td>
+<td>B</td>
+<td>15</td>
+</tr>
+<tr>
+<th>2</th>
+<td>2021</td>
+<td>A</td>
+<td>12</td>
+</tr>
+<tr>
+<th>3</th>
+<td>2021</td>
+<td>B</td>
+<td>18</td>
+</tr>
+<tr>
+<th>4</th>
+<td>2022</td>
+<td>A</td>
+<td>14</td>
+</tr>
+<tr>
+<th>5</th>
+<td>2022</td>
+<td>B</td>
+<td>20</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h4 id="pivot-long-wide"><code>pivot()</code>: Long → Wide</h4><ul>
+<li>Spread one column's values across new columns.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">wide</span> <span class="o">=</span> <span class="n">long</span><span class="o">.</span><span class="n">pivot</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="s1">'year'</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="s1">'firm'</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="s1">'profit'</span><span class="p">)</span>
+<span class="n">wide</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th>firm</th>
+<th>A</th>
+<th>B</th>
+</tr>
+<tr>
+<th>year</th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>2020</th>
+<td>10</td>
+<td>15</td>
+</tr>
+<tr>
+<th>2021</th>
+<td>12</td>
+<td>18</td>
+</tr>
+<tr>
+<th>2022</th>
+<td>14</td>
+<td>20</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h4 id="melt-wide-long"><code>melt()</code>: Wide → Long</h4><ul>
+<li>Unstack columns back into rows. Useful for plotting and many statistical functions that expect long format.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">wide</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span><span class="o">.</span><span class="n">melt</span><span class="p">(</span><span class="n">id_vars</span><span class="o">=</span><span class="s1">'year'</span><span class="p">,</span>
+                          <span class="n">value_vars</span><span class="o">=</span><span class="p">[</span><span class="s1">'A'</span><span class="p">,</span> <span class="s1">'B'</span><span class="p">],</span>
+                          <span class="n">var_name</span><span class="o">=</span><span class="s1">'firm'</span><span class="p">,</span>
+                          <span class="n">value_name</span><span class="o">=</span><span class="s1">'profit'</span><span class="p">)</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>year</th>
+<th>firm</th>
+<th>profit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>2020</td>
+<td>A</td>
+<td>10</td>
+</tr>
+<tr>
+<th>1</th>
+<td>2021</td>
+<td>A</td>
+<td>12</td>
+</tr>
+<tr>
+<th>2</th>
+<td>2022</td>
+<td>A</td>
+<td>14</td>
+</tr>
+<tr>
+<th>3</th>
+<td>2020</td>
+<td>B</td>
+<td>15</td>
+</tr>
+<tr>
+<th>4</th>
+<td>2021</td>
+<td>B</td>
+<td>18</td>
+</tr>
+<tr>
+<th>5</th>
+<td>2022</td>
+<td>B</td>
+<td>20</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h3 id="in-class-exercise-2">In-Class Exercise</h3>
+
+<p><strong>12-1. Building a DataFrame:</strong></p>
+<ul>
+<li>Create a DataFrame named <code>portfolio</code> with four columns:<ul>
+<li><code>ticker</code>: <code>['AAPL', 'GOOG', 'MSFT', 'AMZN', 'TSLA']</code></li>
+<li><code>price</code>: <code>[180, 140, 330, 130, 250]</code></li>
+<li><code>shares</code>: <code>[100, 50, 30, 80, 20]</code></li>
+<li><code>sector</code>: <code>['Tech', 'Tech', 'Tech', 'Consumer', 'Auto']</code></li>
+</ul>
+</li>
+<li>Print the DataFrame and use <code>info()</code> to inspect dtypes and non-null counts.</li>
+</ul>
+
+<p><strong>12-2. New Columns and Filtering:</strong></p>
+<ul>
+<li>Add a column <code>value</code> to your <code>portfolio</code> equal to <code>price * shares</code>.</li>
+<li>Print just the rows where <code>value &gt; 5000</code>.</li>
+<li>Sort the full DataFrame by <code>value</code> in descending order.</li>
+</ul>
+
+<p><strong>12-3. GroupBy:</strong></p>
+<ul>
+<li>Using your <code>portfolio</code> from 12-2, compute the <strong>total value invested in each sector</strong> with <code>groupby('sector')['value'].sum()</code>.</li>
+<li>Then use <code>agg(['sum', 'mean', 'count'])</code> on the same group to compute three statistics at once.</li>
+</ul>
+
+<p><strong>12-4. Loading Fama-French Data:</strong></p>
+<ul>
+<li>Re-read the file <code>ff5_factors.csv</code> we saved earlier with <code>pd.read_csv(..., index_col=0)</code>.</li>
+<li>Convert the index to datetime with <code>pd.to_datetime(..., format='%Y-%m')</code>.</li>
+<li>Report the start date, end date, and number of rows.</li>
+</ul>
+
+<p><strong>12-5. Filtering Returns:</strong></p>
+<ul>
+<li>Find every month in which the market premium (<code>Mkt-RF</code>) was greater than 10%.</li>
+<li>How many such months are there? Print them.</li>
+</ul>
+
+<p><strong>12-6. Rolling Statistics:</strong></p>
+<ul>
+<li>Compute the 24-month rolling mean and 24-month rolling standard deviation of <code>Mkt-RF</code>.</li>
+<li>Print the most recent five values of each.</li>
+</ul>
+
+<p><strong>12-7. Resample to Annual:</strong></p>
+<ul>
+<li>Use <code>resample('YE').sum()</code> to compute the <strong>approximate annual sum</strong> of each Fama-French factor.</li>
+<li>Then sort this annual DataFrame by <code>Mkt-RF</code> in descending order and print the top 5 best years for the market premium.</li>
+</ul>
+
+<p><strong>12-8. Merge and Group:</strong></p>
+<ul>
+<li>Construct a DataFrame <code>sectors</code> with two columns:<ul>
+<li><code>ticker</code>: <code>['AAPL', 'GOOG', 'MSFT', 'AMZN', 'TSLA', 'F', 'GM']</code></li>
+<li><code>industry</code>: <code>['Software', 'Software', 'Software', 'Retail', 'Auto', 'Auto', 'Auto']</code></li>
+</ul>
+</li>
+<li>Merge it with your <code>portfolio</code> DataFrame on <code>ticker</code> using a left join.</li>
+<li>Group the merged frame by <code>industry</code> and report the total <code>value</code> per industry.</li>
+</ul>
+</div>

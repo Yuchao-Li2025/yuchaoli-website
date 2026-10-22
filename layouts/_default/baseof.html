@@ -10,7 +10,8 @@
 </head>
 
 <body class="
-{{- if (or (ne .Kind `page` ) (eq .Layout `archives`) (eq .Layout `search`)) -}}
+{{- /* 灰底的列表样式；ECON 294A 课程页是正文页面，保持白底 */ -}}
+{{- if and (or (ne .Kind `page` ) (eq .Layout `archives`) (eq .Layout `search`)) (ne .Type `econ294a`) -}}
 {{- print "list" -}}
 {{- end -}}
 {{- if eq site.Params.defaultTheme `dark` -}}

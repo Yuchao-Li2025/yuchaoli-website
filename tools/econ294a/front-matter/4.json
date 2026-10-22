@@ -1,0 +1,3 @@
+{"title": "Lecture 4: Functions", "lecture": 4, "weight": 4,
+ "summary": "Defining functions and docstrings; positional, keyword, and default arguments; return values; passing lists; *args and **kwargs; modules and import styles.",
+ "description": "ECON 294A lecture notes by Yuchao Li: Python functions with finance examples (returns, compounding, bond pricing), organized into modules."}

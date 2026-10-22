@@ -1,0 +1,830 @@
+---
+title: "Lecture 3: Dictionaries, User Input, and while Loops"
+lecture: 3
+weight: 3
+summary: "Dictionaries: key-value pairs, get(), looping, and nesting; input(), the modulo operator, and while loops with break, continue, and flags."
+description: "ECON 294A lecture notes by Yuchao Li: Python dictionaries, user input, and while loops, with finance examples."
+notebook: "ECON294A_Lecture3.ipynb"
+---
+<div class="toc"><details><summary accesskey="c" title="(Alt + C)"><span class="details">Contents</span></summary><div class="inner"><ul><li><a href="#what-well-cover" aria-label="What We&#x27;ll Cover">What We&#x27;ll Cover</a></li><li><a href="#ch-6-dictionaries" aria-label="Ch 6: Dictionaries">Ch 6: Dictionaries</a><ul><li><a href="#key-value-pairs" aria-label="Key-Value Pairs">Key-Value Pairs</a></li><li><a href="#lookups-and-updates" aria-label="Lookups and Updates">Lookups and Updates</a></li><li><a href="#iterating-over-a-dictionary" aria-label="Iterating over a Dictionary">Iterating over a Dictionary</a></li><li><a href="#nested-data-structures" aria-label="Nested Data Structures">Nested Data Structures</a></li><li><a href="#in-class-exercise" aria-label="In-Class Exercise">In-Class Exercise</a></li></ul></li><li><a href="#ch-7-user-input-and-while-loops" aria-label="Ch 7: User Input and while Loops">Ch 7: User Input and while Loops</a><ul><li><a href="#reading-input-with-input" aria-label="Reading Input with input()">Reading Input with input()</a></li><li><a href="#remainders-with-the-modulo-operator" aria-label="Remainders with the Modulo Operator">Remainders with the Modulo Operator</a></li><li><a href="#repeating-with-while-loops" aria-label="Repeating with while Loops">Repeating with while Loops</a></li><li><a href="#modifying-lists-and-dictionaries-in-a-while-loop" aria-label="Modifying Lists and Dictionaries in a while Loop">Modifying Lists and Dictionaries in a while Loop</a></li><li><a href="#in-class-exercise-2" aria-label="In-Class Exercise">In-Class Exercise</a></li></ul></li></ul></div></details></div>
+<div class="post-content nb">
+<ul>
+<li><p>Lectures 1-2 covered variables, lists, <code>for</code> loops, and <code>if</code> statements. This lecture adds dictionaries, user input, and <code>while</code> loops.</p>
+</li>
+<li><p>A dictionary stores values under names (keys) instead of positions, so a stock's price can be looked up by its ticker.</p>
+</li>
+<li><p><code>input()</code> asks the user for information, and a <code>while</code> loop repeats a block of code until a condition changes, such as an account reaching a target balance.</p>
+</li>
+<li><p>Dictionaries come back in Lecture 6, where a pandas DataFrame can be built directly from one.</p>
+</li>
+</ul>
+
+<h3 id="what-well-cover">What We'll Cover</h3><ul>
+<li><p><strong>Ch 6 (Dictionaries):</strong> key-value pairs; looking up, adding, updating, and deleting entries; <code>get()</code> for missing keys; looping over pairs, keys, and values; nesting lists and dictionaries.</p>
+</li>
+<li><p><strong>Ch 7 (User Input and while Loops):</strong> <code>input()</code> and converting text to numbers; the modulo operator; <code>while</code> loops with quit commands, flags, <code>break</code>, and <code>continue</code>; making sure loops end; modifying lists and dictionaries inside a <code>while</code> loop.</p>
+</li>
+<li><p>Most examples use a small brokerage account: tickers on a watchlist (AAPL, MSFT, NVDA, JPM, XOM, KO, ...), their sectors and fundamentals, open positions, and a queue of orders. Some <code>while</code> loop examples grow a savings balance or pay down a loan. All prices and figures are illustrative.</p>
+</li>
+</ul>
+
+<h2 id="ch-6-dictionaries">Ch 6: Dictionaries</h2>
+
+<ul>
+<li><p>A list finds an item by its position: <code>prices[2]</code> is the third price, and you have to remember which stock that is.</p>
+</li>
+<li><p>A <strong>dictionary</strong> finds an item by its key: <code>prices["NVDA"]</code> is NVDA's price, no matter how many other stocks are stored.</p>
+</li>
+<li><p>Typical dictionaries in finance code are a quote board (ticker → price), a reference table (ticker → sector, exchange, currency), and the fields of a single trade (ticker, side, shares, price).</p>
+</li>
+</ul>
+
+<h3 id="key-value-pairs">Key-Value Pairs</h3><ul>
+<li><p>A dictionary is written as curly braces <code>{}</code> around comma-separated entries of the form <code>key: value</code>. Each entry is a <strong>key-value pair</strong>.</p>
+</li>
+<li><p>Keys must be unique and are usually strings, such as tickers or field names. Values can be any Python object, including a list or another dictionary; the nested structures at the end of this chapter are built this way.</p>
+</li>
+<li><p>Dictionaries are used in two common ways:</p>
+<ul>
+<li>As a <strong>record</strong>: each key names a different attribute of one thing, such as a single position.</li>
+<li>As a <strong>lookup table</strong>: every key is the same kind of thing (a ticker) and every value the same kind of fact (a price).</li>
+</ul>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">position</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"ticker"</span><span class="p">:</span> <span class="s2">"AAPL"</span><span class="p">,</span> <span class="s2">"shares"</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span> <span class="s2">"price"</span><span class="p">:</span> <span class="mf">189.50</span><span class="p">}</span>  <span class="c1"># a record</span>
+<span class="n">quotes</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"AAPL"</span><span class="p">:</span> <span class="mf">189.50</span><span class="p">,</span> <span class="s2">"MSFT"</span><span class="p">:</span> <span class="mf">415.20</span><span class="p">,</span> <span class="s2">"NVDA"</span><span class="p">:</span> <span class="mf">121.40</span><span class="p">}</span>  <span class="c1"># a lookup table</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">position</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">quotes</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>{'ticker': 'AAPL', 'shares': 50, 'price': 189.5}
+{'AAPL': 189.5, 'MSFT': 415.2, 'NVDA': 121.4}
+</pre>
+</div></div>
+<h3 id="lookups-and-updates">Lookups and Updates</h3><ul>
+<li>Dictionaries are mutable, like lists and unlike tuples: after creating one, you can add, update, and delete entries.</li>
+</ul>
+
+<h4 id="looking-up-a-value">Looking Up a Value</h4><ul>
+<li><p>Index a dictionary by key, as you index a list by position: <code>quotes["MSFT"]</code> returns MSFT's price.</p>
+</li>
+<li><p>The result is an ordinary value and can be used in arithmetic or in an f-string.</p>
+</li>
+<li><p>In an f-string, a colon after the expression sets the display format: <code>.2f</code> shows two decimals and <code>,</code> adds thousands separators, so <code>f"{9475.0:,.2f}"</code> shows <code>9,475.00</code>. (Plain <code>print()</code> drops trailing zeros: <code>189.50</code> prints as <code>189.5</code>.)</p>
+</li>
+</ul>
+<p><strong>Note:</strong> Inside an f-string written with double quotes, put keys in single quotes, as in <code>f"{position['ticker']}"</code>. Reusing double quotes there is a syntax error before Python 3.12.</p>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="nb">print</span><span class="p">(</span><span class="n">quotes</span><span class="p">[</span><span class="s2">"MSFT"</span><span class="p">])</span>
+<span class="n">value</span> <span class="o">=</span> <span class="n">position</span><span class="p">[</span><span class="s2">"shares"</span><span class="p">]</span> <span class="o">*</span> <span class="n">position</span><span class="p">[</span><span class="s2">"price"</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">position</span><span class="p">[</span><span class="s1">'ticker'</span><span class="p">]</span><span class="si">}</span><span class="s2"> position value: $</span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>415.2
+AAPL position value: $9,475.00
+</pre>
+</div></div>
+<h4 id="adding-entries">Adding Entries</h4><ul>
+<li><p>Assigning to a key that does not exist yet adds a new pair: <code>quotes["JPM"] = 198.60</code>.</p>
+</li>
+<li><p>Dictionaries keep <strong>insertion order</strong> (guaranteed since Python 3.7), so new pairs appear at the end.</p>
+</li>
+<li><p>When the fields arrive one at a time, as when a trade ticket is filled in, start with an empty dictionary <code>{}</code> and assign each field as it becomes known.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">quotes</span><span class="p">[</span><span class="s2">"JPM"</span><span class="p">]</span> <span class="o">=</span> <span class="mf">198.60</span>
+<span class="n">quotes</span><span class="p">[</span><span class="s2">"XOM"</span><span class="p">]</span> <span class="o">=</span> <span class="mf">112.75</span>
+<span class="n">quotes</span></code></pre></div><div class="nb-out nb-text">
+<pre>{'AAPL': 189.5, 'MSFT': 415.2, 'NVDA': 121.4, 'JPM': 198.6, 'XOM': 112.75}</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">trade</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">trade</span><span class="p">[</span><span class="s2">"ticker"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"NVDA"</span>
+<span class="n">trade</span><span class="p">[</span><span class="s2">"side"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"buy"</span>
+<span class="n">trade</span><span class="p">[</span><span class="s2">"shares"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">40</span>
+<span class="n">trade</span></code></pre></div><div class="nb-out nb-text">
+<pre>{'ticker': 'NVDA', 'side': 'buy', 'shares': 40}</pre>
+</div></div>
+<h4 id="updating-entries">Updating Entries</h4><ul>
+<li><p>Assigning to a key that already exists replaces its value. This is how a price or a share count is updated.</p>
+</li>
+<li><p>The new value can be computed from the old one: <code>position["shares"] += 25</code> is short for <code>position["shares"] = position["shares"] + 25</code>.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">quotes</span><span class="p">[</span><span class="s2">"NVDA"</span><span class="p">]</span> <span class="o">=</span> <span class="mf">124.10</span>   <span class="c1"># a new quote replaces the old one</span>
+<span class="n">position</span><span class="p">[</span><span class="s2">"shares"</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">25</span>  <span class="c1"># buy 25 more shares</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">quotes</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">position</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>{'AAPL': 189.5, 'MSFT': 415.2, 'NVDA': 124.1, 'JPM': 198.6, 'XOM': 112.75}
+{'ticker': 'AAPL', 'shares': 75, 'price': 189.5}
+</pre>
+</div></div>
+<h4 id="deleting-entries">Deleting Entries</h4><ul>
+<li><p><code>del quotes["XOM"]</code> deletes the key together with its value.</p>
+</li>
+<li><p><code>pop(key)</code> also removes a pair and returns its value. Use it when you still need the value, e.g., to report the final price of a stock you stop tracking.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">del</span> <span class="n">quotes</span><span class="p">[</span><span class="s2">"XOM"</span><span class="p">]</span>
+<span class="n">last_nvda</span> <span class="o">=</span> <span class="n">quotes</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"NVDA"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Stopped tracking NVDA at $</span><span class="si">{</span><span class="n">last_nvda</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">quotes</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Stopped tracking NVDA at $124.10
+{'AAPL': 189.5, 'MSFT': 415.2, 'JPM': 198.6}
+</pre>
+</div></div>
+<h4 id="a-lookup-table">A Lookup Table</h4><ul>
+<li><p>A lookup table holds the same fact for many items, for example the sector of every ticker we follow.</p>
+</li>
+<li><p>Write a long dictionary with one pair per line: indent the pairs, put a comma after every pair (the last one too, so adding a ticker later changes only one line), and put the closing brace on its own line.</p>
+</li>
+<li><p>A variable can serve as the key, so the same line of code works for any ticker.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">sectors</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"AAPL"</span><span class="p">:</span> <span class="s2">"Technology"</span><span class="p">,</span>
+    <span class="s2">"MSFT"</span><span class="p">:</span> <span class="s2">"Technology"</span><span class="p">,</span>
+    <span class="s2">"NVDA"</span><span class="p">:</span> <span class="s2">"Technology"</span><span class="p">,</span>
+    <span class="s2">"AMZN"</span><span class="p">:</span> <span class="s2">"Consumer Discretionary"</span><span class="p">,</span>
+    <span class="s2">"JPM"</span><span class="p">:</span> <span class="s2">"Financials"</span><span class="p">,</span>
+    <span class="s2">"XOM"</span><span class="p">:</span> <span class="s2">"Energy"</span><span class="p">,</span>
+    <span class="s2">"KO"</span><span class="p">:</span> <span class="s2">"Consumer Staples"</span><span class="p">,</span>
+<span class="p">}</span>
+<span class="n">ticker</span> <span class="o">=</span> <span class="s2">"JPM"</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ticker</span><span class="si">}</span><span class="s2"> is in the </span><span class="si">{</span><span class="n">sectors</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span><span class="si">}</span><span class="s2"> sector."</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>JPM is in the Financials sector.
+</pre>
+</div></div>
+<h4 id="missing-keys-keyerror-and-get">Missing Keys: <code>KeyError</code> and <code>get()</code></h4><ul>
+<li>Looking up a key that is not in the dictionary raises a <code>KeyError</code>. TSLA is not in <code>sectors</code>, so the lookup below fails.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># This will fail: there is no "TSLA" key in sectors</span>
+<span class="n">sectors</span><span class="p">[</span><span class="s2">"TSLA"</span><span class="p">]</span></code></pre></div><div class="nb-out nb-error">
+<pre>
+---------------------------------------------------------------------------
+KeyError                                  Traceback (most recent call last)
+Cell In[9], line 2
+      1 # This will fail: there is no "TSLA" key in sectors
+----&gt; 2 sectors["TSLA"]
+
+KeyError: 'TSLA'</pre>
+</div></div>
+<ul>
+<li><p><code>get(key, default)</code> returns the value if the key exists and <code>default</code> if it does not, so the program keeps running.</p>
+</li>
+<li><p>Without a default, <code>get()</code> returns <code>None</code>, a built-in object Python uses as a placeholder when there is nothing to return.</p>
+</li>
+<li><p>The <code>in</code> keyword (from Lecture 2) tests whether a key is present. It checks keys only, not values.</p>
+</li>
+<li><p>Use <code>[]</code> when a missing key would be a bug you want to see right away, and <code>get()</code> when a missing key is expected and a fallback value makes sense.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="nb">print</span><span class="p">(</span><span class="n">sectors</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"JPM"</span><span class="p">,</span> <span class="s2">"Unknown"</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">sectors</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"TSLA"</span><span class="p">,</span> <span class="s2">"Unknown"</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">sectors</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"TSLA"</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"XOM"</span> <span class="ow">in</span> <span class="n">sectors</span><span class="p">)</span>     <span class="c1"># a key</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Energy"</span> <span class="ow">in</span> <span class="n">sectors</span><span class="p">)</span>  <span class="c1"># a value, not a key</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Financials
+Unknown
+None
+True
+False
+</pre>
+</div></div>
+<h3 id="iterating-over-a-dictionary">Iterating over a Dictionary</h3><ul>
+<li>A <code>for</code> loop can go through a dictionary's pairs, keys, or values, using the methods <code>items()</code>, <code>keys()</code>, and <code>values()</code>.</li>
+</ul>
+
+<h4 id="pairs-with-items">Pairs with <code>items()</code></h4><ul>
+<li><p><code>items()</code> gives the loop one key-value pair per pass. With two loop variables, as in <code>for ticker, shares in holdings.items():</code>, each pair is unpacked into a key and a value.</p>
+</li>
+<li><p>Use names that describe the data (<code>ticker, shares</code>) rather than generic ones (<code>k, v</code>).</p>
+</li>
+<li><p>In the next cell, <code>holdings</code> maps tickers to share counts. Each pass looks up the price in <code>quotes</code> and adds the position's value to the portfolio total.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">holdings</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"AAPL"</span><span class="p">:</span> <span class="mi">75</span><span class="p">,</span> <span class="s2">"MSFT"</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span> <span class="s2">"JPM"</span><span class="p">:</span> <span class="mi">120</span><span class="p">}</span>
+<span class="n">total</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">for</span> <span class="n">ticker</span><span class="p">,</span> <span class="n">shares</span> <span class="ow">in</span> <span class="n">holdings</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="n">shares</span> <span class="o">*</span> <span class="n">quotes</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span>
+    <span class="n">total</span> <span class="o">+=</span> <span class="n">value</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ticker</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">shares</span><span class="si">}</span><span class="s2"> shares x $</span><span class="si">{</span><span class="n">quotes</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> = $</span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Portfolio value: $</span><span class="si">{</span><span class="n">total</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>AAPL: 75 shares x $189.50 = $14,212.50
+MSFT: 20 shares x $415.20 = $8,304.00
+JPM: 120 shares x $198.60 = $23,832.00
+Portfolio value: $46,348.50
+</pre>
+</div></div>
+<h4 id="keys-with-keys-and-sorted">Keys with <code>keys()</code> and <code>sorted()</code></h4><ul>
+<li><p><code>keys()</code> returns just the keys. Looping over a dictionary directly also goes through its keys, so <code>for ticker in sectors:</code> is the usual shorthand.</p>
+</li>
+<li><p>Inside the loop, <code>sectors[ticker]</code> gives the value for each key. The first cell below uses it to count the technology stocks.</p>
+</li>
+<li><p>To go through the keys in alphabetical order, wrap them in <code>sorted()</code>. It returns a sorted list and leaves the dictionary unchanged.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">tech_count</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">for</span> <span class="n">ticker</span> <span class="ow">in</span> <span class="n">sectors</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">sectors</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"Technology"</span><span class="p">:</span>
+        <span class="n">tech_count</span> <span class="o">+=</span> <span class="mi">1</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">tech_count</span><span class="si">}</span><span class="s2"> of </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">sectors</span><span class="p">)</span><span class="si">}</span><span class="s2"> stocks are in Technology"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>3 of 7 stocks are in Technology
+</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">for</span> <span class="n">ticker</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">sectors</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ticker</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">sectors</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>AAPL: Technology
+AMZN: Consumer Discretionary
+JPM: Financials
+KO: Consumer Staples
+MSFT: Technology
+NVDA: Technology
+XOM: Energy
+</pre>
+</div></div>
+<h4 id="values-with-values-and-set">Values with <code>values()</code> and <code>set()</code></h4><ul>
+<li><p><code>values()</code> returns just the values, for when the keys are not needed.</p>
+</li>
+<li><p>Values can repeat: three of our stocks are in Technology. Passing the values to <code>set()</code> keeps each distinct value once.</p>
+</li>
+<li><p>A <strong>set</strong> holds at most one copy of each item and has no positions or fixed order, so sort it before printing to get predictable output.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">for</span> <span class="n">sector</span> <span class="ow">in</span> <span class="n">sectors</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">sector</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Technology
+Technology
+Technology
+Consumer Discretionary
+Financials
+Energy
+Consumer Staples
+</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">unique_sectors</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">sectors</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">unique_sectors</span><span class="p">)</span><span class="si">}</span><span class="s2"> distinct sectors:"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">sector</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">unique_sectors</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"- </span><span class="si">{</span><span class="n">sector</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>5 distinct sectors:
+- Consumer Discretionary
+- Consumer Staples
+- Energy
+- Financials
+- Technology
+</pre>
+</div></div>
+<h3 id="nested-data-structures">Nested Data Structures</h3><ul>
+<li><p><strong>Nesting</strong> means storing lists and dictionaries inside other lists and dictionaries. A whole brokerage account (its positions, holdings, and per-stock data) can then be kept in one variable.</p>
+</li>
+<li><p>The right structure depends on whether you will loop over records or look items up by key. The three subsections below cover the most common cases.</p>
+</li>
+</ul>
+
+<h4 id="records-in-a-list">Records in a List</h4><ul>
+<li><p>Records with the same fields, such as the positions in an account, can be stored as a list of dictionaries, one dictionary per position.</p>
+</li>
+<li><p>A <code>for</code> loop then gives you one dictionary per pass, and you read its fields by key. Below we compute each position's <strong>cost basis</strong>: shares times the purchase price.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">positions</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span><span class="s2">"ticker"</span><span class="p">:</span> <span class="s2">"AAPL"</span><span class="p">,</span> <span class="s2">"shares"</span><span class="p">:</span> <span class="mi">75</span><span class="p">,</span> <span class="s2">"cost"</span><span class="p">:</span> <span class="mf">150.00</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">"ticker"</span><span class="p">:</span> <span class="s2">"JPM"</span><span class="p">,</span> <span class="s2">"shares"</span><span class="p">:</span> <span class="mi">120</span><span class="p">,</span> <span class="s2">"cost"</span><span class="p">:</span> <span class="mf">165.00</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">"ticker"</span><span class="p">:</span> <span class="s2">"KO"</span><span class="p">,</span> <span class="s2">"shares"</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span> <span class="s2">"cost"</span><span class="p">:</span> <span class="mf">58.50</span><span class="p">},</span>
+<span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">positions</span><span class="p">)</span><span class="si">}</span><span class="s2"> positions; the first is </span><span class="si">{</span><span class="n">positions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>3 positions; the first is {'ticker': 'AAPL', 'shares': 75, 'cost': 150.0}
+</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">total_cost</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="n">positions</span><span class="p">:</span>
+    <span class="n">cost_basis</span> <span class="o">=</span> <span class="n">pos</span><span class="p">[</span><span class="s2">"shares"</span><span class="p">]</span> <span class="o">*</span> <span class="n">pos</span><span class="p">[</span><span class="s2">"cost"</span><span class="p">]</span>
+    <span class="n">total_cost</span> <span class="o">+=</span> <span class="n">cost_basis</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">pos</span><span class="p">[</span><span class="s1">'ticker'</span><span class="p">]</span><span class="si">}</span><span class="s2">: cost basis $</span><span class="si">{</span><span class="n">cost_basis</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Total cost basis: $</span><span class="si">{</span><span class="n">total_cost</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>AAPL: cost basis $11,250.00
+JPM: cost basis $19,800.00
+KO: cost basis $11,700.00
+Total cost basis: $42,750.00
+</pre>
+</div></div>
+<ul>
+<li><p>The dictionaries inside the list can be changed in place. The next loop adds today's price to each position and computes its <strong>unrealized gain</strong>, shares times (price minus cost).</p>
+</li>
+<li><p>To reach one field of one record, use the list index and then the key: <code>positions[0]["price"]</code>.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">latest</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"AAPL"</span><span class="p">:</span> <span class="mf">192.00</span><span class="p">,</span> <span class="s2">"JPM"</span><span class="p">:</span> <span class="mf">198.60</span><span class="p">,</span> <span class="s2">"KO"</span><span class="p">:</span> <span class="mf">61.80</span><span class="p">}</span>
+<span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="n">positions</span><span class="p">:</span>
+    <span class="n">pos</span><span class="p">[</span><span class="s2">"price"</span><span class="p">]</span> <span class="o">=</span> <span class="n">latest</span><span class="p">[</span><span class="n">pos</span><span class="p">[</span><span class="s2">"ticker"</span><span class="p">]]</span>
+    <span class="n">gain</span> <span class="o">=</span> <span class="n">pos</span><span class="p">[</span><span class="s2">"shares"</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">pos</span><span class="p">[</span><span class="s2">"price"</span><span class="p">]</span> <span class="o">-</span> <span class="n">pos</span><span class="p">[</span><span class="s2">"cost"</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">pos</span><span class="p">[</span><span class="s1">'ticker'</span><span class="p">]</span><span class="si">}</span><span class="s2">: unrealized gain $</span><span class="si">{</span><span class="n">gain</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>AAPL: unrealized gain $3,150.00
+JPM: unrealized gain $4,032.00
+KO: unrealized gain $660.00
+</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="nb">print</span><span class="p">(</span><span class="n">positions</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">positions</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"price"</span><span class="p">])</span></code></pre></div><div class="nb-out nb-stream">
+<pre>{'ticker': 'AAPL', 'shares': 75, 'cost': 150.0, 'price': 192.0}
+192.0
+</pre>
+</div></div>
+<h4 id="lists-as-values">Lists as Values</h4><ul>
+<li><p>A dictionary value can be a list. This suits a field with several entries, such as the stocks a fund holds.</p>
+</li>
+<li><p>Get the list with its key, then loop over it as usual. Here each holding is also looked up in <code>sectors</code>.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">fund</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"strategy"</span><span class="p">:</span> <span class="s2">"dividend income"</span><span class="p">,</span>
+    <span class="s2">"benchmark"</span><span class="p">:</span> <span class="s2">"S&amp;P 500"</span><span class="p">,</span>
+    <span class="s2">"holdings"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"KO"</span><span class="p">,</span> <span class="s2">"JPM"</span><span class="p">,</span> <span class="s2">"XOM"</span><span class="p">,</span> <span class="s2">"MSFT"</span><span class="p">],</span>
+<span class="p">}</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Strategy: </span><span class="si">{</span><span class="n">fund</span><span class="p">[</span><span class="s1">'strategy'</span><span class="p">]</span><span class="si">}</span><span class="s2"> (benchmark: </span><span class="si">{</span><span class="n">fund</span><span class="p">[</span><span class="s1">'benchmark'</span><span class="p">]</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">ticker</span> <span class="ow">in</span> <span class="n">fund</span><span class="p">[</span><span class="s2">"holdings"</span><span class="p">]:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"- </span><span class="si">{</span><span class="n">ticker</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">sectors</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Strategy: dividend income (benchmark: S&amp;P 500)
+- KO: Consumer Staples
+- JPM: Financials
+- XOM: Energy
+- MSFT: Technology
+</pre>
+</div></div>
+<h4 id="dictionaries-as-values">Dictionaries as Values</h4><ul>
+<li><p>When each item has several named attributes and you want to find items by key, nest dictionaries: the outer key is the ticker, and the inner dictionary holds that stock's fields.</p>
+</li>
+<li><p>Give every inner dictionary the same keys, so that one loop can handle all of them.</p>
+</li>
+<li><p>Two keys in a row reach a single field: <code>fundamentals["JPM"]["eps"]</code> first selects JPM's inner dictionary, then its EPS (earnings per share).</p>
+</li>
+<li><p>Looping over <code>items()</code> gives each ticker together with its inner dictionary. The second cell below uses this to compute each stock's <strong>price-to-earnings (P/E) ratio</strong>, price divided by EPS.</p>
+</li>
+</ul>
+<p><strong>Note:</strong> Each extra level of nesting adds another <code>[...]</code> to every lookup, and beyond two levels the code is hard to follow. For tables like this one (a row per ticker, a column per field), Lecture 6 introduces the pandas DataFrame.</p>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">fundamentals</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"AAPL"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"sector"</span><span class="p">:</span> <span class="s2">"Technology"</span><span class="p">,</span> <span class="s2">"price"</span><span class="p">:</span> <span class="mf">192.00</span><span class="p">,</span> <span class="s2">"eps"</span><span class="p">:</span> <span class="mf">6.40</span><span class="p">},</span>
+    <span class="s2">"JPM"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"sector"</span><span class="p">:</span> <span class="s2">"Financials"</span><span class="p">,</span> <span class="s2">"price"</span><span class="p">:</span> <span class="mf">198.60</span><span class="p">,</span> <span class="s2">"eps"</span><span class="p">:</span> <span class="mf">16.20</span><span class="p">},</span>
+    <span class="s2">"KO"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"sector"</span><span class="p">:</span> <span class="s2">"Consumer Staples"</span><span class="p">,</span> <span class="s2">"price"</span><span class="p">:</span> <span class="mf">61.80</span><span class="p">,</span> <span class="s2">"eps"</span><span class="p">:</span> <span class="mf">2.45</span><span class="p">},</span>
+<span class="p">}</span>
+<span class="n">fundamentals</span><span class="p">[</span><span class="s2">"JPM"</span><span class="p">][</span><span class="s2">"eps"</span><span class="p">]</span></code></pre></div><div class="nb-out nb-text">
+<pre>16.2</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">for</span> <span class="n">ticker</span><span class="p">,</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">fundamentals</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">pe_ratio</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s2">"price"</span><span class="p">]</span> <span class="o">/</span> <span class="n">info</span><span class="p">[</span><span class="s2">"eps"</span><span class="p">]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ticker</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">info</span><span class="p">[</span><span class="s1">'sector'</span><span class="p">]</span><span class="si">}</span><span class="s2">): P/E = </span><span class="si">{</span><span class="n">pe_ratio</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>AAPL (Technology): P/E = 30.0
+JPM (Financials): P/E = 12.3
+KO (Consumer Staples): P/E = 25.2
+</pre>
+</div></div>
+<h3 id="in-class-exercise">In-Class Exercise</h3>
+
+<p><strong>6-1. Quote Board:</strong></p>
+<ul>
+<li>Create a dictionary that maps five tickers of your choice to illustrative prices.</li>
+<li>Add a sixth ticker, update one price, and delete one ticker, printing the dictionary after each step.</li>
+<li>Finally, loop through the tickers in alphabetical order and print each one with its price to two decimals.</li>
+</ul>
+
+<p><strong>6-2. Sector Counts:</strong></p>
+<ul>
+<li>Using the <code>sectors</code> dictionary from this lecture, print the sector of each ticker in <code>["MSFT", "TSLA", "XOM", "META"]</code>, showing <code>Unknown</code> for tickers that are missing.</li>
+<li>Then build a new dictionary that counts how many stocks fall in each sector, and print it. Hint: <code>counts.get(sector, 0)</code> gives the count so far, or 0 for a new sector.</li>
+</ul>
+
+<p><strong>6-3. Portfolio Weights:</strong></p>
+<ul>
+<li>Create a list of three dictionaries, each with the keys <code>"ticker"</code>, <code>"shares"</code>, and <code>"price"</code>.</li>
+<li>Compute each position's market value and the portfolio's total value.</li>
+<li>Print each position's <strong>weight</strong> (its value divided by the total) as a percentage with one decimal.</li>
+</ul>
+
+<p><strong>6-4. Value Screen:</strong></p>
+<ul>
+<li>Build a dictionary of dictionaries for four stocks, with the inner keys <code>"price"</code>, <code>"eps"</code>, and <code>"dividend"</code> (annual dividend per share).</li>
+<li>For each stock, print its P/E ratio and its dividend yield (dividend divided by price) as a percentage.</li>
+<li>Then print only the tickers whose P/E is below 20.</li>
+</ul>
+
+<h2 id="ch-7-user-input-and-while-loops">Ch 7: User Input and while Loops</h2>
+
+<ul>
+<li><p>So far our programs have used only data written into the code. This chapter adds user input and loops that repeat until a task is done.</p>
+</li>
+<li><p><code>input()</code> asks the user a question while the program runs and returns the answer, such as a ticker or a share count.</p>
+</li>
+<li><p>A <code>while</code> loop repeats a block of code as long as a condition holds, for example while a savings balance is below its goal.</p>
+</li>
+</ul>
+
+<h3 id="reading-input-with-input">Reading Input with <code>input()</code></h3><ul>
+<li><p><code>input(prompt)</code> prints the prompt, then waits until the user types a reply and presses Enter. The reply is returned as a string.</p>
+</li>
+<li><p>End the prompt with a space or <code>": "</code>; otherwise the reply appears directly after the prompt's last character.</p>
+</li>
+<li><p>Because the reply is a string, string methods work on it directly. For example, <code>.upper()</code> turns <code>msft</code> into <code>MSFT</code>, which matches a key in <code>quotes</code> from Ch 6. In the sample run, the user types <code>msft</code>.</p>
+</li>
+<li><p>In Colab or Jupyter, a cell that calls <code>input()</code> shows a text box and keeps running until you answer.</p>
+</li>
+</ul>
+<p><strong>Note:</strong> Outputs in this chapter show sample runs: each prompt is followed by what the user typed. When you run a cell yourself, type your own answers.</p>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">ticker</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">"Enter a ticker symbol: "</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+<span class="k">if</span> <span class="n">ticker</span> <span class="ow">in</span> <span class="n">quotes</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ticker</span><span class="si">}</span><span class="s2"> quote: $</span><span class="si">{</span><span class="n">quotes</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"No quote for </span><span class="si">{</span><span class="n">ticker</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Enter a ticker symbol: msft
+MSFT quote: $415.20
+</pre>
+</div></div>
+<h4 id="converting-input-with-int-and-float">Converting Input with <code>int()</code> and <code>float()</code></h4><ul>
+<li><code>input()</code> always returns text. If the user types 150, as in this sample run, the program receives the string <code>"150"</code>, not the number 150.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">shares</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">"How many shares of KO? "</span><span class="p">)</span>
+<span class="nb">type</span><span class="p">(</span><span class="n">shares</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>How many shares of KO? 150
+</pre>
+</div><div class="nb-out nb-text">
+<pre>str</pre>
+</div></div>
+<ul>
+<li>Multiplying that string by a price raises a <code>TypeError</code>, because Python cannot multiply text by a decimal number.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># This will fail: shares holds the text "150", not a number</span>
+<span class="n">cost</span> <span class="o">=</span> <span class="n">shares</span> <span class="o">*</span> <span class="mf">61.80</span></code></pre></div><div class="nb-out nb-error">
+<pre>
+---------------------------------------------------------------------------
+TypeError                                 Traceback (most recent call last)
+Cell In[25], line 2
+      1 # This will fail: shares holds the text "150", not a number
+----&gt; 2 cost = shares * 61.80
+
+TypeError: can't multiply sequence by non-int of type 'float'</pre>
+</div></div>
+<ul>
+<li><p>Multiplying text by a whole number does not raise an error. It repeats the text instead, so the mistake can go unnoticed.</p>
+</li>
+<li><p>To avoid both problems, convert the string first: <code>int()</code> turns a string of digits into an integer, and <code>float()</code> turns text such as <code>"61.80"</code> into a decimal number.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="nb">print</span><span class="p">(</span><span class="n">shares</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>  <span class="c1"># text: repeated, not doubled</span>
+<span class="n">shares</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">shares</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">shares</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>  <span class="c1"># number: real arithmetic</span></code></pre></div><div class="nb-out nb-stream">
+<pre>150150
+300
+</pre>
+</div></div>
+<ul>
+<li>Usually the conversion is done on the same line, as in <code>float(input(...))</code>. In the next cell, the user enters a <strong>limit price</strong>, the most they will pay per share (sample run: 61.80).</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">limit_price</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">input</span><span class="p">(</span><span class="s2">"Limit price for KO: "</span><span class="p">))</span>
+<span class="n">max_cost</span> <span class="o">=</span> <span class="n">shares</span> <span class="o">*</span> <span class="n">limit_price</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Buying </span><span class="si">{</span><span class="n">shares</span><span class="si">}</span><span class="s2"> KO shares costs at most $</span><span class="si">{</span><span class="n">max_cost</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Limit price for KO: 61.80
+Buying 150 KO shares costs at most $9,270.00
+</pre>
+</div></div>
+<ul>
+<li><p><code>int()</code> expects a plain whole number such as <code>"1000"</code>. Text with a comma, a decimal point, or letters raises a <code>ValueError</code>, and users often type <code>1,000</code>.</p>
+</li>
+<li><p>In the sample run below, the user types <code>1,000</code>. Later in this chapter a <code>while</code> loop keeps asking until the answer is valid, and Lecture 5 shows how to catch the error with <code>try</code>/<code>except</code>.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># This will fail: int() cannot read the comma in "1,000"</span>
+<span class="n">shares</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">input</span><span class="p">(</span><span class="s2">"How many shares of KO? "</span><span class="p">))</span></code></pre></div><div class="nb-out nb-stream">
+<pre>How many shares of KO? 1,000
+</pre>
+</div><div class="nb-out nb-error">
+<pre>
+---------------------------------------------------------------------------
+ValueError                                Traceback (most recent call last)
+Cell In[28], line 2
+      1 # This will fail: int() cannot read the comma in "1,000"
+----&gt; 2 shares = int(input("How many shares of KO? "))
+
+ValueError: invalid literal for int() with base 10: '1,000'</pre>
+</div></div>
+<h3 id="remainders-with-the-modulo-operator">Remainders with the Modulo Operator</h3><ul>
+<li><p>The <strong>modulo operator</strong> <code>%</code> gives the remainder of a division, and floor division <code>//</code> counts how many whole times one number fits into another.</p>
+</li>
+<li><p>Together they split a quantity into whole units and a remainder: 30 months is <code>30 // 12</code> = 2 years and <code>30 % 12</code> = 6 months.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">months</span> <span class="o">=</span> <span class="mi">30</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">months</span><span class="si">}</span><span class="s2"> months = </span><span class="si">{</span><span class="n">months</span><span class="w"> </span><span class="o">//</span><span class="w"> </span><span class="mi">12</span><span class="si">}</span><span class="s2"> years and </span><span class="si">{</span><span class="n">months</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="mi">12</span><span class="si">}</span><span class="s2"> months"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>30 months = 2 years and 6 months
+</pre>
+</div></div>
+<ul>
+<li>A remainder of 0 means the division is exact. Stock orders are often counted in round lots of 100 shares, and any leftover is an odd lot. <code>//</code> counts the round lots and <code>%</code> gives the odd lot. (The underscore in <code>1_000</code> only makes the number easier to read; Python treats it as 1000.)</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">lot_size</span> <span class="o">=</span> <span class="mi">100</span>
+<span class="k">for</span> <span class="n">shares</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">300</span><span class="p">,</span> <span class="mi">250</span><span class="p">,</span> <span class="mi">1_000</span><span class="p">,</span> <span class="mi">75</span><span class="p">]:</span>
+    <span class="n">lots</span> <span class="o">=</span> <span class="n">shares</span> <span class="o">//</span> <span class="n">lot_size</span>
+    <span class="n">odd</span> <span class="o">=</span> <span class="n">shares</span> <span class="o">%</span> <span class="n">lot_size</span>
+    <span class="k">if</span> <span class="n">odd</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">shares</span><span class="si">}</span><span class="s2"> shares: </span><span class="si">{</span><span class="n">lots</span><span class="si">}</span><span class="s2"> round lots"</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">shares</span><span class="si">}</span><span class="s2"> shares: </span><span class="si">{</span><span class="n">lots</span><span class="si">}</span><span class="s2"> round lots plus an odd lot of </span><span class="si">{</span><span class="n">odd</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>300 shares: 3 round lots
+250 shares: 2 round lots plus an odd lot of 50
+1000 shares: 10 round lots
+75 shares: 0 round lots plus an odd lot of 75
+</pre>
+</div></div>
+<h3 id="repeating-with-while-loops">Repeating with <code>while</code> Loops</h3><ul>
+<li><p>A <code>for</code> loop makes one pass per item. A <code>while</code> loop checks a condition before each pass and stops the first time the condition is <code>False</code>.</p>
+</li>
+<li><p>Use a <code>while</code> loop when the number of passes is not known in advance.</p>
+</li>
+<li><p>Something inside the loop must eventually make the condition <code>False</code>. In the first example, a balance of 10,000 earns 7% a year until it reaches 15,000.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">balance</span> <span class="o">=</span> <span class="mf">10_000.00</span>
+<span class="n">year</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">while</span> <span class="n">balance</span> <span class="o">&lt;</span> <span class="mf">15_000.00</span><span class="p">:</span>
+    <span class="n">year</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="n">balance</span> <span class="o">*=</span> <span class="mf">1.07</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Year </span><span class="si">{</span><span class="n">year</span><span class="si">}</span><span class="s2">: $</span><span class="si">{</span><span class="n">balance</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Year 1: $10,700.00
+Year 2: $11,449.00
+Year 3: $12,250.43
+Year 4: $13,107.96
+Year 5: $14,025.52
+Year 6: $15,007.30
+</pre>
+</div></div>
+<ul>
+<li><p>In year 6 the balance passes 15,000, so the condition <code>balance &lt; 15_000.00</code> becomes <code>False</code> and the loop stops. (<code>balance *= 1.07</code> is short for <code>balance = balance * 1.07</code>.)</p>
+</li>
+<li><p>If only the final answer matters, leave out the <code>print()</code> inside the loop. The next cell finds how many years it takes for money to double at 7% a year.</p>
+</li>
+<li><p>The <strong>rule of 72</strong> estimates the doubling time as 72 / 7 ≈ 10.3 years. Because the loop counts whole years, it reports the first year-end at which the balance has doubled.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">balance</span> <span class="o">=</span> <span class="mf">10_000.00</span>
+<span class="n">rate</span> <span class="o">=</span> <span class="mf">0.07</span>
+<span class="n">years</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">while</span> <span class="n">balance</span> <span class="o">&lt;</span> <span class="mf">20_000.00</span><span class="p">:</span>
+    <span class="n">balance</span> <span class="o">*=</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">rate</span>
+    <span class="n">years</span> <span class="o">+=</span> <span class="mi">1</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Doubled after </span><span class="si">{</span><span class="n">years</span><span class="si">}</span><span class="s2"> years: $</span><span class="si">{</span><span class="n">balance</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Doubled after 11 years: $21,048.52
+</pre>
+</div></div>
+<h4 id="a-quit-command">A Quit Command</h4><ul>
+<li><p>With <code>input()</code> inside a <code>while</code> loop, the user decides how many passes to make: the loop runs until they type a quit command, here <code>q</code>.</p>
+</li>
+<li><p>The first question is asked before the loop, so the condition has an answer to check. Each pass stores the answer, then asks again.</p>
+</li>
+<li><p>When the user types <code>q</code> (which <code>.upper()</code> turns into <code>Q</code>), the condition becomes <code>False</code>, so the loop ends and <code>Q</code> is not added to the list. In the sample run, the user adds two tickers and then quits.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">watchlist</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">ticker</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">"Add a ticker (q to quit): "</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+<span class="k">while</span> <span class="n">ticker</span> <span class="o">!=</span> <span class="s2">"Q"</span><span class="p">:</span>
+    <span class="n">watchlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ticker</span><span class="p">)</span>
+    <span class="n">ticker</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">"Add another ticker (q to quit): "</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Watchlist: </span><span class="si">{</span><span class="n">watchlist</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Add a ticker (q to quit): nvda
+Add another ticker (q to quit): ko
+Add another ticker (q to quit): q
+Watchlist: ['NVDA', 'KO']
+</pre>
+</div></div>
+<h4 id="flags-for-several-stopping-rules">Flags for Several Stopping Rules</h4><ul>
+<li><p>When a loop has more than one stopping rule, putting every rule in the <code>while</code> line makes the line long and hard to read.</p>
+</li>
+<li><p>A <strong>flag</strong> is a Boolean variable that stays <code>True</code> while the loop should keep going. Any branch inside the loop can set it to <code>False</code>.</p>
+</li>
+<li><p>In the next two cells, a savings balance grows 7% a year plus a deposit of 1,000 at each year-end. The loop stops when the balance reaches the goal or when time runs out. (Set <code>max_years = 5</code> and rerun both cells to see the second rule end the loop.)</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">balance</span> <span class="o">=</span> <span class="mf">10_000.00</span>
+<span class="n">goal</span> <span class="o">=</span> <span class="mf">25_000.00</span>
+<span class="n">max_years</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Goal: $</span><span class="si">{</span><span class="n">goal</span><span class="si">:</span><span class="s2">,.0f</span><span class="si">}</span><span class="s2"> within </span><span class="si">{</span><span class="n">max_years</span><span class="si">}</span><span class="s2"> years"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Goal: $25,000 within 10 years
+</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">year</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">saving</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="k">while</span> <span class="n">saving</span><span class="p">:</span>
+    <span class="n">year</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="n">balance</span> <span class="o">=</span> <span class="n">balance</span> <span class="o">*</span> <span class="mf">1.07</span> <span class="o">+</span> <span class="mi">1_000</span>
+    <span class="k">if</span> <span class="n">balance</span> <span class="o">&gt;=</span> <span class="n">goal</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Goal reached in year </span><span class="si">{</span><span class="n">year</span><span class="si">}</span><span class="s2">: $</span><span class="si">{</span><span class="n">balance</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">saving</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">elif</span> <span class="n">year</span> <span class="o">==</span> <span class="n">max_years</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Time is up after </span><span class="si">{</span><span class="n">year</span><span class="si">}</span><span class="s2"> years: $</span><span class="si">{</span><span class="n">balance</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">saving</span> <span class="o">=</span> <span class="kc">False</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Goal reached in year 8: $27,441.66
+</pre>
+</div></div>
+<h4 id="leaving-early-with-break">Leaving Early with <code>break</code></h4><ul>
+<li><p><code>break</code> ends a loop immediately: the rest of the body is skipped and no further passes run.</p>
+</li>
+<li><p>A common pattern is <code>while True:</code>, a loop that would never end on its own, with a <code>break</code> at the point where the task is done.</p>
+</li>
+<li><p>The next loop asks for a share count until the answer is valid, which handles the <code>1,000</code> input from earlier. The string method <code>isdigit()</code> returns <code>True</code> only if every character is a digit. In the sample run, the first answer contains a comma.</p>
+</li>
+<li><p><code>break</code> also works in <code>for</code> loops, e.g., to stop scanning a list of prices at the first one that crosses a stop-loss level.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+    <span class="n">answer</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">"Shares to buy (digits only): "</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">answer</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+        <span class="k">break</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Please type digits only, with no commas or decimals."</span><span class="p">)</span>
+<span class="n">shares</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">answer</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Order size: </span><span class="si">{</span><span class="n">shares</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> shares"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Shares to buy (digits only): 1,000
+Please type digits only, with no commas or decimals.
+Shares to buy (digits only): 1000
+Order size: 1,000 shares
+</pre>
+</div></div>
+<h4 id="skipping-a-pass-with-continue">Skipping a Pass with <code>continue</code></h4><ul>
+<li><p><code>continue</code> ends the current pass and goes back to the condition check. Unlike <code>break</code>, it does not end the loop.</p>
+</li>
+<li><p>Example: a student loan of 20,000 at 6% a year (0.5% a month) is repaid at 400 a month. The loop runs month by month, but we want a report only at each year-end, so in the other 11 months <code>continue</code> skips the <code>print()</code>.</p>
+</li>
+<li><p><code>month % 12 != 0</code> is <code>True</code> in every month except months 12, 24, 36, and so on.</p>
+</li>
+<li><p>The loop ends once the balance reaches zero or below, so the final payment is a little more than what was still owed.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">balance</span> <span class="o">=</span> <span class="mf">20_000.00</span>  <span class="c1"># student loan</span>
+<span class="n">monthly_rate</span> <span class="o">=</span> <span class="mf">0.06</span> <span class="o">/</span> <span class="mi">12</span>
+<span class="n">payment</span> <span class="o">=</span> <span class="mf">400.00</span>
+<span class="n">month</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">while</span> <span class="n">balance</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+    <span class="n">month</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="n">balance</span> <span class="o">=</span> <span class="n">balance</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">monthly_rate</span><span class="p">)</span> <span class="o">-</span> <span class="n">payment</span>
+    <span class="k">if</span> <span class="n">month</span> <span class="o">%</span> <span class="mi">12</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">continue</span>  <span class="c1"># not a year-end, so skip the report</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"End of year </span><span class="si">{</span><span class="n">month</span><span class="w"> </span><span class="o">//</span><span class="w"> </span><span class="mi">12</span><span class="si">}</span><span class="s2">: $</span><span class="si">{</span><span class="n">balance</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2"> owed"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Repaid in month </span><span class="si">{</span><span class="n">month</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>End of year 1: $16,299.33 owed
+End of year 2: $12,370.41 owed
+End of year 3: $8,199.17 owed
+End of year 4: $3,770.65 owed
+Repaid in month 58
+</pre>
+</div></div>
+<h4 id="making-sure-the-loop-ends">Making Sure the Loop Ends</h4><ul>
+<li><p>A <code>while</code> loop whose condition never becomes <code>False</code> runs forever. Such an <strong>infinite loop</strong> hangs the program, and the code after the loop never runs.</p>
+</li>
+<li><p>The loop below never ends: <code>month</code> grows, but <code>balance</code> never changes, so <code>balance &gt; 0</code> stays <code>True</code>. It is shown as text rather than as a code cell so that it cannot be run by accident.</p>
+</li>
+</ul>
+<div class="highlight"><pre><span></span><span class="n">balance</span> <span class="o">=</span> <span class="mf">20_000.00</span>
+<span class="n">month</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">while</span> <span class="n">balance</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+    <span class="n">month</span> <span class="o">+=</span> <span class="mi">1</span>  <span class="c1"># bug: balance is never updated</span>
+</pre></div>
+<ul>
+<li>If a cell seems stuck, stop it with Runtime → Interrupt execution in Colab, the Interrupt command in Jupyter's Kernel menu, or Ctrl+C in a terminal.</li>
+</ul>
+
+<ul>
+<li><p>Common causes of infinite loops:</p>
+<ul>
+<li>The variable in the condition is never updated, as above.</li>
+<li>The update never moves the condition toward <code>False</code>. At 0.5% a month, a 20,000 loan accrues 100 of interest each month, so a payment of 100 or less never brings the balance down.</li>
+<li>The condition tests for an exact value, e.g., <code>while balance != 0:</code>. The balance can jump from positive to negative without ever equaling 0, so the loop keeps going. Write <code>while balance &gt; 0:</code> instead.</li>
+</ul>
+</li>
+<li><p>A simple safeguard is a cap on the number of passes. In the next cell, the payment only covers the interest, but the loop still stops after 600 months (50 years).</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">balance</span> <span class="o">=</span> <span class="mf">20_000.00</span>
+<span class="n">payment</span> <span class="o">=</span> <span class="mf">100.00</span>  <span class="c1"># equals the monthly interest</span>
+<span class="n">month</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">while</span> <span class="n">balance</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">month</span> <span class="o">&lt;</span> <span class="mi">600</span><span class="p">:</span>
+    <span class="n">month</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="n">balance</span> <span class="o">=</span> <span class="n">balance</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="mf">0.06</span> <span class="o">/</span> <span class="mi">12</span><span class="p">)</span> <span class="o">-</span> <span class="n">payment</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Stopped after </span><span class="si">{</span><span class="n">month</span><span class="si">}</span><span class="s2"> months; $</span><span class="si">{</span><span class="n">balance</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2"> still owed"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Stopped after 600 months; $20,000.00 still owed
+</pre>
+</div></div>
+<h3 id="modifying-lists-and-dictionaries-in-a-while-loop">Modifying Lists and Dictionaries in a <code>while</code> Loop</h3><ul>
+<li>Suppose we want to empty a list of tickers one at a time. Removing each item inside a <code>for</code> loop over the same list does not work, as the next cell shows.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">tickers</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"AAPL"</span><span class="p">,</span> <span class="s2">"MSFT"</span><span class="p">,</span> <span class="s2">"NVDA"</span><span class="p">,</span> <span class="s2">"JPM"</span><span class="p">]</span>
+<span class="k">for</span> <span class="n">ticker</span> <span class="ow">in</span> <span class="n">tickers</span><span class="p">:</span>
+    <span class="n">tickers</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">ticker</span><span class="p">)</span>  <span class="c1"># try to empty the list...</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">tickers</span><span class="p">)</span>              <span class="c1"># ...but half the tickers survive</span></code></pre></div><div class="nb-out nb-stream">
+<pre>['MSFT', 'JPM']
+</pre>
+</div></div>
+<ul>
+<li><p>Each <code>remove()</code> shifts the later items one position to the left, but the <code>for</code> loop still moves on to the next position, so every other ticker is skipped. No error is raised.</p>
+</li>
+<li><p>A <code>while</code> loop avoids this because it checks the list itself before every pass. An empty list counts as <code>False</code>, so a loop that starts with <code>while pending:</code> stops when the list is empty.</p>
+</li>
+</ul>
+
+<h4 id="moving-orders-from-pending-to-filled">Moving Orders from Pending to Filled</h4><ul>
+<li><p>Each pass takes the oldest pending order, fills it at the current price, and moves it to the <code>filled</code> list.</p>
+</li>
+<li><p><code>pop(0)</code> removes and returns the first item, so orders are handled first in, first out.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">pending</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span><span class="s2">"ticker"</span><span class="p">:</span> <span class="s2">"AAPL"</span><span class="p">,</span> <span class="s2">"side"</span><span class="p">:</span> <span class="s2">"buy"</span><span class="p">,</span> <span class="s2">"shares"</span><span class="p">:</span> <span class="mi">100</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">"ticker"</span><span class="p">:</span> <span class="s2">"XOM"</span><span class="p">,</span> <span class="s2">"side"</span><span class="p">:</span> <span class="s2">"sell"</span><span class="p">,</span> <span class="s2">"shares"</span><span class="p">:</span> <span class="mi">50</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">"ticker"</span><span class="p">:</span> <span class="s2">"KO"</span><span class="p">,</span> <span class="s2">"side"</span><span class="p">:</span> <span class="s2">"buy"</span><span class="p">,</span> <span class="s2">"shares"</span><span class="p">:</span> <span class="mi">200</span><span class="p">},</span>
+<span class="p">]</span>
+<span class="n">filled</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">fill_prices</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"AAPL"</span><span class="p">:</span> <span class="mf">189.50</span><span class="p">,</span> <span class="s2">"XOM"</span><span class="p">:</span> <span class="mf">112.75</span><span class="p">,</span> <span class="s2">"KO"</span><span class="p">:</span> <span class="mf">61.80</span><span class="p">}</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">pending</span><span class="p">)</span><span class="si">}</span><span class="s2"> orders pending"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>3 orders pending
+</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">while</span> <span class="n">pending</span><span class="p">:</span>
+    <span class="n">order</span> <span class="o">=</span> <span class="n">pending</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">order</span><span class="p">[</span><span class="s2">"price"</span><span class="p">]</span> <span class="o">=</span> <span class="n">fill_prices</span><span class="p">[</span><span class="n">order</span><span class="p">[</span><span class="s2">"ticker"</span><span class="p">]]</span>
+    <span class="n">filled</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Filled: </span><span class="si">{</span><span class="n">order</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Orders still pending: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">pending</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Filled: {'ticker': 'AAPL', 'side': 'buy', 'shares': 100, 'price': 189.5}
+Filled: {'ticker': 'XOM', 'side': 'sell', 'shares': 50, 'price': 112.75}
+Filled: {'ticker': 'KO', 'side': 'buy', 'shares': 200, 'price': 61.8}
+Orders still pending: 0
+</pre>
+</div></div>
+<h4 id="deleting-every-copy-of-a-ticker">Deleting Every Copy of a Ticker</h4><ul>
+<li><p><code>remove()</code> deletes only the first match. To delete every copy of a value, call <code>remove()</code> in a <code>while</code> loop until the value is gone.</p>
+</li>
+<li><p>Example: <code>alerts</code> holds one entry per price alert, and we delete every alert for NVDA. The list method <code>count()</code> returns how many times a value appears.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">alerts</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"NVDA"</span><span class="p">,</span> <span class="s2">"KO"</span><span class="p">,</span> <span class="s2">"NVDA"</span><span class="p">,</span> <span class="s2">"JPM"</span><span class="p">,</span> <span class="s2">"XOM"</span><span class="p">,</span> <span class="s2">"NVDA"</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"NVDA alerts before: </span><span class="si">{</span><span class="n">alerts</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s1">'NVDA'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="k">while</span> <span class="s2">"NVDA"</span> <span class="ow">in</span> <span class="n">alerts</span><span class="p">:</span>
+    <span class="n">alerts</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s2">"NVDA"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Remaining alerts: </span><span class="si">{</span><span class="n">alerts</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>NVDA alerts before: 3
+Remaining alerts: ['KO', 'JPM', 'XOM']
+</pre>
+</div></div>
+<h4 id="building-a-dictionary-from-user-answers">Building a Dictionary from User Answers</h4><ul>
+<li><p>A <code>while</code> loop can also collect key-value pairs from the user, one pair per pass.</p>
+</li>
+<li><p>Here the user enters target portfolio weights in percent, and the loop ends once the weights add up to 100. In the sample run, the user enters three stocks.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">targets</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">total_weight</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="k">while</span> <span class="n">total_weight</span> <span class="o">&lt;</span> <span class="mi">100</span><span class="p">:</span>
+    <span class="n">ticker</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">"Ticker: "</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+    <span class="n">weight</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">input</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Target weight for </span><span class="si">{</span><span class="n">ticker</span><span class="si">}</span><span class="s2"> (%): "</span><span class="p">))</span>
+    <span class="n">targets</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span> <span class="o">=</span> <span class="n">weight</span>
+    <span class="n">total_weight</span> <span class="o">+=</span> <span class="n">weight</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">targets</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Ticker: aapl
+Target weight for AAPL (%): 40
+Ticker: jpm
+Target weight for JPM (%): 35
+Ticker: ko
+Target weight for KO (%): 25
+{'AAPL': 40.0, 'JPM': 35.0, 'KO': 25.0}
+</pre>
+</div></div>
+<ul>
+<li>Once the dictionary is filled, an ordinary <code>for</code> loop converts the weights into dollar amounts for an account worth 50,000.</li>
+</ul>
+<p><strong>Note:</strong> The <code>while</code> loop above does not check the user's answers. If the weights add up to more than 100 (say 60 and then 60), it stops at 120. Exercise 7-5 asks you to handle this case.</p>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">account_value</span> <span class="o">=</span> <span class="mi">50_000</span>
+<span class="k">for</span> <span class="n">ticker</span><span class="p">,</span> <span class="n">weight</span> <span class="ow">in</span> <span class="n">targets</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">dollars</span> <span class="o">=</span> <span class="n">account_value</span> <span class="o">*</span> <span class="n">weight</span> <span class="o">/</span> <span class="mi">100</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ticker</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">weight</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">% = $</span><span class="si">{</span><span class="n">dollars</span><span class="si">:</span><span class="s2">,.0f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>AAPL: 40% = $20,000
+JPM: 35% = $17,500
+KO: 25% = $12,500
+</pre>
+</div></div>
+<h3 id="in-class-exercise-2">In-Class Exercise</h3>
+
+<p><strong>7-1. Order Ticket:</strong></p>
+<ul>
+<li>Ask the user for a ticker, a number of shares, and a limit price, converting each answer to a suitable type.</li>
+<li>Print a one-line summary with the ticker in uppercase and the maximum cost formatted with commas and two decimals.</li>
+<li>Use <code>%</code> to report whether the order is a whole number of 100-share round lots.</li>
+</ul>
+
+<p><strong>7-2. Years to Target:</strong></p>
+<ul>
+<li>Start with 5,000 that grows 6% per year. Use a <code>while</code> loop to print the balance at the end of each year until it reaches at least 8,000, then report how many years that took.</li>
+<li>Add a cap so the loop also stops after 30 years, and check that it ends when the growth rate is 0%.</li>
+</ul>
+
+<p><strong>7-3. Coupon Calendar:</strong></p>
+<ul>
+<li>A 3-year bond with a face value of 1,000 pays a coupon of 20 every 6 months and repays the face value at maturity.</li>
+<li>Use a <code>while</code> loop over months 1 to 36, with <code>continue</code> to skip the months without a payment.</li>
+<li>Print each payment month with the cash received, then the total received over the bond's life.</li>
+</ul>
+
+<p><strong>7-4. Order Book with Restrictions:</strong></p>
+<ul>
+<li>Create a list of pending orders (dictionaries with <code>"ticker"</code>, <code>"side"</code>, and <code>"shares"</code>), including two orders for a ticker on a <code>restricted</code> list.</li>
+<li>Use a <code>while</code> loop to move every order to either <code>filled</code> or <code>rejected</code>, using <code>continue</code> to skip the fill step for rejected orders.</li>
+<li>Print both lists at the end.</li>
+</ul>
+
+<p><strong>7-5. Target Allocation with Checks:</strong></p>
+<ul>
+<li>Use a <code>while</code> loop and <code>input()</code> to build a dictionary that maps tickers to whole-number target weights in percent.</li>
+<li>Stop when the user types <code>done</code> or the weights add up to 100. If a weight would push the total above 100, print a warning and ask again instead of storing it.</li>
+<li>Print the final allocation in alphabetical order.</li>
+</ul>
+</div>

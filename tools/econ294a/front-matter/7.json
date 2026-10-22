@@ -1,0 +1,3 @@
+{"title": "Lecture 7: Data Visualization", "lecture": 7, "weight": 7,
+ "summary": "Matplotlib (pyplot and object-oriented interfaces, customization, subplots) and Seaborn (distribution, regression, and categorical plots, heatmaps).",
+ "description": "ECON 294A lecture notes by Yuchao Li: data visualization with Matplotlib and Seaborn, applied to Fama-French factor data."}

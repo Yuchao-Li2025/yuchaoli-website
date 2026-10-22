@@ -1,0 +1,3 @@
+{"title": "Lecture 2: Working with Lists and if Statements", "lecture": 2, "weight": 2,
+ "summary": "for loops and indentation, range(), numerical lists, list comprehensions, slicing, copies vs. aliases, and tuples; conditional tests, and/or, membership, and if/elif/else.",
+ "description": "ECON 294A lecture notes by Yuchao Li: loops over lists, slicing, tuples, and if statements, with finance examples."}

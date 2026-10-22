@@ -1,0 +1,2360 @@
+---
+title: "Lecture 8: Econometrics in Python"
+lecture: 8
+weight: 8
+summary: "Hypothesis tests with SciPy; OLS with robust, clustered, and HAC standard errors in statsmodels; panel data, IV, and Fama-MacBeth in linearmodels; GARCH in arch."
+description: "ECON 294A lecture notes by Yuchao Li: econometrics in Python with SciPy, statsmodels, linearmodels, and arch, using Fama-French factors and industry portfolios."
+notebook: "ECON294A_Lecture8.ipynb"
+---
+<div class="toc"><details><summary accesskey="c" title="(Alt + C)"><span class="details">Contents</span></summary><div class="inner"><ul><li><a href="#what-well-cover" aria-label="What We&#x27;ll Cover">What We&#x27;ll Cover</a></li><li><a href="#setup-installing-and-importing-libraries" aria-label="Setup: Installing and Importing Libraries">Setup: Installing and Importing Libraries</a></li><li><a href="#loading-our-data" aria-label="Loading Our Data">Loading Our Data</a></li><li><a href="#ch-15-statistical-foundations" aria-label="Ch 15: Statistical Foundations">Ch 15: Statistical Foundations</a><ul><li><a href="#descriptive-statistics" aria-label="Descriptive Statistics">Descriptive Statistics</a></li><li><a href="#correlation" aria-label="Correlation">Correlation</a></li><li><a href="#distributions-and-normality" aria-label="Distributions and Normality">Distributions and Normality</a></li><li><a href="#hypothesis-testing" aria-label="Hypothesis Testing">Hypothesis Testing</a></li><li><a href="#in-class-exercise" aria-label="In-Class Exercise">In-Class Exercise</a></li></ul></li><li><a href="#ch-16-linear-regression-with-statsmodels" aria-label="Ch 16: Linear Regression with statsmodels">Ch 16: Linear Regression with statsmodels</a><ul><li><a href="#simple-regression-the-capm" aria-label="Simple Regression: the CAPM">Simple Regression: the CAPM</a></li><li><a href="#multiple-regression-the-5-factor-model" aria-label="Multiple Regression: the 5-Factor Model">Multiple Regression: the 5-Factor Model</a></li><li><a href="#categorical-variables-and-interactions" aria-label="Categorical Variables and Interactions">Categorical Variables and Interactions</a></li><li><a href="#robust-standard-errors" aria-label="Robust Standard Errors">Robust Standard Errors</a></li><li><a href="#hac-newey-west-standard-errors" aria-label="HAC / Newey-West Standard Errors">HAC / Newey-West Standard Errors</a></li><li><a href="#clustered-standard-errors" aria-label="Clustered Standard Errors">Clustered Standard Errors</a></li><li><a href="#regression-diagnostics" aria-label="Regression Diagnostics">Regression Diagnostics</a></li><li><a href="#hypothesis-testing-2" aria-label="Hypothesis Testing">Hypothesis Testing</a></li><li><a href="#the-dummy-variable-trap" aria-label="The Dummy Variable Trap">The Dummy Variable Trap</a></li><li><a href="#in-class-exercise-2" aria-label="In-Class Exercise">In-Class Exercise</a></li></ul></li><li><a href="#ch-17-panel-data-iv-with-linearmodels" aria-label="Ch 17: Panel Data &amp; IV with linearmodels">Ch 17: Panel Data &amp; IV with linearmodels</a><ul><li><a href="#building-a-panel-dataframe" aria-label="Building a Panel DataFrame">Building a Panel DataFrame</a></li><li><a href="#pooled-ols" aria-label="Pooled OLS">Pooled OLS</a></li><li><a href="#fixed-effects" aria-label="Fixed Effects">Fixed Effects</a></li><li><a href="#random-effects" aria-label="Random Effects">Random Effects</a></li><li><a href="#instrumental-variables-2sls" aria-label="Instrumental Variables / 2SLS">Instrumental Variables / 2SLS</a></li><li><a href="#fama-macbeth-regression" aria-label="Fama-MacBeth Regression">Fama-MacBeth Regression</a></li><li><a href="#in-class-exercise-3" aria-label="In-Class Exercise">In-Class Exercise</a></li></ul></li><li><a href="#ch-18-volatility-modeling-with-arch" aria-label="Ch 18: Volatility Modeling with arch">Ch 18: Volatility Modeling with arch</a><ul><li><a href="#volatility-clustering" aria-label="Volatility Clustering">Volatility Clustering</a></li><li><a href="#the-garch-1-1-model" aria-label="The GARCH(1,1) Model">The GARCH(1,1) Model</a></li><li><a href="#conditional-volatility" aria-label="Conditional Volatility">Conditional Volatility</a></li><li><a href="#volatility-forecasting" aria-label="Volatility Forecasting">Volatility Forecasting</a></li><li><a href="#a-note-on-the-mean-model" aria-label="A Note on the Mean Model">A Note on the Mean Model</a></li><li><a href="#in-class-exercise-4" aria-label="In-Class Exercise">In-Class Exercise</a></li></ul></li><li><a href="#summary" aria-label="Summary">Summary</a></li></ul></div></details></div>
+<div class="post-content nb">
+<ul>
+<li><p>Lectures 1-5 covered the Python language. In Lecture 6 we worked with data in NumPy and pandas, and in Lecture 7 we plotted it.</p>
+</li>
+<li><p>From here on, the focus is on running standard econometric methods in Python.</p>
+</li>
+<li><p>This lecture is about <strong>inference</strong>: estimating relationships and testing whether they are statistically significant (coefficients, standard errors, hypothesis tests).</p>
+</li>
+<li><p>Lecture 9 is about <strong>prediction</strong>: building models that forecast well out of sample.</p>
+</li>
+</ul>
+
+<h3 id="what-well-cover">What We'll Cover</h3><ul>
+<li><p><strong>Ch 15 (Statistical Foundations):</strong> descriptive statistics, correlation, and hypothesis tests with <code>scipy.stats</code>.</p>
+</li>
+<li><p><strong>Ch 16 (Linear Regression):</strong> OLS, robust/clustered/HAC standard errors, and diagnostics with <code>statsmodels</code>.</p>
+</li>
+<li><p><strong>Ch 17 (Panel Data &amp; IV):</strong> fixed effects, instrumental variables, and Fama-MacBeth with <code>linearmodels</code>.</p>
+</li>
+<li><p><strong>Ch 18 (Volatility Modeling):</strong> ARCH/GARCH with <code>arch</code>.</p>
+</li>
+<li><p>Most examples use the Fama-French 5 factors and the 10 industry portfolios from Ken French's data library, both widely used in empirical asset pricing.</p>
+</li>
+</ul>
+
+<h3 id="setup-installing-and-importing-libraries">Setup: Installing and Importing Libraries</h3><ul>
+<li><code>statsmodels</code>, <code>scipy</code>, and <code>numpy</code>/<code>pandas</code> come pre-installed in Colab.</li>
+<li><code>linearmodels</code> (panel/IV) and <code>arch</code> (GARCH) are not, so we install them.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="err">!</span><span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">q</span> <span class="n">linearmodels</span> <span class="n">arch</span></code></pre></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">seaborn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sns</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy</span><span class="w"> </span><span class="kn">import</span> <span class="n">stats</span>
+
+<span class="n">sns</span><span class="o">.</span><span class="n">set_theme</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s1">'whitegrid'</span><span class="p">)</span></code></pre></div></div>
+<h3 id="loading-our-data">Loading Our Data</h3><ul>
+<li><p>We need two datasets from Ken French's library: the 5 factors and the 10 industry portfolios.</p>
+</li>
+<li><p>We write a small helper function, <code>load_french()</code>, that loads any monthly French dataset (recall functions from Lecture 4). It tries pandas-datareader first and falls back to a direct download.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">import</span><span class="w"> </span><span class="nn">io</span><span class="o">,</span><span class="w"> </span><span class="nn">zipfile</span><span class="o">,</span><span class="w"> </span><span class="nn">urllib.request</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">load_french</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">colnames</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="s1">'1990-01-01'</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">'2023-12-31'</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Load a monthly dataset from Ken French's data library.</span>
+<span class="sd">    Tries pandas-datareader first, then falls back to a direct download."""</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">pandas_datareader.data</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">web</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">web</span><span class="o">.</span><span class="n">DataReader</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="s1">'famafrench'</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">data</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">to_timestamp</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">data</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"datareader failed (</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">); using direct download for </span><span class="si">{</span><span class="n">dataset</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="p">(</span><span class="sa">f</span><span class="s2">"https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/"</span>
+               <span class="sa">f</span><span class="s2">"ftp/</span><span class="si">{</span><span class="n">dataset</span><span class="si">}</span><span class="s2">_CSV.zip"</span><span class="p">)</span>
+        <span class="n">req</span> <span class="o">=</span> <span class="n">urllib</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">Request</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s1">'User-Agent'</span><span class="p">:</span> <span class="s1">'Mozilla/5.0'</span><span class="p">})</span>
+        <span class="k">with</span> <span class="n">urllib</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">urlopen</span><span class="p">(</span><span class="n">req</span><span class="p">)</span> <span class="k">as</span> <span class="n">r</span><span class="p">:</span>
+            <span class="n">raw</span> <span class="o">=</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">read</span><span class="p">()))</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">namelist</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">'latin1'</span><span class="p">)</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ln</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+                 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ln</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="o">&gt;=</span> <span class="mi">6</span> <span class="ow">and</span> <span class="n">ln</span><span class="o">.</span><span class="n">strip</span><span class="p">()[:</span><span class="mi">6</span><span class="p">]</span><span class="o">.</span><span class="n">isdigit</span><span class="p">())</span>
+        <span class="n">e_</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">))</span>
+                   <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="o">&gt;=</span> <span class="mi">6</span> <span class="ow">and</span> <span class="n">lines</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()[:</span><span class="mi">6</span><span class="p">]</span><span class="o">.</span><span class="n">isdigit</span><span class="p">())),</span>
+                  <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">))</span>
+        <span class="n">block</span> <span class="o">=</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="n">s</span><span class="p">:</span><span class="n">e_</span><span class="p">])</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">StringIO</span><span class="p">(</span><span class="n">block</span><span class="p">),</span> <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">'Date'</span><span class="p">]</span> <span class="o">+</span> <span class="n">colnames</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="s1">'Date'</span><span class="p">)</span>
+        <span class="n">data</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">'%Y%m'</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">data</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="o">-</span><span class="mf">99.99</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span></code></pre></div></div>
+<h4 id="load-the-five-factors">Load the Five Factors</h4><ul>
+<li>Columns are <code>Mkt-RF</code>, <code>SMB</code>, <code>HML</code>, <code>RMW</code>, <code>CMA</code>, and the risk-free rate <code>RF</code>.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">factor_cols</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'Mkt-RF'</span><span class="p">,</span> <span class="s1">'SMB'</span><span class="p">,</span> <span class="s1">'HML'</span><span class="p">,</span> <span class="s1">'RMW'</span><span class="p">,</span> <span class="s1">'CMA'</span><span class="p">,</span> <span class="s1">'RF'</span><span class="p">]</span>
+<span class="n">factors</span> <span class="o">=</span> <span class="n">load_french</span><span class="p">(</span><span class="s1">'F-F_Research_Data_5_Factors_2x3'</span><span class="p">,</span> <span class="n">factor_cols</span><span class="p">)</span>
+<span class="n">factors</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+<th>SMB</th>
+<th>HML</th>
+<th>RMW</th>
+<th>CMA</th>
+<th>RF</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990-01-01</th>
+<td>-7.80</td>
+<td>-1.21</td>
+<td>0.83</td>
+<td>-1.12</td>
+<td>1.40</td>
+<td>0.57</td>
+</tr>
+<tr>
+<th>1990-02-01</th>
+<td>1.11</td>
+<td>1.15</td>
+<td>0.65</td>
+<td>-0.04</td>
+<td>-0.61</td>
+<td>0.57</td>
+</tr>
+<tr>
+<th>1990-03-01</th>
+<td>1.83</td>
+<td>1.59</td>
+<td>-2.90</td>
+<td>1.99</td>
+<td>-0.94</td>
+<td>0.64</td>
+</tr>
+<tr>
+<th>1990-04-01</th>
+<td>-3.36</td>
+<td>-0.35</td>
+<td>-2.57</td>
+<td>1.78</td>
+<td>-1.00</td>
+<td>0.69</td>
+</tr>
+<tr>
+<th>1990-05-01</th>
+<td>8.44</td>
+<td>-2.41</td>
+<td>-3.89</td>
+<td>1.68</td>
+<td>-1.63</td>
+<td>0.68</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h4 id="rename-columns-for-formula-compatibility">Rename Columns for Formula Compatibility</h4><ul>
+<li><p><code>statsmodels</code> formulas treat a hyphen as a minus sign, so <code>Mkt-RF</code> would be parsed as <code>Mkt</code> minus <code>RF</code>.</p>
+</li>
+<li><p>We rename <code>Mkt-RF</code> to <code>Mkt_RF</code> to avoid this.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">factors</span> <span class="o">=</span> <span class="n">factors</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">'Mkt-RF'</span><span class="p">:</span> <span class="s1">'Mkt_RF'</span><span class="p">})</span>
+<span class="n">factors</span><span class="o">.</span><span class="n">columns</span></code></pre></div><div class="nb-out nb-text">
+<pre>Index(['Mkt_RF', 'SMB', 'HML', 'RMW', 'CMA', 'RF'], dtype='object')</pre>
+</div></div>
+<h4 id="load-the-10-industry-portfolios">Load the 10 Industry Portfolios</h4><ul>
+<li>These are monthly value-weighted returns for 10 broad industries.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">industry_cols</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'NoDur'</span><span class="p">,</span> <span class="s1">'Durbl'</span><span class="p">,</span> <span class="s1">'Manuf'</span><span class="p">,</span> <span class="s1">'Enrgy'</span><span class="p">,</span> <span class="s1">'HiTec'</span><span class="p">,</span>
+                 <span class="s1">'Telcm'</span><span class="p">,</span> <span class="s1">'Shops'</span><span class="p">,</span> <span class="s1">'Hlth'</span><span class="p">,</span> <span class="s1">'Utils'</span><span class="p">,</span> <span class="s1">'Other'</span><span class="p">]</span>
+<span class="n">industries</span> <span class="o">=</span> <span class="n">load_french</span><span class="p">(</span><span class="s1">'10_Industry_Portfolios'</span><span class="p">,</span> <span class="n">industry_cols</span><span class="p">)</span>
+<span class="n">industries</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>NoDur</th>
+<th>Durbl</th>
+<th>Manuf</th>
+<th>Enrgy</th>
+<th>HiTec</th>
+<th>Telcm</th>
+<th>Shops</th>
+<th>Hlth</th>
+<th>Utils</th>
+<th>Other</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990-01-01</th>
+<td>-9.47</td>
+<td>-3.52</td>
+<td>-6.31</td>
+<td>-4.28</td>
+<td>-1.47</td>
+<td>-13.04</td>
+<td>-6.41</td>
+<td>-7.30</td>
+<td>-5.35</td>
+<td>-8.92</td>
+</tr>
+<tr>
+<th>1990-02-01</th>
+<td>-0.55</td>
+<td>5.05</td>
+<td>2.56</td>
+<td>3.11</td>
+<td>4.04</td>
+<td>-0.26</td>
+<td>1.93</td>
+<td>-2.08</td>
+<td>0.21</td>
+<td>2.52</td>
+</tr>
+<tr>
+<th>1990-03-01</th>
+<td>4.63</td>
+<td>2.88</td>
+<td>3.88</td>
+<td>-0.59</td>
+<td>4.63</td>
+<td>4.22</td>
+<td>5.16</td>
+<td>3.80</td>
+<td>-0.75</td>
+<td>-0.38</td>
+</tr>
+<tr>
+<th>1990-04-01</th>
+<td>-0.17</td>
+<td>-4.08</td>
+<td>-2.77</td>
+<td>-3.58</td>
+<td>-1.94</td>
+<td>-3.29</td>
+<td>-2.08</td>
+<td>0.34</td>
+<td>-5.52</td>
+<td>-3.42</td>
+</tr>
+<tr>
+<th>1990-05-01</th>
+<td>9.09</td>
+<td>7.75</td>
+<td>8.11</td>
+<td>6.05</td>
+<td>12.41</td>
+<td>9.20</td>
+<td>11.53</td>
+<td>12.81</td>
+<td>5.43</td>
+<td>9.18</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h4 id="a-note-on-units">A Note on Units</h4><ul>
+<li><p>All values are in percent (<code>1.5</code> means a 1.5% monthly return).</p>
+</li>
+<li><p>For asset-pricing regressions we work with <strong>excess returns</strong> (return minus the risk-free rate).</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Align the two datasets on common dates, then build excess returns</span>
+<span class="n">common</span> <span class="o">=</span> <span class="n">factors</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">industries</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+<span class="n">factors</span> <span class="o">=</span> <span class="n">factors</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">common</span><span class="p">]</span>
+<span class="n">industries</span> <span class="o">=</span> <span class="n">industries</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">common</span><span class="p">]</span>
+
+<span class="c1"># Name the index 'Date' so later reshaping (melt/reset_index) is predictable</span>
+<span class="n">factors</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">'Date'</span>
+<span class="n">industries</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">'Date'</span>
+
+<span class="c1"># Excess return = industry return - risk-free rate</span>
+<span class="n">ind_excess</span> <span class="o">=</span> <span class="n">industries</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">factors</span><span class="p">[</span><span class="s1">'RF'</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">ind_excess</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">'Date'</span>
+<span class="n">ind_excess</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>NoDur</th>
+<th>Durbl</th>
+<th>Manuf</th>
+<th>Enrgy</th>
+<th>HiTec</th>
+<th>Telcm</th>
+<th>Shops</th>
+<th>Hlth</th>
+<th>Utils</th>
+<th>Other</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990-01-01</th>
+<td>-10.04</td>
+<td>-4.09</td>
+<td>-6.88</td>
+<td>-4.85</td>
+<td>-2.04</td>
+<td>-13.61</td>
+<td>-6.98</td>
+<td>-7.87</td>
+<td>-5.92</td>
+<td>-9.49</td>
+</tr>
+<tr>
+<th>1990-02-01</th>
+<td>-1.12</td>
+<td>4.48</td>
+<td>1.99</td>
+<td>2.54</td>
+<td>3.47</td>
+<td>-0.83</td>
+<td>1.36</td>
+<td>-2.65</td>
+<td>-0.36</td>
+<td>1.95</td>
+</tr>
+<tr>
+<th>1990-03-01</th>
+<td>3.99</td>
+<td>2.24</td>
+<td>3.24</td>
+<td>-1.23</td>
+<td>3.99</td>
+<td>3.58</td>
+<td>4.52</td>
+<td>3.16</td>
+<td>-1.39</td>
+<td>-1.02</td>
+</tr>
+<tr>
+<th>1990-04-01</th>
+<td>-0.86</td>
+<td>-4.77</td>
+<td>-3.46</td>
+<td>-4.27</td>
+<td>-2.63</td>
+<td>-3.98</td>
+<td>-2.77</td>
+<td>-0.35</td>
+<td>-6.21</td>
+<td>-4.11</td>
+</tr>
+<tr>
+<th>1990-05-01</th>
+<td>8.41</td>
+<td>7.07</td>
+<td>7.43</td>
+<td>5.37</td>
+<td>11.73</td>
+<td>8.52</td>
+<td>10.85</td>
+<td>12.13</td>
+<td>4.75</td>
+<td>8.50</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Sample period: </span><span class="si">{</span><span class="n">common</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="si">:</span><span class="s2">%Y-%m</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">common</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">:</span><span class="s2">%Y-%m</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Number of months: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">common</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Sample period: 1990-01 to 2023-12
+Number of months: 408
+</pre>
+</div></div>
+<h2 id="ch-15-statistical-foundations">Ch 15: Statistical Foundations</h2>
+
+<ul>
+<li><p>Before regression, we need a few statistical tools: descriptive statistics, correlation, and hypothesis tests.</p>
+</li>
+<li><p>In Lecture 7 we plotted distributions; here we summarize them with statistics and tests.</p>
+</li>
+<li><p><code>scipy.stats</code> is the standard library for these tasks. The conventional import is <code>from scipy import stats</code>.</p>
+</li>
+</ul>
+
+<h3 id="descriptive-statistics">Descriptive Statistics</h3>
+
+<ul>
+<li>pandas gives quick summaries; <code>scipy.stats</code> adds higher moments like skewness and kurtosis.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># pandas summary of the five factors</span>
+<span class="n">factors</span><span class="p">[[</span><span class="s1">'Mkt_RF'</span><span class="p">,</span> <span class="s1">'SMB'</span><span class="p">,</span> <span class="s1">'HML'</span><span class="p">,</span> <span class="s1">'RMW'</span><span class="p">,</span> <span class="s1">'CMA'</span><span class="p">]]</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt_RF</th>
+<th>SMB</th>
+<th>HML</th>
+<th>RMW</th>
+<th>CMA</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>count</th>
+<td>408.000000</td>
+<td>408.000000</td>
+<td>408.000000</td>
+<td>408.000000</td>
+<td>408.000000</td>
+</tr>
+<tr>
+<th>mean</th>
+<td>0.707279</td>
+<td>0.117034</td>
+<td>0.151569</td>
+<td>0.375270</td>
+<td>0.197917</td>
+</tr>
+<tr>
+<th>std</th>
+<td>4.448067</td>
+<td>3.046912</td>
+<td>3.248474</td>
+<td>2.626859</td>
+<td>2.176679</td>
+</tr>
+<tr>
+<th>min</th>
+<td>-17.200000</td>
+<td>-15.530000</td>
+<td>-13.830000</td>
+<td>-18.930000</td>
+<td>-7.060000</td>
+</tr>
+<tr>
+<th>25%</th>
+<td>-1.960000</td>
+<td>-1.820000</td>
+<td>-1.670000</td>
+<td>-0.915000</td>
+<td>-1.070000</td>
+</tr>
+<tr>
+<th>50%</th>
+<td>1.185000</td>
+<td>0.045000</td>
+<td>-0.070000</td>
+<td>0.345000</td>
+<td>-0.020000</td>
+</tr>
+<tr>
+<th>75%</th>
+<td>3.430000</td>
+<td>1.912500</td>
+<td>1.670000</td>
+<td>1.487500</td>
+<td>1.410000</td>
+</tr>
+<tr>
+<th>max</th>
+<td>13.580000</td>
+<td>18.540000</td>
+<td>12.860000</td>
+<td>13.040000</td>
+<td>9.000000</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h4 id="higher-moments-skewness-and-kurtosis">Higher Moments: Skewness and Kurtosis</h4><ul>
+<li><strong>Skewness</strong> measures asymmetry (negative = long left tail).</li>
+<li><strong>Kurtosis</strong> measures tail heaviness (positive excess = fatter tails than normal).</li>
+<li>Stock market returns typically have negative skewness and fat tails.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Market premium skewness: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">skew</span><span class="p">(</span><span class="n">factors</span><span class="p">[</span><span class="s1">'Mkt_RF'</span><span class="p">])</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Market premium excess kurtosis: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">kurtosis</span><span class="p">(</span><span class="n">factors</span><span class="p">[</span><span class="s1">'Mkt_RF'</span><span class="p">])</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Market premium skewness: -0.556
+Market premium excess kurtosis: 1.001
+</pre>
+</div></div>
+<ul>
+<li><code>stats.describe()</code> returns several summaries at once.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">desc</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">describe</span><span class="p">(</span><span class="n">factors</span><span class="p">[</span><span class="s1">'Mkt_RF'</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"n        = </span><span class="si">{</span><span class="n">desc</span><span class="o">.</span><span class="n">nobs</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"mean     = </span><span class="si">{</span><span class="n">desc</span><span class="o">.</span><span class="n">mean</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"variance = </span><span class="si">{</span><span class="n">desc</span><span class="o">.</span><span class="n">variance</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"skewness = </span><span class="si">{</span><span class="n">desc</span><span class="o">.</span><span class="n">skewness</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"kurtosis = </span><span class="si">{</span><span class="n">desc</span><span class="o">.</span><span class="n">kurtosis</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>n        = 408
+mean     = 0.707
+variance = 19.785
+skewness = -0.556
+kurtosis = 1.001
+</pre>
+</div></div>
+<h3 id="correlation">Correlation</h3>
+
+<h4 id="pearson-correlation">Pearson Correlation</h4><ul>
+<li><code>stats.pearsonr(x, y)</code> returns the linear correlation coefficient and a p-value for the null hypothesis of zero correlation.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">r</span><span class="p">,</span> <span class="n">pval</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">pearsonr</span><span class="p">(</span><span class="n">factors</span><span class="p">[</span><span class="s1">'SMB'</span><span class="p">],</span> <span class="n">factors</span><span class="p">[</span><span class="s1">'HML'</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Pearson r = </span><span class="si">{</span><span class="n">r</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">,  p-value = </span><span class="si">{</span><span class="n">pval</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Pearson r = 0.000,  p-value = 0.9974
+</pre>
+</div></div>
+<h4 id="spearman-rank-correlation">Spearman (Rank) Correlation</h4><ul>
+<li><code>stats.spearmanr</code> measures monotonic association using ranks. It is robust to outliers and does not require a linear relationship.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">rho</span><span class="p">,</span> <span class="n">pval</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">spearmanr</span><span class="p">(</span><span class="n">factors</span><span class="p">[</span><span class="s1">'SMB'</span><span class="p">],</span> <span class="n">factors</span><span class="p">[</span><span class="s1">'HML'</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Spearman rho = </span><span class="si">{</span><span class="n">rho</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">,  p-value = </span><span class="si">{</span><span class="n">pval</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Spearman rho = 0.036,  p-value = 0.4637
+</pre>
+</div></div>
+<h4 id="correlation-matrix">Correlation Matrix</h4><ul>
+<li>For many variables at once, use pandas <code>.corr()</code> (recall the heatmap from Lecture 7).</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">factor_corr</span> <span class="o">=</span> <span class="n">factors</span><span class="p">[[</span><span class="s1">'Mkt_RF'</span><span class="p">,</span> <span class="s1">'SMB'</span><span class="p">,</span> <span class="s1">'HML'</span><span class="p">,</span> <span class="s1">'RMW'</span><span class="p">,</span> <span class="s1">'CMA'</span><span class="p">]]</span><span class="o">.</span><span class="n">corr</span><span class="p">()</span>
+<span class="n">factor_corr</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt_RF</th>
+<th>SMB</th>
+<th>HML</th>
+<th>RMW</th>
+<th>CMA</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>Mkt_RF</th>
+<td>1.00</td>
+<td>0.23</td>
+<td>-0.11</td>
+<td>-0.31</td>
+<td>-0.33</td>
+</tr>
+<tr>
+<th>SMB</th>
+<td>0.23</td>
+<td>1.00</td>
+<td>0.00</td>
+<td>-0.46</td>
+<td>-0.04</td>
+</tr>
+<tr>
+<th>HML</th>
+<td>-0.11</td>
+<td>0.00</td>
+<td>1.00</td>
+<td>0.32</td>
+<td>0.66</td>
+</tr>
+<tr>
+<th>RMW</th>
+<td>-0.31</td>
+<td>-0.46</td>
+<td>0.32</td>
+<td>1.00</td>
+<td>0.22</td>
+</tr>
+<tr>
+<th>CMA</th>
+<td>-0.33</td>
+<td>-0.04</td>
+<td>0.66</td>
+<td>0.22</td>
+<td>1.00</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">heatmap</span><span class="p">(</span><span class="n">factor_corr</span><span class="p">,</span> <span class="n">annot</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">'.2f'</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">'RdBu_r'</span><span class="p">,</span>
+            <span class="n">center</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">square</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Correlation of Fama-French Factors'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="443" loading="lazy" src="fig-01.png" width="523"/>
+</div></div>
+<h3 id="distributions-and-normality">Distributions and Normality</h3>
+
+<ul>
+<li>Many statistical tests assume normality. Here we check whether the market premium is normally distributed.</li>
+</ul>
+
+<h4 id="overlaying-a-normal-curve">Overlaying a Normal Curve</h4><ul>
+<li><code>stats.norm.pdf</code> gives the normal density. We fit it using the sample mean and standard deviation.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">mu</span><span class="p">,</span> <span class="n">sigma</span> <span class="o">=</span> <span class="n">factors</span><span class="p">[</span><span class="s1">'Mkt_RF'</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span> <span class="n">factors</span><span class="p">[</span><span class="s1">'Mkt_RF'</span><span class="p">]</span><span class="o">.</span><span class="n">std</span><span class="p">()</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">factors</span><span class="p">[</span><span class="s1">'Mkt_RF'</span><span class="p">],</span> <span class="n">bins</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">color</span><span class="o">=</span><span class="s1">'steelblue'</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s1">'white'</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">factors</span><span class="p">[</span><span class="s1">'Mkt_RF'</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">factors</span><span class="p">[</span><span class="s1">'Mkt_RF'</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="mi">200</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">stats</span><span class="o">.</span><span class="n">norm</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">sigma</span><span class="p">),</span> <span class="s1">'r-'</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Normal fit'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Market Premium vs Normal Distribution'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">'Monthly return (%)'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="402" loading="lazy" src="fig-02.png" width="694"/>
+</div></div>
+<h4 id="testing-for-normality">Testing for Normality</h4><ul>
+<li>The <strong>Jarque-Bera</strong> test uses skewness and kurtosis. A small p-value rejects normality.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">jb_stat</span><span class="p">,</span> <span class="n">jb_pval</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">jarque_bera</span><span class="p">(</span><span class="n">factors</span><span class="p">[</span><span class="s1">'Mkt_RF'</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Jarque-Bera statistic = </span><span class="si">{</span><span class="n">jb_stat</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"p-value = </span><span class="si">{</span><span class="n">jb_pval</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">jb_pval</span> <span class="o">&lt;</span> <span class="mf">0.05</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"=&gt; Reject normality at the 5</span><span class="si">% le</span><span class="s2">vel."</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"=&gt; Cannot reject normality at the 5</span><span class="si">% le</span><span class="s2">vel."</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Jarque-Bera statistic = 38.05
+p-value = 0.0000
+=&gt; Reject normality at the 5% level.
+</pre>
+</div></div>
+<h3 id="hypothesis-testing">Hypothesis Testing</h3>
+
+<h4 id="one-sample-t-test">One-Sample t-test</h4><ul>
+<li><p>We test whether the average market premium is different from zero, that is, whether there is an equity premium.</p>
+</li>
+<li><p><code>stats.ttest_1samp(data, popmean)</code> tests whether the mean equals a hypothesized value.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">t_stat</span><span class="p">,</span> <span class="n">p_val</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">ttest_1samp</span><span class="p">(</span><span class="n">factors</span><span class="p">[</span><span class="s1">'Mkt_RF'</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Mean market premium = </span><span class="si">{</span><span class="n">factors</span><span class="p">[</span><span class="s1">'Mkt_RF'</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">% per month"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"t-statistic = </span><span class="si">{</span><span class="n">t_stat</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">,  p-value = </span><span class="si">{</span><span class="n">p_val</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Mean market premium = 0.707% per month
+t-statistic = 3.212,  p-value = 0.0014
+</pre>
+</div></div>
+<h4 id="two-sample-t-test">Two-Sample t-test</h4><ul>
+<li><p>The two-sample test compares the average market premium in the first and second halves of the sample.</p>
+</li>
+<li><p><code>stats.ttest_ind(a, b)</code> tests whether two groups have equal means.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">mid</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">factors</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span>
+<span class="n">first_half</span> <span class="o">=</span> <span class="n">factors</span><span class="p">[</span><span class="s1">'Mkt_RF'</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:</span><span class="n">mid</span><span class="p">]</span>
+<span class="n">second_half</span> <span class="o">=</span> <span class="n">factors</span><span class="p">[</span><span class="s1">'Mkt_RF'</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">mid</span><span class="p">:]</span>
+
+<span class="n">t_stat</span><span class="p">,</span> <span class="n">p_val</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">ttest_ind</span><span class="p">(</span><span class="n">first_half</span><span class="p">,</span> <span class="n">second_half</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"First half mean:  </span><span class="si">{</span><span class="n">first_half</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">%"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Second half mean: </span><span class="si">{</span><span class="n">second_half</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">%"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"t-statistic = </span><span class="si">{</span><span class="n">t_stat</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">,  p-value = </span><span class="si">{</span><span class="n">p_val</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>First half mean:  0.618%
+Second half mean: 0.797%
+t-statistic = -0.405,  p-value = 0.6857
+</pre>
+</div></div>
+<h3 id="in-class-exercise">In-Class Exercise</h3>
+
+<p><strong>15-1. Descriptive Statistics:</strong></p>
+<ul>
+<li>Compute the mean, standard deviation, skewness, and excess kurtosis of the <code>HML</code> factor.</li>
+<li>Is <code>HML</code> positively or negatively skewed over this sample?</li>
+</ul>
+
+<p><strong>15-2. Correlation:</strong></p>
+<ul>
+<li>Compute the Pearson correlation between <code>SMB</code> and <code>RMW</code>, along with its p-value.</li>
+<li>Is the correlation statistically significant at the 5% level?</li>
+</ul>
+
+<p><strong>15-3. Equity Premium Test:</strong></p>
+<ul>
+<li>Run a one-sample t-test on the <code>RMW</code> (profitability) factor against a mean of zero.</li>
+<li>Is the average profitability premium statistically different from zero?</li>
+</ul>
+
+<h2 id="ch-16-linear-regression-with-statsmodels">Ch 16: Linear Regression with statsmodels</h2>
+
+<ul>
+<li><p><code>statsmodels</code> is the main Python library for econometric regression. It provides detailed summary tables, robust standard errors, diagnostics, and hypothesis tests.</p>
+</li>
+<li><p>It has two interfaces:</p>
+<ul>
+<li>The <strong>formula API</strong> (<code>statsmodels.formula.api</code>, aliased <code>smf</code>) uses R-style strings like <code>y ~ x1 + x2</code>.</li>
+<li>The <strong>arrays API</strong> (<code>statsmodels.api</code>, aliased <code>sm</code>) takes explicit <code>X</code> and <code>y</code> arrays.</li>
+</ul>
+</li>
+<li><p>We use the formula API for most models because it is concise and handles categorical variables automatically.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">import</span><span class="w"> </span><span class="nn">statsmodels.api</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sm</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">statsmodels.formula.api</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">smf</span></code></pre></div></div>
+<h3 id="simple-regression-the-capm">Simple Regression: the CAPM</h3>
+
+<ul>
+<li><p>The <strong>Capital Asset Pricing Model</strong> (CAPM) says a portfolio's excess return is explained by its sensitivity to the market:</p>
+<p><code>R_excess = alpha + beta * Mkt_RF + error</code></p>
+</li>
+<li><p>A significant alpha means the portfolio earns returns that the market factor does not explain.</p>
+</li>
+<li><p>We estimate the CAPM for the <code>HiTec</code> (technology) industry.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Build a regression DataFrame: one portfolio's excess return + the factors</span>
+<span class="n">reg_df</span> <span class="o">=</span> <span class="n">factors</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">reg_df</span><span class="p">[</span><span class="s1">'HiTec'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ind_excess</span><span class="p">[</span><span class="s1">'HiTec'</span><span class="p">]</span>
+<span class="n">reg_df</span><span class="p">[[</span><span class="s1">'HiTec'</span><span class="p">,</span> <span class="s1">'Mkt_RF'</span><span class="p">]]</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>HiTec</th>
+<th>Mkt_RF</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990-01-01</th>
+<td>-2.04</td>
+<td>-7.80</td>
+</tr>
+<tr>
+<th>1990-02-01</th>
+<td>3.47</td>
+<td>1.11</td>
+</tr>
+<tr>
+<th>1990-03-01</th>
+<td>3.99</td>
+<td>1.83</td>
+</tr>
+<tr>
+<th>1990-04-01</th>
+<td>-2.63</td>
+<td>-3.36</td>
+</tr>
+<tr>
+<th>1990-05-01</th>
+<td>11.73</td>
+<td>8.44</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">capm</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s1">'HiTec ~ Mkt_RF'</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">reg_df</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">capm</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span></code></pre></div><div class="nb-out nb-stream">
+<pre>                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                  HiTec   R-squared:                       0.748
+Model:                            OLS   Adj. R-squared:                  0.748
+Method:                 Least Squares   F-statistic:                     1208.
+Date:                Fri, 18 Sep 2026   Prob (F-statistic):          9.67e-124
+Time:                        05:29:07   Log-Likelihood:                -1077.7
+No. Observations:                 408   AIC:                             2159.
+Df Residuals:                     406   BIC:                             2167.
+Df Model:                           1                                         
+Covariance Type:            nonrobust                                         
+==============================================================================
+                 coef    std err          t      P&gt;|t|      [0.025      0.975]
+------------------------------------------------------------------------------
+Intercept      0.1116      0.171      0.654      0.513      -0.224       0.447
+Mkt_RF         1.3184      0.038     34.757      0.000       1.244       1.393
+==============================================================================
+Omnibus:                       29.157   Durbin-Watson:                   2.123
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):               71.966
+Skew:                           0.334   Prob(JB):                     2.36e-16
+Kurtosis:                       4.946   Cond. No.                         4.56
+==============================================================================
+
+Notes:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+</pre>
+</div></div>
+<h4 id="reading-the-summary-table">Reading the Summary Table</h4><ul>
+<li><code>coef</code>: the estimated coefficients (<code>Intercept</code> = alpha, <code>Mkt_RF</code> = beta).</li>
+<li><code>std err</code>: the standard error of each estimate.</li>
+<li><code>t</code> and <code>P&gt;|t|</code>: the t-statistic and p-value for the null hypothesis that the coefficient is zero.</li>
+<li><code>R-squared</code>: the fraction of variance explained.</li>
+<li><code>[0.025  0.975]</code>: the 95% confidence interval.</li>
+</ul>
+
+<h4 id="pulling-out-specific-numbers">Pulling Out Specific Numbers</h4><ul>
+<li>The fitted result stores the estimates and statistics as attributes, such as <code>.params</code>, <code>.rsquared</code>, <code>.tvalues</code>, and <code>.pvalues</code>.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Alpha (monthly): </span><span class="si">{</span><span class="n">capm</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">'Intercept'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Beta:            </span><span class="si">{</span><span class="n">capm</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">'Mkt_RF'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"R-squared:       </span><span class="si">{</span><span class="n">capm</span><span class="o">.</span><span class="n">rsquared</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Alpha t-stat:    </span><span class="si">{</span><span class="n">capm</span><span class="o">.</span><span class="n">tvalues</span><span class="p">[</span><span class="s1">'Intercept'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Alpha p-value:   </span><span class="si">{</span><span class="n">capm</span><span class="o">.</span><span class="n">pvalues</span><span class="p">[</span><span class="s1">'Intercept'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Alpha (monthly): 0.1116
+Beta:            1.3184
+R-squared:       0.7485
+Alpha t-stat:    0.654
+Alpha p-value:   0.5134
+</pre>
+</div></div>
+<h3 id="multiple-regression-the-5-factor-model">Multiple Regression: the 5-Factor Model</h3>
+
+<ul>
+<li><p>The Fama-French 5-factor model adds size, value, profitability, and investment factors:</p>
+<p><code>R_excess = alpha + b1*Mkt_RF + b2*SMB + b3*HML + b4*RMW + b5*CMA + error</code></p>
+</li>
+<li><p>Add terms to the formula with <code>+</code>.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">ff5</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s1">'HiTec ~ Mkt_RF + SMB + HML + RMW + CMA'</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">reg_df</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">ff5</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span></code></pre></div><div class="nb-out nb-stream">
+<pre>                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                  HiTec   R-squared:                       0.860
+Model:                            OLS   Adj. R-squared:                  0.859
+Method:                 Least Squares   F-statistic:                     495.8
+Date:                Fri, 18 Sep 2026   Prob (F-statistic):          2.07e-169
+Time:                        05:29:07   Log-Likelihood:                -957.45
+No. Observations:                 408   AIC:                             1927.
+Df Residuals:                     402   BIC:                             1951.
+Df Model:                           5                                         
+Covariance Type:            nonrobust                                         
+==============================================================================
+                 coef    std err          t      P&gt;|t|      [0.025      0.975]
+------------------------------------------------------------------------------
+Intercept      0.5070      0.133      3.825      0.000       0.246       0.768
+Mkt_RF         1.1555      0.032     35.961      0.000       1.092       1.219
+SMB           -0.0009      0.048     -0.018      0.986      -0.095       0.093
+HML           -0.3797      0.055     -6.869      0.000      -0.488      -0.271
+RMW           -0.4114      0.060     -6.902      0.000      -0.529      -0.294
+CMA           -0.3443      0.083     -4.166      0.000      -0.507      -0.182
+==============================================================================
+Omnibus:                        7.072   Durbin-Watson:                   2.140
+Prob(Omnibus):                  0.029   Jarque-Bera (JB):                7.016
+Skew:                           0.275   Prob(JB):                       0.0300
+Kurtosis:                       3.333   Cond. No.                         5.22
+==============================================================================
+
+Notes:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+</pre>
+</div></div>
+<ul>
+<li>Compare the two alphas. Adding factors usually shrinks alpha, but for <code>HiTec</code> it rises, mainly because the industry loads negatively on <code>HML</code>, <code>RMW</code>, and <code>CMA</code>, which had positive average returns over this sample.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"CAPM alpha:     </span><span class="si">{</span><span class="n">capm</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">'Intercept'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  (R2=</span><span class="si">{</span><span class="n">capm</span><span class="o">.</span><span class="n">rsquared</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"5-factor alpha: </span><span class="si">{</span><span class="n">ff5</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">'Intercept'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  (R2=</span><span class="si">{</span><span class="n">ff5</span><span class="o">.</span><span class="n">rsquared</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>CAPM alpha:     0.1116  (R2=0.748)
+5-factor alpha: 0.5070  (R2=0.860)
+</pre>
+</div></div>
+<h3 id="categorical-variables-and-interactions">Categorical Variables and Interactions</h3>
+
+<ul>
+<li><p>Use <code>C(variable)</code> to treat a column as categorical (statsmodels creates dummy variables automatically).</p>
+</li>
+<li><p>Use <code>:</code> for an interaction term and <code>*</code> for "both main effects and their interaction."</p>
+</li>
+<li><p>As an example, we test whether the market beta of <code>HiTec</code> was different in crisis months (2008-2009 and 2020).</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Create a crisis indicator</span>
+<span class="n">reg_df</span><span class="p">[</span><span class="s1">'crisis'</span><span class="p">]</span> <span class="o">=</span> <span class="n">reg_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">year</span><span class="o">.</span><span class="n">isin</span><span class="p">([</span><span class="mi">2008</span><span class="p">,</span> <span class="mi">2009</span><span class="p">,</span> <span class="mi">2020</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+<span class="n">reg_df</span><span class="p">[</span><span class="s1">'crisis'</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>count</th>
+</tr>
+<tr>
+<th>crisis</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>372</td>
+</tr>
+<tr>
+<th>1</th>
+<td>36</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> int64</label></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Mkt_RF * C(crisis) gives: Mkt_RF, the crisis dummy, and their interaction</span>
+<span class="n">beta_shift</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s1">'HiTec ~ Mkt_RF * C(crisis)'</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">reg_df</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">beta_shift</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span></code></pre></div><div class="nb-out nb-stream">
+<pre>                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                  HiTec   R-squared:                       0.759
+Model:                            OLS   Adj. R-squared:                  0.758
+Method:                 Least Squares   F-statistic:                     425.0
+Date:                Fri, 18 Sep 2026   Prob (F-statistic):          1.50e-124
+Time:                        05:29:07   Log-Likelihood:                -1068.6
+No. Observations:                 408   AIC:                             2145.
+Df Residuals:                     404   BIC:                             2161.
+Df Model:                           3                                         
+Covariance Type:            nonrobust                                         
+=========================================================================================
+                            coef    std err          t      P&gt;|t|      [0.025      0.975]
+-----------------------------------------------------------------------------------------
+Intercept                -0.0132      0.176     -0.075      0.940      -0.359       0.333
+C(crisis)[T.1]            0.8134      0.584      1.394      0.164      -0.334       1.961
+Mkt_RF                    1.4038      0.042     33.081      0.000       1.320       1.487
+Mkt_RF:C(crisis)[T.1]    -0.3635      0.088     -4.117      0.000      -0.537      -0.190
+==============================================================================
+Omnibus:                       26.559   Durbin-Watson:                   2.148
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):               60.994
+Skew:                           0.321   Prob(JB):                     5.69e-14
+Kurtosis:                       4.782   Cond. No.                         16.5
+==============================================================================
+
+Notes:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+</pre>
+</div></div>
+<ul>
+<li>The <code>Mkt_RF:C(crisis)[T.1]</code> coefficient is the change in beta during crisis months.</li>
+<li>A positive value means tech was more sensitive to the market during crises; a negative value means it was less sensitive.</li>
+</ul>
+
+<h3 id="robust-standard-errors">Robust Standard Errors</h3>
+
+<ul>
+<li><p>OLS standard errors assume <strong>homoskedasticity</strong> (constant error variance). Financial data usually violates this.</p>
+</li>
+<li><p><strong>Heteroskedasticity-robust</strong> (White) standard errors remain valid when the error variance is not constant. Pass <code>cov_type='HC3'</code> to <code>.fit()</code>.</p>
+</li>
+<li><p>The coefficients stay the same; only the standard errors (and so the t-statistics and p-values) change.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">ols_se</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s1">'HiTec ~ Mkt_RF + SMB + HML'</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">reg_df</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+<span class="n">rob_se</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s1">'HiTec ~ Mkt_RF + SMB + HML'</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">reg_df</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">cov_type</span><span class="o">=</span><span class="s1">'HC3'</span><span class="p">)</span>
+
+<span class="n">compare</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+    <span class="s1">'coef'</span><span class="p">:</span> <span class="n">ols_se</span><span class="o">.</span><span class="n">params</span><span class="p">,</span>
+    <span class="s1">'OLS_se'</span><span class="p">:</span> <span class="n">ols_se</span><span class="o">.</span><span class="n">bse</span><span class="p">,</span>
+    <span class="s1">'Robust_se(HC3)'</span><span class="p">:</span> <span class="n">rob_se</span><span class="o">.</span><span class="n">bse</span><span class="p">,</span>
+<span class="p">})</span>
+<span class="n">compare</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>coef</th>
+<th>OLS_se</th>
+<th>Robust_se(HC3)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>Intercept</th>
+<td>0.2417</td>
+<td>0.1368</td>
+<td>0.1371</td>
+</tr>
+<tr>
+<th>Mkt_RF</th>
+<td>1.2447</td>
+<td>0.0314</td>
+<td>0.0382</td>
+</tr>
+<tr>
+<th>SMB</th>
+<td>0.1423</td>
+<td>0.0456</td>
+<td>0.0646</td>
+</tr>
+<tr>
+<th>HML</th>
+<td>-0.6242</td>
+<td>0.0418</td>
+<td>0.0557</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h3 id="hac-newey-west-standard-errors">HAC / Newey-West Standard Errors</h3>
+
+<ul>
+<li><p>Time-series regressions often have autocorrelated errors as well as heteroskedasticity.</p>
+</li>
+<li><p><strong>HAC</strong> (heteroskedasticity- and autocorrelation-consistent) standard errors, also called Newey-West standard errors, allow for both.</p>
+</li>
+<li><p>Pass <code>cov_type='HAC'</code> and a <code>maxlags</code> value (a common rule of thumb is a few lags).</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">hac</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s1">'HiTec ~ Mkt_RF + SMB + HML'</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">reg_df</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+    <span class="n">cov_type</span><span class="o">=</span><span class="s1">'HAC'</span><span class="p">,</span> <span class="n">cov_kwds</span><span class="o">=</span><span class="p">{</span><span class="s1">'maxlags'</span><span class="p">:</span> <span class="mi">6</span><span class="p">})</span>
+
+<span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+    <span class="s1">'coef'</span><span class="p">:</span> <span class="n">hac</span><span class="o">.</span><span class="n">params</span><span class="p">,</span>
+    <span class="s1">'OLS_se'</span><span class="p">:</span> <span class="n">ols_se</span><span class="o">.</span><span class="n">bse</span><span class="p">,</span>
+    <span class="s1">'HAC_se'</span><span class="p">:</span> <span class="n">hac</span><span class="o">.</span><span class="n">bse</span><span class="p">,</span>
+<span class="p">})</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>coef</th>
+<th>OLS_se</th>
+<th>HAC_se</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>Intercept</th>
+<td>0.2417</td>
+<td>0.1368</td>
+<td>0.1312</td>
+</tr>
+<tr>
+<th>Mkt_RF</th>
+<td>1.2447</td>
+<td>0.0314</td>
+<td>0.0456</td>
+</tr>
+<tr>
+<th>SMB</th>
+<td>0.1423</td>
+<td>0.0456</td>
+<td>0.0579</td>
+</tr>
+<tr>
+<th>HML</th>
+<td>-0.6242</td>
+<td>0.0418</td>
+<td>0.0770</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h3 id="clustered-standard-errors">Clustered Standard Errors</h3>
+
+<ul>
+<li><p>When observations cluster into groups (e.g., by year), errors may be correlated within clusters.</p>
+</li>
+<li><p><strong>Clustered</strong> standard errors account for this. Pass <code>cov_type='cluster'</code> and the grouping variable.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">clustered</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s1">'HiTec ~ Mkt_RF + SMB + HML'</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">reg_df</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+    <span class="n">cov_type</span><span class="o">=</span><span class="s1">'cluster'</span><span class="p">,</span> <span class="n">cov_kwds</span><span class="o">=</span><span class="p">{</span><span class="s1">'groups'</span><span class="p">:</span> <span class="n">reg_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">year</span><span class="p">})</span>
+
+<span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+    <span class="s1">'coef'</span><span class="p">:</span> <span class="n">clustered</span><span class="o">.</span><span class="n">params</span><span class="p">,</span>
+    <span class="s1">'OLS_se'</span><span class="p">:</span> <span class="n">ols_se</span><span class="o">.</span><span class="n">bse</span><span class="p">,</span>
+    <span class="s1">'Clustered_se'</span><span class="p">:</span> <span class="n">clustered</span><span class="o">.</span><span class="n">bse</span><span class="p">,</span>
+<span class="p">})</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>coef</th>
+<th>OLS_se</th>
+<th>Clustered_se</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>Intercept</th>
+<td>0.2417</td>
+<td>0.1368</td>
+<td>0.1388</td>
+</tr>
+<tr>
+<th>Mkt_RF</th>
+<td>1.2447</td>
+<td>0.0314</td>
+<td>0.0561</td>
+</tr>
+<tr>
+<th>SMB</th>
+<td>0.1423</td>
+<td>0.0456</td>
+<td>0.0518</td>
+</tr>
+<tr>
+<th>HML</th>
+<td>-0.6242</td>
+<td>0.0418</td>
+<td>0.0853</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h3 id="regression-diagnostics">Regression Diagnostics</h3>
+
+<h4 id="residual-plot">Residual Plot</h4><ul>
+<li>A plot of residuals against fitted values can show heteroskedasticity or nonlinearity (recall plotting from Lecture 7).</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">ff5</span><span class="o">.</span><span class="n">fittedvalues</span><span class="p">,</span> <span class="n">ff5</span><span class="o">.</span><span class="n">resid</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'red'</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">'--'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">'Fitted values'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'Residuals'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Residuals vs Fitted (5-Factor Model)'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="402" loading="lazy" src="fig-03.png" width="699"/>
+</div></div>
+<h4 id="heteroskedasticity-test-breusch-pagan">Heteroskedasticity Test: Breusch-Pagan</h4><ul>
+<li>Formally test for heteroskedasticity. A small p-value indicates non-constant variance.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">from</span><span class="w"> </span><span class="nn">statsmodels.stats.diagnostic</span><span class="w"> </span><span class="kn">import</span> <span class="n">het_breuschpagan</span>
+
+<span class="n">bp_stat</span><span class="p">,</span> <span class="n">bp_pval</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">het_breuschpagan</span><span class="p">(</span><span class="n">ff5</span><span class="o">.</span><span class="n">resid</span><span class="p">,</span> <span class="n">ff5</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">exog</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Breusch-Pagan statistic = </span><span class="si">{</span><span class="n">bp_stat</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"p-value = </span><span class="si">{</span><span class="n">bp_pval</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">bp_pval</span> <span class="o">&lt;</span> <span class="mf">0.05</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"=&gt; Heteroskedasticity detected; use robust standard errors."</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Breusch-Pagan statistic = 4.855
+p-value = 0.4339
+</pre>
+</div></div>
+<h4 id="multicollinearity-variance-inflation-factors">Multicollinearity: Variance Inflation Factors</h4><ul>
+<li><strong>VIF</strong> measures how much a regressor is explained by the others. VIF &gt; 10 signals serious multicollinearity.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">from</span><span class="w"> </span><span class="nn">statsmodels.stats.outliers_influence</span><span class="w"> </span><span class="kn">import</span> <span class="n">variance_inflation_factor</span>
+
+<span class="n">X</span> <span class="o">=</span> <span class="n">sm</span><span class="o">.</span><span class="n">add_constant</span><span class="p">(</span><span class="n">reg_df</span><span class="p">[[</span><span class="s1">'Mkt_RF'</span><span class="p">,</span> <span class="s1">'SMB'</span><span class="p">,</span> <span class="s1">'HML'</span><span class="p">,</span> <span class="s1">'RMW'</span><span class="p">,</span> <span class="s1">'CMA'</span><span class="p">]])</span>
+<span class="n">vif</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+    <span class="s1">'variable'</span><span class="p">:</span> <span class="n">X</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span>
+    <span class="s1">'VIF'</span><span class="p">:</span> <span class="p">[</span><span class="n">variance_inflation_factor</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span>
+<span class="p">})</span>
+<span class="n">vif</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>variable</th>
+<th>VIF</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>const</td>
+<td>1.00</td>
+</tr>
+<tr>
+<th>1</th>
+<td>Mkt_RF</td>
+<td>1.28</td>
+</tr>
+<tr>
+<th>2</th>
+<td>SMB</td>
+<td>1.32</td>
+</tr>
+<tr>
+<th>3</th>
+<td>HML</td>
+<td>2.02</td>
+</tr>
+<tr>
+<th>4</th>
+<td>RMW</td>
+<td>1.54</td>
+</tr>
+<tr>
+<th>5</th>
+<td>CMA</td>
+<td>2.03</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h3 id="hypothesis-testing-2">Hypothesis Testing</h3>
+
+<h4 id="testing-a-single-restriction">Testing a Single Restriction</h4><ul>
+<li><p>The summary table tests each coefficient against 0. Here we test whether the market beta equals 1.</p>
+</li>
+<li><p><code>.t_test()</code> takes a restriction string, such as <code>'Mkt_RF = 1'</code>.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="nb">print</span><span class="p">(</span><span class="n">ff5</span><span class="o">.</span><span class="n">t_test</span><span class="p">(</span><span class="s1">'Mkt_RF = 1'</span><span class="p">))</span></code></pre></div><div class="nb-out nb-stream">
+<pre>                             Test for Constraints                             
+==============================================================================
+                 coef    std err          t      P&gt;|t|      [0.025      0.975]
+------------------------------------------------------------------------------
+c0             1.1555      0.032      4.840      0.000       1.092       1.219
+==============================================================================
+</pre>
+</div></div>
+<h4 id="testing-joint-restrictions-f-test">Testing Joint Restrictions (F-test)</h4><ul>
+<li><p>An F-test checks whether the four non-market factors are jointly significant. The null hypothesis is that all four coefficients are zero.</p>
+</li>
+<li><p><code>.f_test()</code> takes the restrictions as one string, separated by commas.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">f_result</span> <span class="o">=</span> <span class="n">ff5</span><span class="o">.</span><span class="n">f_test</span><span class="p">(</span><span class="s1">'SMB = 0, HML = 0, RMW = 0, CMA = 0'</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"F-statistic = </span><span class="si">{</span><span class="nb">float</span><span class="p">(</span><span class="n">f_result</span><span class="o">.</span><span class="n">fvalue</span><span class="p">)</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"p-value = </span><span class="si">{</span><span class="nb">float</span><span class="p">(</span><span class="n">f_result</span><span class="o">.</span><span class="n">pvalue</span><span class="p">)</span><span class="si">:</span><span class="s2">.4g</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>F-statistic = 80.685
+p-value = 3.233e-50
+</pre>
+</div></div>
+<h3 id="the-dummy-variable-trap">The Dummy Variable Trap</h3><ul>
+<li><p>Including a dummy for every category together with an intercept makes the regressors perfectly collinear.</p>
+</li>
+<li><p><code>C()</code> in statsmodels drops one category automatically, but dummies built by hand can cause this problem.</p>
+</li>
+<li><p>The next cell creates the trap on purpose.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Manually create BOTH crisis and non-crisis dummies, then include both + intercept</span>
+<span class="n">reg_df</span><span class="p">[</span><span class="s1">'non_crisis'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">reg_df</span><span class="p">[</span><span class="s1">'crisis'</span><span class="p">]</span>
+
+<span class="c1"># crisis + non_crisis + intercept are perfectly collinear</span>
+<span class="n">trap</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s1">'HiTec ~ Mkt_RF + crisis + non_crisis'</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">reg_df</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">trap</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span></code></pre></div><div class="nb-out nb-stream">
+<pre>                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                  HiTec   R-squared:                       0.749
+Model:                            OLS   Adj. R-squared:                  0.748
+Method:                 Least Squares   F-statistic:                     605.2
+Date:                Fri, 18 Sep 2026   Prob (F-statistic):          2.17e-122
+Time:                        05:29:08   Log-Likelihood:                -1077.0
+No. Observations:                 408   AIC:                             2160.
+Df Residuals:                     405   BIC:                             2172.
+Df Model:                           2                                         
+Covariance Type:            nonrobust                                         
+==============================================================================
+                 coef    std err          t      P&gt;|t|      [0.025      0.975]
+------------------------------------------------------------------------------
+Intercept      0.2620      0.198      1.321      0.187      -0.128       0.652
+Mkt_RF         1.3198      0.038     34.790      0.000       1.245       1.394
+crisis         0.4740      0.383      1.239      0.216      -0.278       1.226
+non_crisis    -0.2119      0.223     -0.950      0.343      -0.651       0.227
+==============================================================================
+Omnibus:                       29.624   Durbin-Watson:                   2.130
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):               72.656
+Skew:                           0.343   Prob(JB):                     1.67e-16
+Kurtosis:                       4.950   Cond. No.                     1.27e+16
+==============================================================================
+
+Notes:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+[2] The smallest eigenvalue is 5.11e-29. This might indicate that there are
+strong multicollinearity problems or that the design matrix is singular.
+</pre>
+</div><div class="nb-out nb-stderr">
+<pre>/tmp/ipykernel_1690/138966126.py:5: SingularMatrixWarning: The design matrix is rank-deficient. The model parameters are not uniquely determined.
+  trap = smf.ols('HiTec ~ Mkt_RF + crisis + non_crisis', data=reg_df).fit()
+</pre>
+</div></div>
+<ul>
+<li><p>statsmodels still reports estimates for all three terms, but it warns that the design matrix is rank-deficient (singular). The coefficients on <code>Intercept</code>, <code>crisis</code>, and <code>non_crisis</code> are not separately identified, so their individual values should not be interpreted.</p>
+</li>
+<li><p>Never include a full set of dummies together with an intercept. Use <code>C()</code> and let statsmodels handle the categories.</p>
+</li>
+</ul>
+
+<h3 id="in-class-exercise-2">In-Class Exercise</h3>
+
+<p><strong>16-1. CAPM for Another Industry:</strong></p>
+<ul>
+<li>Estimate the CAPM (<code>Mkt_RF</code> only) for the <code>Utils</code> (utilities) industry's excess return.</li>
+<li>Report its beta and R-squared. Is the beta above or below 1? What does that say about utilities' market risk?</li>
+</ul>
+
+<p><strong>16-2. Full 5-Factor Model:</strong></p>
+<ul>
+<li>Estimate the 5-factor model for the <code>Enrgy</code> (energy) industry.</li>
+<li>Which factors are statistically significant at the 5% level?</li>
+</ul>
+
+<p><strong>16-3. Robust Standard Errors:</strong></p>
+<ul>
+<li>Re-estimate the 5-factor model for <code>Enrgy</code> using HAC (Newey-West) standard errors with <code>maxlags=6</code>.</li>
+<li>Compare the t-statistic on <code>Mkt_RF</code> to the plain-OLS version. Does the conclusion change?</li>
+</ul>
+
+<p><strong>16-4. Alpha Test:</strong></p>
+<ul>
+<li>For the <code>Hlth</code> (healthcare) industry's 5-factor model, test whether the alpha (intercept) is statistically different from zero.</li>
+<li>Did healthcare deliver a significant abnormal return over this sample?</li>
+</ul>
+
+<p><strong>16-5. Joint Significance:</strong></p>
+<ul>
+<li>For the <code>Shops</code> (retail) industry's 5-factor model, run an F-test of the joint hypothesis that <code>SMB</code>, <code>HML</code>, <code>RMW</code>, and <code>CMA</code> are all zero.</li>
+<li>Are the non-market factors jointly significant?</li>
+</ul>
+
+<h2 id="ch-17-panel-data-iv-with-linearmodels">Ch 17: Panel Data &amp; IV with linearmodels</h2>
+
+<ul>
+<li><p>Much of econometrics uses <strong>panel data</strong>: many entities (firms, countries, portfolios) observed over many periods.</p>
+</li>
+<li><p><code>statsmodels</code> has limited support for panel models. <code>linearmodels</code> provides fixed effects, random effects, IV/2SLS, and Fama-MacBeth estimators.</p>
+</li>
+<li><p>We treat the 10 industry portfolios as a panel, with industry as the entity and month as the time period.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">from</span><span class="w"> </span><span class="nn">linearmodels</span><span class="w"> </span><span class="kn">import</span> <span class="n">PooledOLS</span><span class="p">,</span> <span class="n">PanelOLS</span><span class="p">,</span> <span class="n">RandomEffects</span><span class="p">,</span> <span class="n">IV2SLS</span><span class="p">,</span> <span class="n">FamaMacBeth</span></code></pre></div></div>
+<h3 id="building-a-panel-dataframe">Building a Panel DataFrame</h3>
+
+<ul>
+<li><p><code>linearmodels</code> expects a <strong>MultiIndex</strong> with (entity, time).</p>
+</li>
+<li><p>Our <code>ind_excess</code> is wide (one column per industry). We <code>melt</code> it to long format, then add the factors (recall reshaping and merging from Lecture 6).</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Wide -&gt; long: one row per (industry, month)</span>
+<span class="n">panel</span> <span class="o">=</span> <span class="n">ind_excess</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span><span class="o">.</span><span class="n">melt</span><span class="p">(</span>
+    <span class="n">id_vars</span><span class="o">=</span><span class="s1">'Date'</span><span class="p">,</span> <span class="n">var_name</span><span class="o">=</span><span class="s1">'industry'</span><span class="p">,</span> <span class="n">value_name</span><span class="o">=</span><span class="s1">'excess'</span><span class="p">)</span>
+<span class="n">panel</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Date</th>
+<th>industry</th>
+<th>excess</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>1990-01-01</td>
+<td>NoDur</td>
+<td>-10.04</td>
+</tr>
+<tr>
+<th>1</th>
+<td>1990-02-01</td>
+<td>NoDur</td>
+<td>-1.12</td>
+</tr>
+<tr>
+<th>2</th>
+<td>1990-03-01</td>
+<td>NoDur</td>
+<td>3.99</td>
+</tr>
+<tr>
+<th>3</th>
+<td>1990-04-01</td>
+<td>NoDur</td>
+<td>-0.86</td>
+</tr>
+<tr>
+<th>4</th>
+<td>1990-05-01</td>
+<td>NoDur</td>
+<td>8.41</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Attach the factors to every row by merging on Date</span>
+<span class="n">factor_data</span> <span class="o">=</span> <span class="n">factors</span><span class="p">[[</span><span class="s1">'Mkt_RF'</span><span class="p">,</span> <span class="s1">'SMB'</span><span class="p">,</span> <span class="s1">'HML'</span><span class="p">,</span> <span class="s1">'RMW'</span><span class="p">,</span> <span class="s1">'CMA'</span><span class="p">]]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+<span class="n">panel</span> <span class="o">=</span> <span class="n">panel</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">factor_data</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="s1">'Date'</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">'left'</span><span class="p">)</span>
+<span class="n">panel</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Date</th>
+<th>industry</th>
+<th>excess</th>
+<th>Mkt_RF</th>
+<th>SMB</th>
+<th>HML</th>
+<th>RMW</th>
+<th>CMA</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>1990-01-01</td>
+<td>NoDur</td>
+<td>-10.04</td>
+<td>-7.80</td>
+<td>-1.21</td>
+<td>0.83</td>
+<td>-1.12</td>
+<td>1.40</td>
+</tr>
+<tr>
+<th>1</th>
+<td>1990-02-01</td>
+<td>NoDur</td>
+<td>-1.12</td>
+<td>1.11</td>
+<td>1.15</td>
+<td>0.65</td>
+<td>-0.04</td>
+<td>-0.61</td>
+</tr>
+<tr>
+<th>2</th>
+<td>1990-03-01</td>
+<td>NoDur</td>
+<td>3.99</td>
+<td>1.83</td>
+<td>1.59</td>
+<td>-2.90</td>
+<td>1.99</td>
+<td>-0.94</td>
+</tr>
+<tr>
+<th>3</th>
+<td>1990-04-01</td>
+<td>NoDur</td>
+<td>-0.86</td>
+<td>-3.36</td>
+<td>-0.35</td>
+<td>-2.57</td>
+<td>1.78</td>
+<td>-1.00</td>
+</tr>
+<tr>
+<th>4</th>
+<td>1990-05-01</td>
+<td>NoDur</td>
+<td>8.41</td>
+<td>8.44</td>
+<td>-2.41</td>
+<td>-3.89</td>
+<td>1.68</td>
+<td>-1.63</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Set the (entity, time) MultiIndex that linearmodels expects</span>
+<span class="n">panel</span> <span class="o">=</span> <span class="n">panel</span><span class="o">.</span><span class="n">set_index</span><span class="p">([</span><span class="s1">'industry'</span><span class="p">,</span> <span class="s1">'Date'</span><span class="p">])</span>
+<span class="n">panel</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th>excess</th>
+<th>Mkt_RF</th>
+<th>SMB</th>
+<th>HML</th>
+<th>RMW</th>
+<th>CMA</th>
+</tr>
+<tr>
+<th>industry</th>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th rowspan="5" valign="top">NoDur</th>
+<th>1990-01-01</th>
+<td>-10.04</td>
+<td>-7.80</td>
+<td>-1.21</td>
+<td>0.83</td>
+<td>-1.12</td>
+<td>1.40</td>
+</tr>
+<tr>
+<th>1990-02-01</th>
+<td>-1.12</td>
+<td>1.11</td>
+<td>1.15</td>
+<td>0.65</td>
+<td>-0.04</td>
+<td>-0.61</td>
+</tr>
+<tr>
+<th>1990-03-01</th>
+<td>3.99</td>
+<td>1.83</td>
+<td>1.59</td>
+<td>-2.90</td>
+<td>1.99</td>
+<td>-0.94</td>
+</tr>
+<tr>
+<th>1990-04-01</th>
+<td>-0.86</td>
+<td>-3.36</td>
+<td>-0.35</td>
+<td>-2.57</td>
+<td>1.78</td>
+<td>-1.00</td>
+</tr>
+<tr>
+<th>1990-05-01</th>
+<td>8.41</td>
+<td>8.44</td>
+<td>-2.41</td>
+<td>-3.89</td>
+<td>1.68</td>
+<td>-1.63</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h4 id="add-an-entity-and-time-varying-regressor">Add an Entity-and-Time-Varying Regressor</h4><ul>
+<li><p>The factors are common to all industries in a given month. They vary over time but not across industries.</p>
+</li>
+<li><p>To illustrate fixed effects fully, we add each industry's own lagged excess return, <code>lag_excess</code> (a momentum-style variable that varies across both dimensions).</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Lag within each industry (group by the entity level of the index)</span>
+<span class="n">panel</span><span class="p">[</span><span class="s1">'lag_excess'</span><span class="p">]</span> <span class="o">=</span> <span class="n">panel</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="s1">'industry'</span><span class="p">)[</span><span class="s1">'excess'</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">panel</span> <span class="o">=</span> <span class="n">panel</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span>
+<span class="n">panel</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th>excess</th>
+<th>Mkt_RF</th>
+<th>SMB</th>
+<th>HML</th>
+<th>RMW</th>
+<th>CMA</th>
+<th>lag_excess</th>
+</tr>
+<tr>
+<th>industry</th>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th rowspan="5" valign="top">NoDur</th>
+<th>1990-02-01</th>
+<td>-1.12</td>
+<td>1.11</td>
+<td>1.15</td>
+<td>0.65</td>
+<td>-0.04</td>
+<td>-0.61</td>
+<td>-10.04</td>
+</tr>
+<tr>
+<th>1990-03-01</th>
+<td>3.99</td>
+<td>1.83</td>
+<td>1.59</td>
+<td>-2.90</td>
+<td>1.99</td>
+<td>-0.94</td>
+<td>-1.12</td>
+</tr>
+<tr>
+<th>1990-04-01</th>
+<td>-0.86</td>
+<td>-3.36</td>
+<td>-0.35</td>
+<td>-2.57</td>
+<td>1.78</td>
+<td>-1.00</td>
+<td>3.99</td>
+</tr>
+<tr>
+<th>1990-05-01</th>
+<td>8.41</td>
+<td>8.44</td>
+<td>-2.41</td>
+<td>-3.89</td>
+<td>1.68</td>
+<td>-1.63</td>
+<td>-0.86</td>
+</tr>
+<tr>
+<th>1990-06-01</th>
+<td>1.45</td>
+<td>-1.09</td>
+<td>1.31</td>
+<td>-2.00</td>
+<td>-0.99</td>
+<td>-0.39</td>
+<td>8.41</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h3 id="pooled-ols">Pooled OLS</h3>
+
+<ul>
+<li><p><strong>Pooled OLS</strong> ignores the panel structure. It is OLS on all rows stacked together.</p>
+</li>
+<li><p>It is the baseline for the panel models below. In a <code>PanelOLS</code> formula, fixed effects are added with the <code>EntityEffects</code> and <code>TimeEffects</code> terms; <code>PooledOLS</code> includes neither.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">pooled</span> <span class="o">=</span> <span class="n">PooledOLS</span><span class="o">.</span><span class="n">from_formula</span><span class="p">(</span>
+    <span class="s1">'excess ~ 1 + Mkt_RF + SMB + HML + lag_excess'</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">panel</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">pooled</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>                          PooledOLS Estimation Summary                          
+================================================================================
+Dep. Variable:                 excess   R-squared:                        0.5540
+Estimator:                  PooledOLS   R-squared (Between):              0.0135
+No. Observations:                4070   R-squared (Within):               0.5544
+Date:                Fri, Sep 18 2026   R-squared (Overall):              0.5540
+Time:                        05:29:10   Log-likelihood                 -1.11e+04
+Cov. Estimator:            Unadjusted                                           
+                                        F-statistic:                      1262.2
+Entities:                          10   P-value                           0.0000
+Avg Obs:                       407.00   Distribution:                  F(4,4065)
+Min Obs:                       407.00                                           
+Max Obs:                       407.00   F-statistic (robust):             1262.2
+                                        P-value                           0.0000
+Time periods:                     407   Distribution:                  F(4,4065)
+Avg Obs:                      10.0000                                           
+Min Obs:                      10.0000                                           
+Max Obs:                      10.0000                                           
+                                                                                
+                             Parameter Estimates                              
+==============================================================================
+            Parameter  Std. Err.     T-stat    P-value    Lower CI    Upper CI
+------------------------------------------------------------------------------
+Intercept      0.0428     0.0595     0.7197     0.4717     -0.0738      0.1594
+Mkt_RF         0.9424     0.0136     69.412     0.0000      0.9158      0.9691
+SMB           -0.0291     0.0198    -1.4727     0.1409     -0.0679      0.0096
+HML            0.1551     0.0181     8.5901     0.0000      0.1197      0.1905
+lag_excess     0.0066     0.0106     0.6250     0.5320     -0.0141      0.0273
+==============================================================================
+</pre>
+</div></div>
+<h3 id="fixed-effects">Fixed Effects</h3>
+
+<h4 id="entity-industry-fixed-effects">Entity (Industry) Fixed Effects</h4><ul>
+<li><p><strong>Entity fixed effects</strong> absorb time-invariant differences across industries (e.g., utilities always being defensive).</p>
+</li>
+<li><p>Add <code>EntityEffects</code> to the formula. We also cluster the standard errors by entity.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">fe_entity</span> <span class="o">=</span> <span class="n">PanelOLS</span><span class="o">.</span><span class="n">from_formula</span><span class="p">(</span>
+    <span class="s1">'excess ~ 1 + Mkt_RF + SMB + HML + lag_excess + EntityEffects'</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">panel</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">cov_type</span><span class="o">=</span><span class="s1">'clustered'</span><span class="p">,</span> <span class="n">cluster_entity</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">fe_entity</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>                          PanelOLS Estimation Summary                           
+================================================================================
+Dep. Variable:                 excess   R-squared:                        0.5544
+Estimator:                   PanelOLS   R-squared (Between):              0.0118
+No. Observations:                4070   R-squared (Within):               0.5544
+Date:                Fri, Sep 18 2026   R-squared (Overall):              0.5540
+Time:                        05:29:10   Log-likelihood                 -1.11e+04
+Cov. Estimator:             Clustered                                           
+                                        F-statistic:                      1261.6
+Entities:                          10   P-value                           0.0000
+Avg Obs:                       407.00   Distribution:                  F(4,4056)
+Min Obs:                       407.00                                           
+Max Obs:                       407.00   F-statistic (robust):             174.16
+                                        P-value                           0.0000
+Time periods:                     407   Distribution:                  F(4,4056)
+Avg Obs:                      10.0000                                           
+Min Obs:                      10.0000                                           
+Max Obs:                      10.0000                                           
+                                                                                
+                             Parameter Estimates                              
+==============================================================================
+            Parameter  Std. Err.     T-stat    P-value    Lower CI    Upper CI
+------------------------------------------------------------------------------
+Intercept      0.0434     0.0677     0.6404     0.5220     -0.0894      0.1761
+Mkt_RF         0.9424     0.0808     11.669     0.0000      0.7841      1.1008
+SMB           -0.0289     0.0472    -0.6128     0.5401     -0.1215      0.0636
+HML            0.1552     0.1086     1.4291     0.1530     -0.0577      0.3680
+lag_excess     0.0058     0.0151     0.3825     0.7021     -0.0239      0.0355
+==============================================================================
+
+F-test for Poolability: 0.7872
+P-value: 0.6283
+Distribution: F(9,4056)
+
+Included effects: Entity
+</pre>
+</div></div>
+<ul>
+<li>The factor coefficients are still identified because the factors vary over time within each industry.</li>
+</ul>
+
+<h4 id="adding-time-fixed-effects">Adding Time Fixed Effects</h4><ul>
+<li><p>The next cell adds time fixed effects while keeping the common factors.</p>
+</li>
+<li><p>Time effects absorb everything that is common to all industries within a month, including the factors.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Time effects fully absorb the common factors, so this cannot be estimated.</span>
+<span class="c1"># We catch the error on purpose so you can read the message.</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">fe_bad</span> <span class="o">=</span> <span class="n">PanelOLS</span><span class="o">.</span><span class="n">from_formula</span><span class="p">(</span>
+        <span class="s1">'excess ~ 1 + Mkt_RF + SMB + HML + EntityEffects + TimeEffects'</span><span class="p">,</span>
+        <span class="n">data</span><span class="o">=</span><span class="n">panel</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">fe_bad</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">:</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>AbsorbingEffectError:
+
+
+The model cannot be estimated. The included effects have fully absorbed
+one or more of the variables. This occurs when one or more of the dependent
+variable is perfectly explained using the effects included in the model.
+
+The following variables or variable combinations have been fully absorbed
+or have become perfectly collinear after effects are removed:
+
+          Intercept, Mkt_RF, SMB, HML
+          Intercept, Mkt_RF, SMB, HML
+          Intercept, Mkt_RF, SMB, HML
+
+Set drop_absorbed=True to automatically drop absorbed variables.
+
+</pre>
+</div></div>
+<ul>
+<li><p>The estimation fails with an <code>AbsorbingEffectError</code>. The effect of a variable that does not vary within the fixed-effect dimension (here, across industries within a month) cannot be identified.</p>
+</li>
+<li><p>In a two-way model, the time effects take the place of the factors, because they absorb all variation that is common to the industries in a given month.</p>
+</li>
+</ul>
+
+<h4 id="two-way-fixed-effects">Two-Way Fixed Effects</h4><ul>
+<li>With both entity and time effects, we keep only the regressor that varies across both dimensions, <code>lag_excess</code>.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">fe_two_way</span> <span class="o">=</span> <span class="n">PanelOLS</span><span class="o">.</span><span class="n">from_formula</span><span class="p">(</span>
+    <span class="s1">'excess ~ 1 + lag_excess + EntityEffects + TimeEffects'</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">panel</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">cov_type</span><span class="o">=</span><span class="s1">'clustered'</span><span class="p">,</span> <span class="n">cluster_entity</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">fe_two_way</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>                          PanelOLS Estimation Summary                           
+================================================================================
+Dep. Variable:                 excess   R-squared:                        0.0006
+Estimator:                   PanelOLS   R-squared (Between):              0.0491
+No. Observations:                4070   R-squared (Within):           -6.577e-05
+Date:                Fri, Sep 18 2026   R-squared (Overall):          -2.702e-05
+Time:                        05:29:10   Log-likelihood                  -1.1e+04
+Cov. Estimator:             Clustered                                           
+                                        F-statistic:                      2.1652
+Entities:                          10   P-value                           0.1413
+Avg Obs:                       407.00   Distribution:                  F(1,3653)
+Min Obs:                       407.00                                           
+Max Obs:                       407.00   F-statistic (robust):             1.7774
+                                        P-value                           0.1826
+Time periods:                     407   Distribution:                  F(1,3653)
+Avg Obs:                      10.0000                                           
+Min Obs:                      10.0000                                           
+Max Obs:                      10.0000                                           
+                                                                                
+                             Parameter Estimates                              
+==============================================================================
+            Parameter  Std. Err.     T-stat    P-value    Lower CI    Upper CI
+------------------------------------------------------------------------------
+Intercept      0.7359     0.0132     55.545     0.0000      0.7100      0.7619
+lag_excess     0.0243     0.0182     1.3332     0.1826     -0.0114      0.0601
+==============================================================================
+
+F-test for Poolability: 11.934
+P-value: 0.0000
+Distribution: F(415,3653)
+
+Included effects: Entity, Time
+</pre>
+</div></div>
+<h3 id="random-effects">Random Effects</h3>
+
+<ul>
+<li><p><strong>Random effects</strong> (RE) treat the entity-specific term as a random draw rather than a fixed parameter.</p>
+</li>
+<li><p>RE is more efficient than fixed effects (FE) if the entity effects are uncorrelated with the regressors, which is a strong assumption.</p>
+</li>
+<li><p>The choice between FE and RE is traditionally guided by a <strong>Hausman test</strong>: if the two give very different coefficients, prefer FE.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">re</span> <span class="o">=</span> <span class="n">RandomEffects</span><span class="o">.</span><span class="n">from_formula</span><span class="p">(</span>
+    <span class="s1">'excess ~ 1 + Mkt_RF + SMB + HML + lag_excess'</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">panel</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">re</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>                        RandomEffects Estimation Summary                        
+================================================================================
+Dep. Variable:                 excess   R-squared:                        0.5540
+Estimator:              RandomEffects   R-squared (Between):              0.0135
+No. Observations:                4070   R-squared (Within):               0.5544
+Date:                Fri, Sep 18 2026   R-squared (Overall):              0.5540
+Time:                        05:29:11   Log-likelihood                 -1.11e+04
+Cov. Estimator:            Unadjusted                                           
+                                        F-statistic:                      1262.2
+Entities:                          10   P-value                           0.0000
+Avg Obs:                       407.00   Distribution:                  F(4,4065)
+Min Obs:                       407.00                                           
+Max Obs:                       407.00   F-statistic (robust):             1262.2
+                                        P-value                           0.0000
+Time periods:                     407   Distribution:                  F(4,4065)
+Avg Obs:                      10.0000                                           
+Min Obs:                      10.0000                                           
+Max Obs:                      10.0000                                           
+                                                                                
+                             Parameter Estimates                              
+==============================================================================
+            Parameter  Std. Err.     T-stat    P-value    Lower CI    Upper CI
+------------------------------------------------------------------------------
+Intercept      0.0428     0.0595     0.7197     0.4717     -0.0738      0.1594
+Mkt_RF         0.9424     0.0136     69.412     0.0000      0.9158      0.9691
+SMB           -0.0291     0.0198    -1.4727     0.1409     -0.0679      0.0096
+HML            0.1551     0.0181     8.5901     0.0000      0.1197      0.1905
+lag_excess     0.0066     0.0106     0.6250     0.5320     -0.0141      0.0273
+==============================================================================
+</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Quick informal FE-vs-RE comparison of the key coefficient</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"FE  Mkt_RF coef: </span><span class="si">{</span><span class="n">fe_entity</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">'Mkt_RF'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"RE  Mkt_RF coef: </span><span class="si">{</span><span class="n">re</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">'Mkt_RF'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>FE  Mkt_RF coef: 0.9424
+RE  Mkt_RF coef: 0.9424
+</pre>
+</div></div>
+<h3 id="instrumental-variables-2sls">Instrumental Variables / 2SLS</h3>
+
+<ul>
+<li><p>When a regressor is <strong>endogenous</strong> (correlated with the error), OLS is biased.</p>
+</li>
+<li><p><strong>Instrumental variables</strong> (IV) estimation, usually done by two-stage least squares (2SLS), addresses this with an instrument <code>z</code> that affects <code>x</code> but does not affect the outcome directly.</p>
+</li>
+<li><p>Valid instruments are hard to find in real data, so we simulate data in which the true effect of <code>x</code> on <code>y</code> is 1.5 and compare the OLS and 2SLS estimates with that value.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Simulate endogeneity: true effect of x on y is 1.5</span>
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">N</span> <span class="o">=</span> <span class="mi">2000</span>
+<span class="n">u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>                      <span class="c1"># unobserved structural error</span>
+<span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>                      <span class="c1"># the instrument</span>
+<span class="n">x</span> <span class="o">=</span> <span class="mf">0.8</span> <span class="o">*</span> <span class="n">z</span> <span class="o">+</span> <span class="n">u</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">N</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.5</span>  <span class="c1"># x depends on z AND on u (endogenous)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="mf">2.0</span> <span class="o">+</span> <span class="mf">1.5</span> <span class="o">*</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">u</span>                   <span class="c1"># u also drives y -&gt; OLS will be biased</span>
+
+<span class="n">iv_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">'y'</span><span class="p">:</span> <span class="n">y</span><span class="p">,</span> <span class="s1">'x'</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span> <span class="s1">'z'</span><span class="p">:</span> <span class="n">z</span><span class="p">})</span>
+<span class="n">iv_df</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>y</th>
+<th>x</th>
+<th>z</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>9.791696</td>
+<td>1.945773</td>
+<td>0.489517</td>
+</tr>
+<tr>
+<th>1</th>
+<td>-0.360118</td>
+<td>-0.349899</td>
+<td>0.238796</td>
+</tr>
+<tr>
+<th>2</th>
+<td>-0.680531</td>
+<td>-0.730677</td>
+<td>-0.448112</td>
+</tr>
+<tr>
+<th>3</th>
+<td>-2.984499</td>
+<td>-1.177062</td>
+<td>-0.610795</td>
+</tr>
+<tr>
+<th>4</th>
+<td>3.896615</td>
+<td>-0.466406</td>
+<td>-2.029945</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h4 id="ols-estimate">OLS Estimate</h4>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">import</span><span class="w"> </span><span class="nn">statsmodels.formula.api</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">smf</span>
+<span class="n">ols_biased</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s1">'y ~ x'</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">iv_df</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"OLS estimate of x's effect: </span><span class="si">{</span><span class="n">ols_biased</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">'x'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  (true = 1.5)"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>OLS estimate of x's effect: 3.1055  (true = 1.5)
+</pre>
+</div></div>
+<h4 id="2sls-estimate">2SLS Estimate</h4><ul>
+<li>In <code>linearmodels</code>, the formula syntax <code>[x ~ z]</code> marks <code>x</code> as endogenous with instrument <code>z</code>.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">iv</span> <span class="o">=</span> <span class="n">IV2SLS</span><span class="o">.</span><span class="n">from_formula</span><span class="p">(</span><span class="s1">'y ~ 1 + [x ~ z]'</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">iv_df</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"2SLS estimate of x's effect: </span><span class="si">{</span><span class="n">iv</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">'x'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  (true = 1.5)"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>2SLS estimate of x's effect: 1.4612  (true = 1.5)
+</pre>
+</div></div>
+<ul>
+<li>The OLS estimate is far from the true value of 1.5, while the 2SLS estimate is close to it.</li>
+</ul>
+
+<h3 id="fama-macbeth-regression">Fama-MacBeth Regression</h3>
+
+<ul>
+<li><p><strong>Fama-MacBeth</strong> regression is a standard method for estimating risk premia in the cross-section of asset returns. It works in two passes:</p>
+<ol>
+<li><strong>Pass 1:</strong> for each asset, estimate its factor beta from a time-series regression.</li>
+<li><strong>Pass 2:</strong> in each period, run a cross-sectional regression of returns on the betas; the slope is that period's risk premium. Then average the slopes over time.</li>
+</ol>
+</li>
+<li><p>We apply it to the 10 industry portfolios, using the market as the only factor.</p>
+</li>
+</ul>
+
+<h4 id="pass-1-estimate-each-industrys-beta">Pass 1: Estimate Each Industry's Beta</h4>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Time-series CAPM for each industry to get its market beta</span>
+<span class="n">betas</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="n">ind_excess</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+    <span class="n">sub</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">'excess'</span><span class="p">:</span> <span class="n">ind_excess</span><span class="p">[</span><span class="n">ind</span><span class="p">],</span> <span class="s1">'Mkt_RF'</span><span class="p">:</span> <span class="n">factors</span><span class="p">[</span><span class="s1">'Mkt_RF'</span><span class="p">]})</span>
+    <span class="n">betas</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s1">'excess ~ Mkt_RF'</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">sub</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">'Mkt_RF'</span><span class="p">]</span>
+
+<span class="n">beta_series</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">betas</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'beta'</span><span class="p">)</span>
+<span class="n">beta_series</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>beta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>NoDur</th>
+<td>0.639</td>
+</tr>
+<tr>
+<th>Durbl</th>
+<td>1.390</td>
+</tr>
+<tr>
+<th>Manuf</th>
+<td>1.007</td>
+</tr>
+<tr>
+<th>Enrgy</th>
+<td>0.854</td>
+</tr>
+<tr>
+<th>HiTec</th>
+<td>1.318</td>
+</tr>
+<tr>
+<th>Telcm</th>
+<td>0.919</td>
+</tr>
+<tr>
+<th>Shops</th>
+<td>0.905</td>
+</tr>
+<tr>
+<th>Hlth</th>
+<td>0.713</td>
+</tr>
+<tr>
+<th>Utils</th>
+<td>0.435</td>
+</tr>
+<tr>
+<th>Other</th>
+<td>1.071</td>
+</tr>
+</tbody>
+</table></div>
+</div><br/><label><b>dtype:</b> float64</label></div></div>
+<h4 id="build-a-panel-with-beta-as-an-asset-specific-regressor">Build a Panel with Beta as an Asset-Specific Regressor</h4><ul>
+<li>Each industry's beta is constant over time but varies across industries. The cross-sectional regressions in Pass 2 use this variation.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Attach each industry's beta to every one of its rows</span>
+<span class="n">panel_fm</span> <span class="o">=</span> <span class="n">ind_excess</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span><span class="o">.</span><span class="n">melt</span><span class="p">(</span>
+    <span class="n">id_vars</span><span class="o">=</span><span class="s1">'Date'</span><span class="p">,</span> <span class="n">var_name</span><span class="o">=</span><span class="s1">'industry'</span><span class="p">,</span> <span class="n">value_name</span><span class="o">=</span><span class="s1">'excess'</span><span class="p">)</span>
+<span class="n">panel_fm</span><span class="p">[</span><span class="s1">'beta'</span><span class="p">]</span> <span class="o">=</span> <span class="n">panel_fm</span><span class="p">[</span><span class="s1">'industry'</span><span class="p">]</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">beta_series</span><span class="p">)</span>
+<span class="n">panel_fm</span> <span class="o">=</span> <span class="n">panel_fm</span><span class="o">.</span><span class="n">set_index</span><span class="p">([</span><span class="s1">'industry'</span><span class="p">,</span> <span class="s1">'Date'</span><span class="p">])</span>
+<span class="n">panel_fm</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th>excess</th>
+<th>beta</th>
+</tr>
+<tr>
+<th>industry</th>
+<th>Date</th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th rowspan="5" valign="top">NoDur</th>
+<th>1990-01-01</th>
+<td>-10.04</td>
+<td>0.639137</td>
+</tr>
+<tr>
+<th>1990-02-01</th>
+<td>-1.12</td>
+<td>0.639137</td>
+</tr>
+<tr>
+<th>1990-03-01</th>
+<td>3.99</td>
+<td>0.639137</td>
+</tr>
+<tr>
+<th>1990-04-01</th>
+<td>-0.86</td>
+<td>0.639137</td>
+</tr>
+<tr>
+<th>1990-05-01</th>
+<td>8.41</td>
+<td>0.639137</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<h4 id="pass-2-by-hand">Pass 2 by Hand</h4><ul>
+<li>We group by month, run a cross-sectional OLS in each month, collect the slopes, and average them (recall <code>groupby</code> from Lecture 6).</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">slopes</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">date</span><span class="p">,</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">panel_fm</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="s1">'Date'</span><span class="p">):</span>
+    <span class="n">cs</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s1">'excess ~ beta'</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">group</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+    <span class="n">slopes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">'beta'</span><span class="p">])</span>
+
+<span class="n">slopes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">slopes</span><span class="p">)</span>
+<span class="n">fm_premium</span> <span class="o">=</span> <span class="n">slopes</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+<span class="n">fm_se</span> <span class="o">=</span> <span class="n">slopes</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">slopes</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Market risk premium (manual FM): </span><span class="si">{</span><span class="n">fm_premium</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">% per month"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Fama-MacBeth t-statistic: </span><span class="si">{</span><span class="n">fm_premium</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">fm_se</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Market risk premium (manual FM): 0.3585% per month
+Fama-MacBeth t-statistic: 1.005
+</pre>
+</div></div>
+<h4 id="pass-2-with-linearmodels">Pass 2 with linearmodels</h4><ul>
+<li><code>FamaMacBeth</code> runs the monthly cross-sectional regressions and averages the slopes in one call. It takes the Pass 1 betas in <code>panel_fm</code> as given. Its <code>beta</code> estimate and t-statistic match the manual version.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">fm</span> <span class="o">=</span> <span class="n">FamaMacBeth</span><span class="o">.</span><span class="n">from_formula</span><span class="p">(</span><span class="s1">'excess ~ 1 + beta'</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">panel_fm</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">fm</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>                             FamaMacBeth Estimation Summary                            
+=======================================================================================
+Dep. Variable:                        excess   R-squared:                        0.0003
+Estimator:                       FamaMacBeth   R-squared (Between):              0.3794
+No. Observations:                       4080   R-squared (Within):               0.0000
+Date:                       Fri, Sep 18 2026   R-squared (Overall):              0.0003
+Time:                               05:29:14   Log-likelihood                -1.278e+04
+Cov. Estimator:    Fama-MacBeth Standard Cov                                           
+                                               F-statistic:                      1.3087
+Entities:                                 10   P-value                           0.2527
+Avg Obs:                              408.00   Distribution:                  F(1,4078)
+Min Obs:                              408.00                                           
+Max Obs:                              408.00   F-statistic (robust):             1.0106
+                                               P-value                           0.3148
+Time periods:                            408   Distribution:                  F(1,4078)
+Avg Obs:                             10.0000                                           
+Min Obs:                             10.0000                                           
+Max Obs:                             10.0000                                           
+                                                                                       
+                             Parameter Estimates                              
+==============================================================================
+            Parameter  Std. Err.     T-stat    P-value    Lower CI    Upper CI
+------------------------------------------------------------------------------
+Intercept      0.4025     0.2736     1.4714     0.1413     -0.1338      0.9388
+beta           0.3585     0.3566     1.0053     0.3148     -0.3406      1.0575
+==============================================================================
+</pre>
+</div></div>
+<h3 id="in-class-exercise-3">In-Class Exercise</h3>
+
+<p><strong>17-1. Build a Panel:</strong></p>
+<ul>
+<li>Using <code>ind_excess</code>, build a long-format panel with a (industry, Date) MultiIndex and a column <code>excess</code>.</li>
+<li>Add the <code>Mkt_RF</code> factor to each row by merging on <code>Date</code>. Print the first few rows and confirm the index names.</li>
+</ul>
+
+<p><strong>17-2. Entity Fixed Effects:</strong></p>
+<ul>
+<li>Estimate a panel regression of <code>excess</code> on <code>Mkt_RF</code> with entity (industry) fixed effects and clustered (by entity) standard errors.</li>
+<li>How does the <code>Mkt_RF</code> coefficient compare to the pooled estimate?</li>
+</ul>
+
+<p><strong>17-3. Pooled vs Fixed Effects:</strong></p>
+<ul>
+<li>Estimate the same model as 17-2 but as pooled OLS (no effects).</li>
+<li>Put the two <code>Mkt_RF</code> coefficients side by side. Did adding industry effects change the slope much? What does that suggest about industry-level intercept differences?</li>
+</ul>
+
+<p><strong>17-4. Instrumental Variables:</strong></p>
+<ul>
+<li>Using the simulated <code>iv_df</code>, re-estimate the effect of <code>x</code> on <code>y</code> with 2SLS using <code>z</code> as the instrument.</li>
+<li>Confirm the 2SLS estimate is close to the true value of 1.5, while OLS is not.</li>
+</ul>
+
+<p><strong>17-5. Fama-MacBeth:</strong></p>
+<ul>
+<li>Run a Fama-MacBeth regression of industry excess returns on their market <code>beta</code> using <code>linearmodels</code>.</li>
+<li>Report the estimated market risk premium and its t-statistic. Is the market price of risk positive over this sample?</li>
+</ul>
+
+<h2 id="ch-18-volatility-modeling-with-arch">Ch 18: Volatility Modeling with arch</h2>
+
+<ul>
+<li><p>So far we have modeled the mean of returns. In finance, the variance of returns matters as much, because it measures risk.</p>
+</li>
+<li><p>Volatility (the standard deviation of returns) is not constant. Calm periods tend to be followed by calm periods, and turbulent periods by turbulent periods. This is <strong>volatility clustering</strong>.</p>
+</li>
+<li><p>The <code>arch</code> library fits ARCH/GARCH models, the standard models for time-varying volatility.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">from</span><span class="w"> </span><span class="nn">arch</span><span class="w"> </span><span class="kn">import</span> <span class="n">arch_model</span></code></pre></div></div>
+<h3 id="volatility-clustering">Volatility Clustering</h3>
+
+<ul>
+<li>The next plot shows the monthly market premium. Big moves (up or down) tend to be followed by big moves.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">mkt</span> <span class="o">=</span> <span class="n">factors</span><span class="p">[</span><span class="s1">'Mkt_RF'</span><span class="p">]</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">11</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">mkt</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">mkt</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'steelblue'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'black'</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Monthly Market Premium: Note the Clusters of Volatility'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'Return (%)'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="378" loading="lazy" src="fig-04.png" width="941"/>
+</div></div>
+<h4 id="visualizing-clustering-with-squared-returns">Visualizing Clustering with Squared Returns</h4><ul>
+<li>Squared returns proxy for variance. Plotting them makes the clusters easier to see.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">11</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">mkt</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">mkt</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'darkred'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Squared Market Returns (a Proxy for Variance)'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'Squared return'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="378" loading="lazy" src="fig-05.png" width="938"/>
+</div></div>
+<h4 id="autocorrelation-of-squared-returns">Autocorrelation of Squared Returns</h4><ul>
+<li>If volatility clusters, squared returns should be autocorrelated even when returns themselves aren't.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">from</span><span class="w"> </span><span class="nn">statsmodels.graphics.tsaplots</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_acf</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">plot_acf</span><span class="p">(</span><span class="n">mkt</span><span class="p">,</span> <span class="n">lags</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">title</span><span class="o">=</span><span class="s1">'ACF of Returns'</span><span class="p">)</span>
+<span class="n">plot_acf</span><span class="p">(</span><span class="n">mkt</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">lags</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">title</span><span class="o">=</span><span class="s1">'ACF of Squared Returns'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="384" loading="lazy" src="fig-06.png" width="1183"/>
+</div></div>
+<ul>
+<li>Returns show little autocorrelation, but squared returns are autocorrelated. This is the pattern GARCH models are designed to capture.</li>
+</ul>
+
+<h3 id="the-garch-1-1-model">The GARCH(1,1) Model</h3>
+
+<ul>
+<li><p><strong>GARCH(1,1)</strong> models this period's conditional variance as a function of last period's squared shock and last period's conditional variance:</p>
+<p><code>sigma^2_t = omega + alpha * e^2_(t-1) + beta * sigma^2_(t-1)</code></p>
+</li>
+<li><p>The parameter alpha measures the reaction to recent shocks, and beta measures persistence.</p>
+</li>
+<li><p>We specify the model with <code>arch_model()</code> and estimate it with <code>.fit()</code>.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># mean='Constant' models returns as a constant plus GARCH errors</span>
+<span class="n">am</span> <span class="o">=</span> <span class="n">arch_model</span><span class="p">(</span><span class="n">mkt</span><span class="p">,</span> <span class="n">mean</span><span class="o">=</span><span class="s1">'Constant'</span><span class="p">,</span> <span class="n">vol</span><span class="o">=</span><span class="s1">'GARCH'</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">q</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">res</span> <span class="o">=</span> <span class="n">am</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">disp</span><span class="o">=</span><span class="s1">'off'</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span></code></pre></div><div class="nb-out nb-stream">
+<pre>                     Constant Mean - GARCH Model Results                      
+==============================================================================
+Dep. Variable:                 Mkt_RF   R-squared:                       0.000
+Mean Model:             Constant Mean   Adj. R-squared:                  0.000
+Vol Model:                      GARCH   Log-Likelihood:               -1158.45
+Distribution:                  Normal   AIC:                           2324.90
+Method:            Maximum Likelihood   BIC:                           2340.94
+                                        No. Observations:                  408
+Date:                Fri, Sep 18 2026   Df Residuals:                      407
+Time:                        05:29:19   Df Model:                            1
+                               Mean Model                               
+========================================================================
+                 coef    std err          t      P&gt;|t|  95.0% Conf. Int.
+------------------------------------------------------------------------
+mu             0.8548      0.188      4.552  5.318e-06 [  0.487,  1.223]
+                             Volatility Model                             
+==========================================================================
+                 coef    std err          t      P&gt;|t|    95.0% Conf. Int.
+--------------------------------------------------------------------------
+omega          1.0777      0.720      1.498      0.134   [ -0.333,  2.488]
+alpha[1]       0.1933  7.424e-02      2.604  9.224e-03 [4.778e-02,  0.339]
+beta[1]        0.7642  9.016e-02      8.476  2.334e-17   [  0.587,  0.941]
+==========================================================================
+
+Covariance estimator: robust
+</pre>
+</div></div>
+<h4 id="interpreting-the-parameters">Interpreting the Parameters</h4><ul>
+<li><code>omega</code>: the constant in the variance equation. The long-run (unconditional) variance is <code>omega / (1 - alpha[1] - beta[1])</code>, provided <code>alpha[1] + beta[1] &lt; 1</code>.</li>
+<li><code>alpha[1]</code>: sensitivity to last period's shock.</li>
+<li><code>beta[1]</code>: persistence of variance.</li>
+<li><code>alpha[1] + beta[1]</code>: total persistence. Values near 1 mean volatility shocks die out slowly.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">alpha</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">'alpha[1]'</span><span class="p">]</span>
+<span class="n">beta</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">'beta[1]'</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"alpha (shock reaction): </span><span class="si">{</span><span class="n">alpha</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"beta  (persistence):    </span><span class="si">{</span><span class="n">beta</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"persistence (alpha+beta): </span><span class="si">{</span><span class="n">alpha</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">beta</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>alpha (shock reaction): 0.1933
+beta  (persistence):    0.7642
+persistence (alpha+beta): 0.9575
+</pre>
+</div></div>
+<h3 id="conditional-volatility">Conditional Volatility</h3>
+
+<ul>
+<li><p>The fitted model gives an estimate of volatility in each period, the <strong>conditional volatility</strong>.</p>
+</li>
+<li><p>The plot shows when markets were calm and when they were turbulent.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">11</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">conditional_volatility</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">res</span><span class="o">.</span><span class="n">conditional_volatility</span><span class="p">,</span>
+        <span class="n">color</span><span class="o">=</span><span class="s1">'purple'</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Estimated Conditional Volatility of the Market (GARCH(1,1))'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'Volatility (% per month)'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="378" loading="lazy" src="fig-07.png" width="919"/>
+</div></div>
+<ul>
+<li>The spikes line up with known crises, such as 2008 and 2020.</li>
+</ul>
+
+<h3 id="volatility-forecasting">Volatility Forecasting</h3>
+
+<ul>
+<li><p>GARCH models are often used to forecast volatility, an input to risk management and option pricing.</p>
+</li>
+<li><p><code>.forecast(horizon=h)</code> produces variance forecasts for the next <code>h</code> periods.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">forecast</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">forecast</span><span class="p">(</span><span class="n">horizon</span><span class="o">=</span><span class="mi">6</span><span class="p">)</span>
+
+<span class="c1"># The forecast holds variances; take the square root for volatility</span>
+<span class="n">fc_var</span> <span class="o">=</span> <span class="n">forecast</span><span class="o">.</span><span class="n">variance</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">fc_vol</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">fc_var</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Volatility forecast for the next 6 months (% per month):"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">fc_vol</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Volatility forecast for the next 6 months (% per month):
+h.1    5.141
+h.2    5.136
+h.3    5.132
+h.4    5.128
+h.5    5.124
+h.6    5.120
+Name: 2023-12-01 00:00:00, dtype: float64
+</pre>
+</div></div>
+<h3 id="a-note-on-the-mean-model">A Note on the Mean Model</h3><ul>
+<li><p>We used <code>mean='Constant'</code>, but <code>arch</code> also supports <code>mean='AR'</code> (autoregressive mean) and different error distributions.</p>
+</li>
+<li><p>For returns with fat tails, <code>dist='t'</code> (Student's t) often fits better than the default normal. We can compare with the AIC.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Compare normal vs Student-t errors using AIC (lower is better)</span>
+<span class="n">res_normal</span> <span class="o">=</span> <span class="n">arch_model</span><span class="p">(</span><span class="n">mkt</span><span class="p">,</span> <span class="n">mean</span><span class="o">=</span><span class="s1">'Constant'</span><span class="p">,</span> <span class="n">vol</span><span class="o">=</span><span class="s1">'GARCH'</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">q</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                        <span class="n">dist</span><span class="o">=</span><span class="s1">'normal'</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">disp</span><span class="o">=</span><span class="s1">'off'</span><span class="p">)</span>
+<span class="n">res_t</span> <span class="o">=</span> <span class="n">arch_model</span><span class="p">(</span><span class="n">mkt</span><span class="p">,</span> <span class="n">mean</span><span class="o">=</span><span class="s1">'Constant'</span><span class="p">,</span> <span class="n">vol</span><span class="o">=</span><span class="s1">'GARCH'</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">q</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                   <span class="n">dist</span><span class="o">=</span><span class="s1">'t'</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">disp</span><span class="o">=</span><span class="s1">'off'</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Normal errors AIC: </span><span class="si">{</span><span class="n">res_normal</span><span class="o">.</span><span class="n">aic</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Student-t errors AIC: </span><span class="si">{</span><span class="n">res_t</span><span class="o">.</span><span class="n">aic</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Normal errors AIC: 2324.9
+Student-t errors AIC: 2320.2
+</pre>
+</div></div>
+<h3 id="in-class-exercise-4">In-Class Exercise</h3>
+
+<p><strong>18-1. Volatility Clustering:</strong></p>
+<ul>
+<li>Pick the <code>HiTec</code> industry's excess return (<code>ind_excess['HiTec']</code>).</li>
+<li>Plot its squared returns over time. Do you see volatility clustering?</li>
+</ul>
+
+<p><strong>18-2. Fit a GARCH(1,1):</strong></p>
+<ul>
+<li>Fit a GARCH(1,1) model with a constant mean to the <code>HiTec</code> excess return.</li>
+<li>Report the estimated <code>alpha[1]</code>, <code>beta[1]</code>, and their sum (persistence).</li>
+</ul>
+
+<p><strong>18-3. Conditional Volatility:</strong></p>
+<ul>
+<li>Plot the conditional volatility from your <code>HiTec</code> GARCH model.</li>
+<li>Which periods show the highest estimated volatility?</li>
+</ul>
+
+<p><strong>18-4. Forecast:</strong></p>
+<ul>
+<li>Produce a 3-month-ahead volatility forecast from your <code>HiTec</code> GARCH model.</li>
+<li>Convert the forecast variances to volatilities (take the square root) and print them.</li>
+</ul>
+
+<h2 id="summary">Summary</h2><ul>
+<li><p>This lecture covered four libraries:</p>
+<ul>
+<li><code>scipy.stats</code> for descriptive statistics and hypothesis tests</li>
+<li><code>statsmodels</code> for regression, robust inference, and diagnostics</li>
+<li><code>linearmodels</code> for panel data, IV, and Fama-MacBeth</li>
+<li><code>arch</code> for volatility modeling</li>
+</ul>
+</li>
+<li><p>The focus was inference: coefficients, standard errors, and tests.</p>
+</li>
+<li><p>Lecture 9 turns to prediction: machine learning with <code>scikit-learn</code> and an introduction to deep learning with <code>PyTorch</code>. It also returns to volatility, predicting it with machine learning and comparing the result with a GARCH(1,1) model.</p>
+</li>
+</ul>
+</div>

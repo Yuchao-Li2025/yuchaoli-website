@@ -1,0 +1,36 @@
+{{- define "main" }}
+{{- /* ECON 294A 的讲义页：正文是由 Jupyter notebook 转成的 HTML（content/econ294a/lecture-N/index.html） */}}
+<article class="post-single nb-page">
+  <header class="post-header">
+    <div class="paper-category"><a href="{{ .CurrentSection.RelPermalink }}">{{ .CurrentSection.Title }}</a></div>
+    <h1 class="post-title">{{ .Title }}</h1>
+    <div class="nb-links">
+      {{- with .Params.notebook }}{{ with $.Resources.Get . }}
+      <a href="{{ .RelPermalink }}" download>Download notebook (.ipynb)</a><span class="nb-sep">·</span>
+      {{- end }}{{ end }}
+      <a href="{{ "teaching/ECON294A_Syllabus_Spring2026.pdf" | relURL }}">Syllabus</a>
+    </div>
+  </header>
+
+  {{ .Content }}
+
+  {{- /* 上一讲 / 下一讲：按 front matter 里的 lecture 编号排序 */}}
+  {{- $lectures := sort (where .CurrentSection.RegularPages "Params.lecture" "!=" nil) "Params.lecture" }}
+  {{- $prev := false }}{{ $next := false }}{{ $found := false }}
+  {{- range $lectures }}
+  {{- if $found }}{{ if not $next }}{{ $next = . }}{{ end }}{{ end }}
+  {{- if eq .RelPermalink $.RelPermalink }}{{ $found = true }}{{ end }}
+  {{- if not $found }}{{ $prev = . }}{{ end }}
+  {{- end }}
+  <footer class="post-footer">
+    <nav class="paginav">
+      {{- with $prev }}
+      <a class="prev" href="{{ .RelPermalink }}"><span class="title">&larr; Previous</span><br><span>{{ .Title }}</span></a>
+      {{- end }}
+      {{- with $next }}
+      <a class="next" href="{{ .RelPermalink }}"><span class="title">Next &rarr;</span><br><span>{{ .Title }}</span></a>
+      {{- end }}
+    </nav>
+  </footer>
+</article>
+{{- end }}{{/* end main */}}

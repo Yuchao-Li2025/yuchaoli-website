@@ -1,0 +1,11 @@
+{{- define "main" }}
+{{- /* ECON 294A 课程页：只显示 content/econ294a/_index.md 的正文（讲义列表写在正文里），不自动列出子页面 */}}
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">{{ .Title }}</h1>
+  </header>
+  <div class="post-content">
+    {{ .Content }}
+  </div>
+</article>
+{{- end }}{{/* end main */}}

@@ -1,0 +1,3 @@
+{"title": "Lecture 8: Econometrics in Python", "lecture": 8, "weight": 8,
+ "summary": "Hypothesis tests with SciPy; OLS with robust, clustered, and HAC standard errors in statsmodels; panel data, IV, and Fama-MacBeth in linearmodels; GARCH in arch.",
+ "description": "ECON 294A lecture notes by Yuchao Li: econometrics in Python with SciPy, statsmodels, linearmodels, and arch, using Fama-French factors and industry portfolios."}

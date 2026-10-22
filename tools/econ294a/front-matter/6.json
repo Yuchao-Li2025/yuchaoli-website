@@ -1,0 +1,3 @@
+{"title": "Lecture 6: Numerical Computing and Data Wrangling", "lecture": 6, "weight": 6,
+ "summary": "NumPy arrays, vectorization, and broadcasting; pandas Series and DataFrames, selection, missing data, group-by, merging, and time series.",
+ "description": "ECON 294A lecture notes by Yuchao Li: NumPy and pandas, applied to Fama-French factor data."}

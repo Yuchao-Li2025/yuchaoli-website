@@ -10,6 +10,8 @@
 | 首页求职信息（JMP、领域、毕业时间、推荐人） | `config.yml` 里的 `profileMode.jobMarket` |
 | 论文 | `content/papers/<论文>/index.md`，PDF 放在同一个文件夹 |
 | 教学 | `content/teaching.md` |
+| Syllabus | `static/teaching/ECON100B_Syllabus_Summer2026.pdf`、`static/teaching/ECON294A_Syllabus_Spring2026.pdf`，Teaching 页上的 Syllabus 链接指向它们。只放 PDF，.tex 源文件不放进仓库 |
+| ECON 294A 课程页和讲义 | `content/econ294a/`，见下文"ECON 294A 讲义" |
 | 照片 | `static/picture.jpeg`：480×480 的正方形 JPEG，约 24 KB，首页显示成 160px 的圆形。换照片时同名覆盖，尺寸和大小保持在这个量级，不要直接放相机或影楼原图 |
 | 分享链接时的预览图 | `static/og.jpg`（1200×630），由 `config.yml` 里的 `images` 指定。源文件是 `og-image/og.html`（这个文件夹不会发布），改完运行 `python3 og-image/render.py` 重新生成；换图后把 `images` 改成 `og.jpg?v=2` 这样，避免各平台显示缓存的旧图。图里有求职那一行，求职季结束后要删掉再生成 |
 | CV | 在 Overleaf 里改，自动同步到 `static/Li_Yuchao_CV.pdf`（英文）和 `static/Li_Yuchao_CV_zh.pdf`（中文），见下文"更新 CV" |
@@ -52,6 +54,27 @@ Research 页按每篇论文 front matter 里的 `category` 分组，组内按 `w
 - 主文件自动识别：项目里唯一一个带 `\documentclass` 的 .tex 文件，有多个时用 `main.tex`。识别不了时，在 cv-sync.yml 里给那份 CV 写上 `main`。
 - 仓库 60 天没有新提交，GitHub 会自动停用定时任务。到 Actions 页面点 Enable workflow 即可恢复。
 - 也可以直接用同名文件覆盖 static/ 里的 PDF，但 Overleaf 上下一次有改动时会被覆盖回去。导航栏、首页按钮和图标的链接都不用改。
+
+## ECON 294A 讲义
+
+网址是 https://www.yuchaoli.com/econ294a/ ，Teaching 页上 ECON 294A 那一行的 Lecture notes 链接到这里。
+
+- 课程页：`content/econ294a/_index.md`。讲义列表直接写在正文里，新增或改名要手动改这里。
+- 每一讲一个文件夹 `content/econ294a/lecture-N/`，里面有：
+  - `index.html`：讲义网页的正文，由 notebook 转成，不要手改；
+  - `fig-01.png`、`fig-02.png`……：notebook 里的图；
+  - `ECON294A_LectureN.ipynb`：页面上"Download notebook"下载的就是这个文件。
+- 模板在 `layouts/econ294a/`，样式在 `assets/css/extended/notebook.css`。
+- 页面不加载任何站外资源，图片已压缩，国内可以正常打开。
+
+更新某一讲（需要 Python，先 `pip install nbconvert nbformat beautifulsoup4 pillow`）：
+
+1. 在 Colab 里改好、运行完，File → Download → Download .ipynb。
+2. 清理成公开版：`python3 tools/econ294a/clean_notebook.py 下载的.ipynb ECON294A_LectureN.ipynb`。它会去掉 Colab 记在每个格子里的 Google 账号名和 ID、Colab 表格的脚本、pip 安装的进度输出和运行编号，并压缩图片。
+3. 生成网页：`python3 tools/econ294a/nb2page.py ECON294A_LectureN.ipynb content/econ294a/lecture-N tools/econ294a/front-matter/N.json`。它会重建这一讲的文件夹（网页、图片和 .ipynb）。标题和简介在 `tools/econ294a/front-matter/N.json` 里改。
+4. 本地预览没问题后提交。
+
+`tools/` 文件夹不会发布到网站上。
 
 ## 上线前要做
 

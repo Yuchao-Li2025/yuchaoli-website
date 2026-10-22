@@ -1,0 +1,953 @@
+---
+title: "Lecture 7: Data Visualization"
+lecture: 7
+weight: 7
+summary: "Matplotlib (pyplot and object-oriented interfaces, customization, subplots) and Seaborn (distribution, regression, and categorical plots, heatmaps)."
+description: "ECON 294A lecture notes by Yuchao Li: data visualization with Matplotlib and Seaborn, applied to Fama-French factor data."
+notebook: "ECON294A_Lecture7.ipynb"
+---
+<div class="toc"><details><summary accesskey="c" title="(Alt + C)"><span class="details">Contents</span></summary><div class="inner"><ul><li><a href="#what-well-cover" aria-label="What We&#x27;ll Cover">What We&#x27;ll Cover</a></li><li><a href="#ch-13-matplotlib" aria-label="Ch 13: Matplotlib">Ch 13: Matplotlib</a><ul><li><a href="#importing-matplotlib" aria-label="Importing Matplotlib">Importing Matplotlib</a></li><li><a href="#loading-our-data" aria-label="Loading Our Data">Loading Our Data</a></li><li><a href="#the-anatomy-of-a-plot" aria-label="The Anatomy of a Plot">The Anatomy of a Plot</a></li><li><a href="#two-interfaces" aria-label="Two Interfaces">Two Interfaces</a></li><li><a href="#your-first-plot" aria-label="Your First Plot">Your First Plot</a></li><li><a href="#line-plots" aria-label="Line Plots">Line Plots</a></li><li><a href="#plot-customization" aria-label="Plot Customization">Plot Customization</a></li><li><a href="#other-plot-types" aria-label="Other Plot Types">Other Plot Types</a></li><li><a href="#subplots" aria-label="Subplots">Subplots</a></li><li><a href="#saving-figures" aria-label="Saving Figures">Saving Figures</a></li><li><a href="#style-sheets" aria-label="Style Sheets">Style Sheets</a></li><li><a href="#in-class-exercise" aria-label="In-Class Exercise">In-Class Exercise</a></li></ul></li><li><a href="#ch-14-seaborn" aria-label="Ch 14: Seaborn">Ch 14: Seaborn</a><ul><li><a href="#importing-seaborn" aria-label="Importing Seaborn">Importing Seaborn</a></li><li><a href="#distribution-plots" aria-label="Distribution Plots">Distribution Plots</a></li><li><a href="#relational-plots" aria-label="Relational Plots">Relational Plots</a></li><li><a href="#regression-plots" aria-label="Regression Plots">Regression Plots</a></li><li><a href="#categorical-plots" aria-label="Categorical Plots">Categorical Plots</a></li><li><a href="#matrix-plot-correlation-heatmap" aria-label="Matrix Plot: Correlation Heatmap">Matrix Plot: Correlation Heatmap</a></li><li><a href="#multi-plot-grids" aria-label="Multi-Plot Grids">Multi-Plot Grids</a></li><li><a href="#styling-and-palettes" aria-label="Styling and Palettes">Styling and Palettes</a></li><li><a href="#matplotlib-seaborn-together" aria-label="Matplotlib + Seaborn Together">Matplotlib + Seaborn Together</a></li><li><a href="#in-class-exercise-2" aria-label="In-Class Exercise">In-Class Exercise</a></li></ul></li></ul></div></details></div>
+<div class="post-content nb">
+<ul>
+<li>This lecture covers plotting with Matplotlib and Seaborn. The data are the Fama-French five factors from Lecture 6.</li>
+</ul>
+
+<h3 id="what-well-cover">What We'll Cover</h3><ul>
+<li><p><strong>Ch 13 (Matplotlib):</strong> the anatomy of a plot, the pyplot and object-oriented interfaces, line plots, customization, other plot types, subplots, saving figures, and style sheets.</p>
+</li>
+<li><p><strong>Ch 14 (Seaborn):</strong> distribution, relational, regression, and categorical plots, correlation heatmaps, multi-plot grids, and styling.</p>
+</li>
+<li><p>Our running data is the <strong>Fama-French 5 Factors</strong> from Ken French's data library.</p>
+</li>
+</ul>
+
+<h2 id="ch-13-matplotlib">Ch 13: Matplotlib</h2>
+
+<ul>
+<li><p><strong>Matplotlib</strong> is the foundational plotting library in Python.</p>
+</li>
+<li><p>Most other Python plotting tools (including <code>pandas.plot()</code> and <code>seaborn</code>) are built on it.</p>
+</li>
+<li><p>Once you know Matplotlib, you can customize any plot, including ones made by higher-level libraries.</p>
+</li>
+</ul>
+
+<h3 id="importing-matplotlib">Importing Matplotlib</h3><ul>
+<li>The conventional alias for the plotting interface is <code>plt</code>.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span></code></pre></div></div>
+<h3 id="loading-our-data">Loading Our Data</h3><ul>
+<li><p>We'll use the <strong>Fama-French 5 Factors</strong> dataset as our running example for plotting.</p>
+</li>
+<li><p>These are monthly factor returns from Kenneth French's data library: <code>Mkt-RF</code> (market premium), <code>SMB</code> (size), <code>HML</code> (value), <code>RMW</code> (profitability), <code>CMA</code> (investment), and <code>RF</code> (risk-free rate).</p>
+</li>
+<li><p>The cell below downloads the data fresh. It tries <code>pandas-datareader</code> first and falls back to a direct download if that fails.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">import</span><span class="w"> </span><span class="nn">io</span><span class="o">,</span><span class="w"> </span><span class="nn">zipfile</span><span class="o">,</span><span class="w"> </span><span class="nn">urllib.request</span>
+
+<span class="c1"># Try pandas-datareader first (the cleanest path)</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">pandas_datareader.data</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">web</span>
+    <span class="n">ff</span> <span class="o">=</span> <span class="n">web</span><span class="o">.</span><span class="n">DataReader</span><span class="p">(</span><span class="s1">'F-F_Research_Data_5_Factors_2x3'</span><span class="p">,</span>
+                        <span class="s1">'famafrench'</span><span class="p">,</span>
+                        <span class="n">start</span><span class="o">=</span><span class="s1">'1990-01-01'</span><span class="p">,</span>
+                        <span class="n">end</span><span class="o">=</span><span class="s1">'2023-12-31'</span><span class="p">)</span>
+    <span class="n">ff5</span> <span class="o">=</span> <span class="n">ff</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">ff5</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">ff5</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">to_timestamp</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Loaded via pandas-datareader: </span><span class="si">{</span><span class="n">ff5</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="c1"># Fallback: download the CSV zip directly from Ken French's website</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"pandas-datareader failed (</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">); falling back to direct download."</span><span class="p">)</span>
+    <span class="n">url</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/"</span>
+           <span class="s2">"ftp/F-F_Research_Data_5_Factors_2x3_CSV.zip"</span><span class="p">)</span>
+    <span class="n">req</span> <span class="o">=</span> <span class="n">urllib</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">Request</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s1">'User-Agent'</span><span class="p">:</span> <span class="s1">'Mozilla/5.0'</span><span class="p">})</span>
+    <span class="k">with</span> <span class="n">urllib</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">urlopen</span><span class="p">(</span><span class="n">req</span><span class="p">)</span> <span class="k">as</span> <span class="n">r</span><span class="p">:</span>
+        <span class="n">zip_bytes</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="k">with</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">zip_bytes</span><span class="p">))</span> <span class="k">as</span> <span class="n">z</span><span class="p">:</span>
+        <span class="n">raw</span> <span class="o">=</span> <span class="n">z</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">namelist</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">'latin1'</span><span class="p">)</span>
+
+    <span class="c1"># The file has a text header; monthly data starts after a blank-line break.</span>
+    <span class="c1"># Find the first line that begins with a 6-digit YYYYMM and parse from there.</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ln</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+                 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ln</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">6</span> <span class="ow">and</span> <span class="n">ln</span><span class="p">[:</span><span class="mi">6</span><span class="p">]</span><span class="o">.</span><span class="n">isdigit</span><span class="p">())</span>
+    <span class="n">end</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">))</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="mi">6</span> <span class="ow">and</span> <span class="n">lines</span><span class="p">[</span><span class="n">i</span><span class="p">][:</span><span class="mi">6</span><span class="p">]</span><span class="o">.</span><span class="n">isdigit</span><span class="p">())),</span>
+               <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">))</span>
+    <span class="n">monthly_csv</span> <span class="o">=</span> <span class="s2">"Date,Mkt-RF,SMB,HML,RMW,CMA,RF</span><span class="se">\n</span><span class="s2">"</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">])</span>
+    <span class="n">ff5</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">StringIO</span><span class="p">(</span><span class="n">monthly_csv</span><span class="p">),</span> <span class="n">index_col</span><span class="o">=</span><span class="s1">'Date'</span><span class="p">)</span>
+    <span class="n">ff5</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">ff5</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">'%Y%m'</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Loaded via direct download: </span><span class="si">{</span><span class="n">ff5</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="n">ff5</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Loaded via pandas-datareader: (408, 6)
+</pre>
+</div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+<th>SMB</th>
+<th>HML</th>
+<th>RMW</th>
+<th>CMA</th>
+<th>RF</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990-01-01</th>
+<td>-7.80</td>
+<td>-1.21</td>
+<td>0.83</td>
+<td>-1.12</td>
+<td>1.40</td>
+<td>0.57</td>
+</tr>
+<tr>
+<th>1990-02-01</th>
+<td>1.11</td>
+<td>1.15</td>
+<td>0.65</td>
+<td>-0.04</td>
+<td>-0.61</td>
+<td>0.57</td>
+</tr>
+<tr>
+<th>1990-03-01</th>
+<td>1.83</td>
+<td>1.59</td>
+<td>-2.90</td>
+<td>1.99</td>
+<td>-0.94</td>
+<td>0.64</td>
+</tr>
+<tr>
+<th>1990-04-01</th>
+<td>-3.36</td>
+<td>-0.35</td>
+<td>-2.57</td>
+<td>1.78</td>
+<td>-1.00</td>
+<td>0.69</td>
+</tr>
+<tr>
+<th>1990-05-01</th>
+<td>8.44</td>
+<td>-2.41</td>
+<td>-3.89</td>
+<td>1.68</td>
+<td>-1.63</td>
+<td>0.68</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div>
+<p><strong>Note on units:</strong></p>
+<ul>
+<li>Fama-French factor returns are stored in <strong>percent</strong> (a value of <code>1.5</code> means 1.5%).</li>
+<li>For plots like <em>cumulative returns</em>, we'll convert to decimal first (divide by 100).</li>
+<li>For <em>histograms of monthly returns</em>, percent is fine but we'll label axes accordingly.</li>
+</ul>
+
+<h3 id="the-anatomy-of-a-plot">The Anatomy of a Plot</h3><ul>
+<li>Every Matplotlib plot has the same three-part structure:<ul>
+<li>A <strong>Figure</strong> is the whole image (the page).</li>
+<li>One or more <strong>Axes</strong> sit inside the Figure (each Axes is one plot).</li>
+<li>Each Axes has <strong>Axis</strong> objects (x-axis, y-axis) with ticks and labels.</li>
+</ul>
+</li>
+</ul>
+
+<h3 id="two-interfaces">Two Interfaces</h3><ul>
+<li><p>The <strong>pyplot interface</strong> (<code>plt.plot()</code>, <code>plt.title()</code>, ...) is quick for simple plots. It operates on the "current" Axes implicitly.</p>
+</li>
+<li><p>The <strong>object-oriented interface</strong> (<code>fig, ax = plt.subplots()</code>, <code>ax.plot()</code>, ...) gives you explicit handles and scales to complex layouts.</p>
+</li>
+<li><p>We'll show both. Prefer the object-oriented style for anything beyond a one-liner.</p>
+</li>
+</ul>
+
+<h3 id="your-first-plot">Your First Plot</h3>
+
+<h4 id="the-pyplot-style">The pyplot Style</h4>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Quick line plot of one factor</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ff5</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">ff5</span><span class="p">[</span><span class="s1">'Mkt-RF'</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">'Market Premium (Mkt-RF), Monthly'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'Date'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'Return (%)'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="455" loading="lazy" src="fig-01.png" width="574"/>
+</div></div>
+<h4 id="the-object-oriented-style">The Object-Oriented Style</h4><ul>
+<li><code>plt.subplots()</code> creates a Figure and an Axes and returns both.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ff5</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">ff5</span><span class="p">[</span><span class="s1">'Mkt-RF'</span><span class="p">])</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Market Premium (Mkt-RF), Monthly'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">'Date'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'Return (%)'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="455" loading="lazy" src="fig-02.png" width="574"/>
+</div></div>
+<ul>
+<li>The plots look identical. We'll use the OO style from here on.</li>
+</ul>
+
+<h3 id="line-plots">Line Plots</h3>
+
+<h4 id="multiple-lines-on-one-axes">Multiple Lines on One Axes</h4><ul>
+<li>Call <code>ax.plot()</code> multiple times to overlay several series.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ff5</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">ff5</span><span class="p">[</span><span class="s1">'Mkt-RF'</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Mkt-RF'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ff5</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">ff5</span><span class="p">[</span><span class="s1">'SMB'</span><span class="p">],</span>    <span class="n">label</span><span class="o">=</span><span class="s1">'SMB'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ff5</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">ff5</span><span class="p">[</span><span class="s1">'HML'</span><span class="p">],</span>    <span class="n">label</span><span class="o">=</span><span class="s1">'HML'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">'Date'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'Monthly return (%)'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Three Fama-French Factors'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="393" loading="lazy" src="fig-03.png" width="853"/>
+</div></div>
+<h4 id="cumulative-returns-converting-percent-to-decimal">Cumulative Returns (Converting Percent to Decimal)</h4><ul>
+<li>Cumulative wealth <code>(1+r).cumprod()</code> requires returns in <strong>decimal</strong> form.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Convert from % to decimal, then compute cumulative wealth</span>
+<span class="n">cum_wealth</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">ff5</span><span class="p">[[</span><span class="s1">'Mkt-RF'</span><span class="p">,</span> <span class="s1">'SMB'</span><span class="p">,</span> <span class="s1">'HML'</span><span class="p">]]</span> <span class="o">/</span> <span class="mi">100</span><span class="p">)</span><span class="o">.</span><span class="n">cumprod</span><span class="p">()</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">cum_wealth</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">cum_wealth</span><span class="p">[</span><span class="s1">'Mkt-RF'</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Mkt-RF'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">cum_wealth</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">cum_wealth</span><span class="p">[</span><span class="s1">'SMB'</span><span class="p">],</span>    <span class="n">label</span><span class="o">=</span><span class="s1">'SMB'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">cum_wealth</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">cum_wealth</span><span class="p">[</span><span class="s1">'HML'</span><span class="p">],</span>    <span class="n">label</span><span class="o">=</span><span class="s1">'HML'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">'Date'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'Cumulative wealth ($1 invested)'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Cumulative Returns of Three Factors'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="393" loading="lazy" src="fig-04.png" width="841"/>
+</div></div>
+<ul>
+<li><code>Mkt-RF</code> compounds to a much larger multiple than <code>SMB</code> or <code>HML</code> over 30+ years.</li>
+</ul>
+
+<h3 id="plot-customization">Plot Customization</h3>
+
+<h4 id="color-line-style-width-markers">Color, Line Style, Width, Markers</h4>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ff5</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">ff5</span><span class="p">[</span><span class="s1">'Mkt-RF'</span><span class="p">],</span>
+        <span class="n">color</span><span class="o">=</span><span class="s1">'steelblue'</span><span class="p">,</span>
+        <span class="n">linestyle</span><span class="o">=</span><span class="s1">'-'</span><span class="p">,</span>
+        <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.2</span><span class="p">,</span>
+        <span class="n">label</span><span class="o">=</span><span class="s1">'Mkt-RF'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ff5</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">ff5</span><span class="p">[</span><span class="s1">'Mkt-RF'</span><span class="p">]</span><span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="mi">12</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span>
+        <span class="n">color</span><span class="o">=</span><span class="s1">'red'</span><span class="p">,</span>
+        <span class="n">linestyle</span><span class="o">=</span><span class="s1">'--'</span><span class="p">,</span>
+        <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="n">label</span><span class="o">=</span><span class="s1">'12-month rolling mean'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Market Premium with 1-Year Rolling Mean'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'Return (%)'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="374" loading="lazy" src="fig-05.png" width="853"/>
+</div></div>
+<h4 id="reference-lines-axhline-and-axvline">Reference Lines: <code>axhline</code> and <code>axvline</code></h4>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ff5</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">ff5</span><span class="p">[</span><span class="s1">'Mkt-RF'</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s1">'steelblue'</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'black'</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>              <span class="c1"># zero line</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="n">ff5</span><span class="p">[</span><span class="s1">'Mkt-RF'</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span> <span class="n">color</span><span class="o">=</span><span class="s1">'red'</span><span class="p">,</span>
+           <span class="n">linestyle</span><span class="o">=</span><span class="s1">'--'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Long-run mean'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Monthly Market Premium with Zero and Mean Lines'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'Return (%)'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="374" loading="lazy" src="fig-06.png" width="853"/>
+</div></div>
+<h4 id="grid">Grid</h4>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ff5</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s1">'2020'</span><span class="p">,</span> <span class="s1">'Mkt-RF'</span><span class="p">])</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'2020 Market Premium'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'Return (%)'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="297" loading="lazy" src="fig-07.png" width="698"/>
+</div></div>
+<h3 id="other-plot-types">Other Plot Types</h3>
+
+<h4 id="histogram">Histogram</h4><ul>
+<li>Use <code>ax.hist()</code> to see the distribution of values.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">ff5</span><span class="p">[</span><span class="s1">'Mkt-RF'</span><span class="p">],</span> <span class="n">bins</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'steelblue'</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s1">'white'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Distribution of Monthly Market Premium'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">'Monthly return (%)'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'Count'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="393" loading="lazy" src="fig-08.png" width="693"/>
+</div></div>
+<h4 id="scatter-plot">Scatter Plot</h4><ul>
+<li>Use <code>ax.scatter()</code> to plot pairs of points.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Do small-cap and value premia move together?</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">ff5</span><span class="p">[</span><span class="s1">'SMB'</span><span class="p">],</span> <span class="n">ff5</span><span class="p">[</span><span class="s1">'HML'</span><span class="p">],</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">'SMB (%)'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'HML (%)'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'SMB vs HML Monthly Returns'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'black'</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'black'</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="547" loading="lazy" src="fig-09.png" width="549"/>
+</div></div>
+<h4 id="bar-chart">Bar Chart</h4><ul>
+<li>Use <code>ax.bar()</code> for vertical bars (categorical x-axis).</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Average monthly return of each factor</span>
+<span class="n">mean_returns</span> <span class="o">=</span> <span class="n">ff5</span><span class="p">[[</span><span class="s1">'Mkt-RF'</span><span class="p">,</span> <span class="s1">'SMB'</span><span class="p">,</span> <span class="s1">'HML'</span><span class="p">,</span> <span class="s1">'RMW'</span><span class="p">,</span> <span class="s1">'CMA'</span><span class="p">]]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span><span class="n">mean_returns</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">mean_returns</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'steelblue'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'black'</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Average Monthly Premium by Factor (1990-2023)'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'Average return (%)'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="374" loading="lazy" src="fig-10.png" width="613"/>
+</div></div>
+<h4 id="boxplot">Boxplot</h4><ul>
+<li>A boxplot summarizes a distribution: median, quartiles, whiskers, and outliers.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">boxplot</span><span class="p">([</span><span class="n">ff5</span><span class="p">[</span><span class="s1">'Mkt-RF'</span><span class="p">],</span> <span class="n">ff5</span><span class="p">[</span><span class="s1">'SMB'</span><span class="p">],</span> <span class="n">ff5</span><span class="p">[</span><span class="s1">'HML'</span><span class="p">],</span> <span class="n">ff5</span><span class="p">[</span><span class="s1">'RMW'</span><span class="p">],</span> <span class="n">ff5</span><span class="p">[</span><span class="s1">'CMA'</span><span class="p">]],</span>
+           <span class="n">tick_labels</span><span class="o">=</span><span class="p">[</span><span class="s1">'Mkt-RF'</span><span class="p">,</span> <span class="s1">'SMB'</span><span class="p">,</span> <span class="s1">'HML'</span><span class="p">,</span> <span class="s1">'RMW'</span><span class="p">,</span> <span class="s1">'CMA'</span><span class="p">])</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'red'</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">'--'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'Monthly return (%)'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Distribution of Each Factor'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="374" loading="lazy" src="fig-11.png" width="621"/>
+</div></div>
+<h3 id="subplots">Subplots</h3>
+
+<ul>
+<li><p>Use <code>plt.subplots(nrows, ncols)</code> to lay out multiple Axes in a grid.</p>
+</li>
+<li><p>The returned <code>ax</code> is a NumPy array of Axes objects.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">factors</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'Mkt-RF'</span><span class="p">,</span> <span class="s1">'SMB'</span><span class="p">,</span> <span class="s1">'HML'</span><span class="p">,</span> <span class="s1">'RMW'</span><span class="p">]</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">nrows</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">ncols</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+
+<span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">factor</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axes</span><span class="o">.</span><span class="n">flat</span><span class="p">,</span> <span class="n">factors</span><span class="p">):</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">ff5</span><span class="p">[</span><span class="n">factor</span><span class="p">],</span> <span class="n">bins</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'steelblue'</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s1">'white'</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">factor</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">'Monthly return (%)'</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s1">'Distributions of Four Fama-French Factors'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">14</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="592" loading="lazy" src="fig-12.png" width="989"/>
+</div></div>
+<ul>
+<li><code>axes.flat</code> gives a flat iterator over all Axes regardless of grid shape.</li>
+<li><code>fig.tight_layout()</code> automatically adjusts spacing so titles and labels don't overlap.</li>
+</ul>
+
+<h3 id="saving-figures">Saving Figures</h3><ul>
+<li><p>Use <code>fig.savefig()</code> to write a figure to disk.</p>
+</li>
+<li><p>The format is inferred from the file extension (<code>.png</code>, <code>.pdf</code>, <code>.svg</code>, ...).</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ff5</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">ff5</span><span class="p">[</span><span class="s1">'Mkt-RF'</span><span class="p">])</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Market Premium'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'Return (%)'</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">'mkt_rf.png'</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">150</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">'tight'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="374" loading="lazy" src="fig-13.png" width="698"/>
+</div></div>
+<ul>
+<li><code>dpi=150</code> controls resolution; <code>bbox_inches='tight'</code> trims whitespace.</li>
+</ul>
+
+<h3 id="style-sheets">Style Sheets</h3><ul>
+<li><p><code>plt.style.use(name)</code> applies a preset look-and-feel.</p>
+</li>
+<li><p>Useful built-ins: <code>'ggplot'</code>, <code>'seaborn-v0_8'</code>, <code>'fivethirtyeight'</code>, <code>'classic'</code>.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># See what styles are available</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">plt</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">available</span><span class="p">[:</span><span class="mi">10</span><span class="p">])</span></code></pre></div><div class="nb-out nb-stream">
+<pre>['Solarize_Light2', '_classic_test_patch', '_mpl-gallery', '_mpl-gallery-nogrid', 'bmh', 'classic', 'dark_background', 'fast', 'fivethirtyeight', 'ggplot']
+</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Apply a style for the rest of the notebook</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">'ggplot'</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ff5</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">ff5</span><span class="p">[</span><span class="s1">'Mkt-RF'</span><span class="p">])</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Market Premium (ggplot style)'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'Return (%)'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="298" loading="lazy" src="fig-14.png" width="702"/>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Reset to default style before continuing</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">'default'</span><span class="p">)</span></code></pre></div></div>
+<p><strong>Note: common pitfall</strong></p>
+<ul>
+<li><p>Forgetting <code>plt.show()</code> at the end of a cell still produces a plot in a notebook, but you'll also see noise like <code>&lt;matplotlib.lines.Line2D at 0x...&gt;</code>.</p>
+</li>
+<li><p>Calling <code>plt.show()</code> (or assigning to <code>_</code>) keeps the output clean.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># This works in a notebook but prints a stray repr line first.</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">9</span><span class="p">])</span></code></pre></div><div class="nb-out nb-text">
+<pre>[&lt;matplotlib.lines.Line2D at 0x7e1da3c65d10&gt;]</pre>
+</div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="197" loading="lazy" src="fig-15.png" width="503"/>
+</div></div>
+<h3 id="in-class-exercise">In-Class Exercise</h3>
+
+<p><strong>13-1. Line Plot:</strong></p>
+<ul>
+<li>Plot the <code>RF</code> (risk-free rate) series from <code>ff5</code> as a line plot using the object-oriented interface.</li>
+<li>Add a title <code>'Risk-Free Rate, Monthly'</code>, an x-label <code>'Date'</code>, and a y-label <code>'Rate (%)'</code>.</li>
+</ul>
+
+<p><strong>13-2. Cumulative Wealth Comparison:</strong></p>
+<ul>
+<li>Compute the cumulative wealth of <code>Mkt-RF</code> and <code>RMW</code> (convert from percent to decimal first).</li>
+<li>Plot both on the same Axes with distinct colors and a legend.</li>
+<li>Set <code>figsize=(10, 4)</code> and give the plot an appropriate title.</li>
+</ul>
+
+<p><strong>13-3. Histogram with Reference Line:</strong></p>
+<ul>
+<li>Plot a histogram of <code>HML</code> with 40 bins.</li>
+<li>Add a vertical dashed red line at the mean of <code>HML</code> using <code>ax.axvline()</code>.</li>
+<li>Label the axes appropriately.</li>
+</ul>
+
+<p><strong>13-4. Side-by-Side Subplots:</strong></p>
+<ul>
+<li>Create a figure with 1 row and 2 columns using <code>plt.subplots(1, 2, figsize=(12, 4))</code>.</li>
+<li>On the left, plot <code>Mkt-RF</code> over time as a line.</li>
+<li>On the right, plot a histogram of <code>Mkt-RF</code>.</li>
+<li>Add appropriate titles to each subplot.</li>
+</ul>
+
+<p><strong>13-5. Customized Scatter:</strong></p>
+<ul>
+<li>Make a scatter plot of <code>Mkt-RF</code> (x) vs <code>SMB</code> (y).</li>
+<li>Use <code>alpha=0.3</code> for transparency and <code>s=10</code> for point size.</li>
+<li>Add horizontal and vertical zero lines using <code>axhline(0)</code> and <code>axvline(0)</code>.</li>
+<li>Save the figure to <code>'mkt_vs_smb.png'</code> with <code>dpi=150</code>.</li>
+</ul>
+
+<h2 id="ch-14-seaborn">Ch 14: Seaborn</h2>
+
+<ul>
+<li><p><strong>Seaborn</strong> is a high-level statistical visualization library built on top of Matplotlib.</p>
+</li>
+<li><p>It produces attractive plots with less code, and is especially good at:</p>
+<ul>
+<li>distribution plots</li>
+<li>regression plots</li>
+<li>categorical comparisons</li>
+<li>correlation heatmaps</li>
+</ul>
+</li>
+<li><p>Seaborn understands <code>pandas</code> DataFrames natively. You usually pass <code>data=df</code> and reference columns by name.</p>
+</li>
+</ul>
+
+<h3 id="importing-seaborn">Importing Seaborn</h3><ul>
+<li>The conventional alias for Seaborn is <code>sns</code>.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">import</span><span class="w"> </span><span class="nn">seaborn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sns</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">set_theme</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s1">'whitegrid'</span><span class="p">)</span></code></pre></div></div>
+<ul>
+<li><p><code>sns.set_theme()</code> applies Seaborn's default styling to <strong>all</strong> subsequent Matplotlib plots.</p>
+</li>
+<li><p>Common style choices: <code>'darkgrid'</code>, <code>'whitegrid'</code>, <code>'dark'</code>, <code>'white'</code>, <code>'ticks'</code>.</p>
+</li>
+</ul>
+
+<h3 id="distribution-plots">Distribution Plots</h3>
+
+<h4 id="histplot-histograms-with-density"><code>histplot()</code>: Histograms with Density</h4>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">histplot</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">ff5</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="s1">'Mkt-RF'</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="n">kde</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Distribution of Mkt-RF (with KDE)'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">'Monthly return (%)'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="402" loading="lazy" src="fig-16.png" width="703"/>
+</div></div>
+<ul>
+<li><code>kde=True</code> overlays a <strong>kernel density estimate</strong> (a smoothed estimate of the distribution).</li>
+</ul>
+
+<h4 id="kdeplot-compare-distributions"><code>kdeplot()</code>: Compare Distributions</h4><ul>
+<li>Plot densities of multiple factors on the same Axes to compare their shapes.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">factor</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">'Mkt-RF'</span><span class="p">,</span> <span class="s1">'SMB'</span><span class="p">,</span> <span class="s1">'HML'</span><span class="p">]:</span>
+    <span class="n">sns</span><span class="o">.</span><span class="n">kdeplot</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">ff5</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">factor</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">factor</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Distribution Comparison: Mkt-RF, SMB, HML'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">'Monthly return (%)'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="402" loading="lazy" src="fig-17.png" width="710"/>
+</div></div>
+<h4 id="boxplot-and-violinplot"><code>boxplot()</code> and <code>violinplot()</code></h4><ul>
+<li><p>Box and violin plots compare distributions across <strong>categories</strong>.</p>
+</li>
+<li><p>They work best with data in <strong>long format</strong>, so we <code>melt</code> the DataFrame first.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">ff5_long</span> <span class="o">=</span> <span class="n">ff5</span><span class="p">[[</span><span class="s1">'Mkt-RF'</span><span class="p">,</span> <span class="s1">'SMB'</span><span class="p">,</span> <span class="s1">'HML'</span><span class="p">,</span> <span class="s1">'RMW'</span><span class="p">,</span> <span class="s1">'CMA'</span><span class="p">]]</span><span class="o">.</span><span class="n">melt</span><span class="p">(</span>
+    <span class="n">var_name</span><span class="o">=</span><span class="s1">'factor'</span><span class="p">,</span> <span class="n">value_name</span><span class="o">=</span><span class="s1">'return'</span>
+<span class="p">)</span>
+<span class="n">ff5_long</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>factor</th>
+<th>return</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>Mkt-RF</td>
+<td>-7.80</td>
+</tr>
+<tr>
+<th>1</th>
+<td>Mkt-RF</td>
+<td>1.11</td>
+</tr>
+<tr>
+<th>2</th>
+<td>Mkt-RF</td>
+<td>1.83</td>
+</tr>
+<tr>
+<th>3</th>
+<td>Mkt-RF</td>
+<td>-3.36</td>
+</tr>
+<tr>
+<th>4</th>
+<td>Mkt-RF</td>
+<td>8.44</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">boxplot</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">ff5_long</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="s1">'factor'</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="s1">'return'</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'red'</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">'--'</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Monthly Return Distribution by Factor'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'Return (%)'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="402" loading="lazy" src="fig-18.png" width="708"/>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># A violin plot shows the full KDE on each side</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">violinplot</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">ff5_long</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="s1">'factor'</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="s1">'return'</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'red'</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">'--'</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Violin Plot of Monthly Returns by Factor'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'Return (%)'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="402" loading="lazy" src="fig-19.png" width="708"/>
+</div></div>
+<h3 id="relational-plots">Relational Plots</h3>
+
+<h4 id="scatterplot-with-a-hue"><code>scatterplot()</code> with a <code>hue</code></h4><ul>
+<li><code>hue</code> colors points by a categorical (or numeric) column.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Add a decade column for color-coding</span>
+<span class="n">ff5_demo</span> <span class="o">=</span> <span class="n">ff5</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">ff5_demo</span><span class="p">[</span><span class="s1">'decade'</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">ff5_demo</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">year</span> <span class="o">//</span> <span class="mi">10</span> <span class="o">*</span> <span class="mi">10</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span> <span class="o">+</span> <span class="s1">'s'</span>
+<span class="n">ff5_demo</span><span class="o">.</span><span class="n">head</span><span class="p">()</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+<th>SMB</th>
+<th>HML</th>
+<th>RMW</th>
+<th>CMA</th>
+<th>RF</th>
+<th>decade</th>
+</tr>
+<tr>
+<th>Date</th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>1990-01-01</th>
+<td>-7.80</td>
+<td>-1.21</td>
+<td>0.83</td>
+<td>-1.12</td>
+<td>1.40</td>
+<td>0.57</td>
+<td>1990s</td>
+</tr>
+<tr>
+<th>1990-02-01</th>
+<td>1.11</td>
+<td>1.15</td>
+<td>0.65</td>
+<td>-0.04</td>
+<td>-0.61</td>
+<td>0.57</td>
+<td>1990s</td>
+</tr>
+<tr>
+<th>1990-03-01</th>
+<td>1.83</td>
+<td>1.59</td>
+<td>-2.90</td>
+<td>1.99</td>
+<td>-0.94</td>
+<td>0.64</td>
+<td>1990s</td>
+</tr>
+<tr>
+<th>1990-04-01</th>
+<td>-3.36</td>
+<td>-0.35</td>
+<td>-2.57</td>
+<td>1.78</td>
+<td>-1.00</td>
+<td>0.69</td>
+<td>1990s</td>
+</tr>
+<tr>
+<th>1990-05-01</th>
+<td>8.44</td>
+<td>-2.41</td>
+<td>-3.89</td>
+<td>1.68</td>
+<td>-1.63</td>
+<td>0.68</td>
+<td>1990s</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">scatterplot</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">ff5_demo</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="s1">'Mkt-RF'</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="s1">'SMB'</span><span class="p">,</span> <span class="n">hue</span><span class="o">=</span><span class="s1">'decade'</span><span class="p">,</span>
+                <span class="n">alpha</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'black'</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'black'</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Mkt-RF vs SMB, Colored by Decade'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="556" loading="lazy" src="fig-20.png" width="638"/>
+</div></div>
+<h4 id="lineplot-with-a-confidence-band"><code>lineplot()</code> with a confidence band</h4><ul>
+<li><code>lineplot</code> is convenient when you have repeated observations and want a mean line with a confidence band.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Mean monthly return by year, with confidence band</span>
+<span class="n">ff5_demo</span><span class="p">[</span><span class="s1">'year'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ff5_demo</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">year</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">lineplot</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">ff5_demo</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="s1">'year'</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="s1">'Mkt-RF'</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span>
+             <span class="n">errorbar</span><span class="o">=</span><span class="p">(</span><span class="s1">'ci'</span><span class="p">,</span> <span class="mi">95</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'red'</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">'--'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Mean Monthly Market Premium by Year (with 95% CI)'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'Monthly return (%)'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="402" loading="lazy" src="fig-21.png" width="854"/>
+</div></div>
+<h3 id="regression-plots">Regression Plots</h3>
+
+<h4 id="regplot-scatter-with-regression-line"><code>regplot()</code>: Scatter with Regression Line</h4><ul>
+<li>Adds a linear-regression fit and a confidence band on top of a scatter plot.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">regplot</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">ff5</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="s1">'Mkt-RF'</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="s1">'HML'</span><span class="p">,</span> <span class="n">scatter_kws</span><span class="o">=</span><span class="p">{</span><span class="s1">'alpha'</span><span class="p">:</span> <span class="mf">0.4</span><span class="p">,</span> <span class="s1">'s'</span><span class="p">:</span> <span class="mi">15</span><span class="p">},</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Value Premium (HML) vs Market Premium (Mkt-RF)'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">'Mkt-RF (%)'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'HML (%)'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="479" loading="lazy" src="fig-22.png" width="638"/>
+</div></div>
+<ul>
+<li>The shaded band is the 95% confidence interval for the regression line.</li>
+</ul>
+
+<h4 id="lmplot-regression-by-group"><code>lmplot()</code>: Regression by Group</h4><ul>
+<li><code>lmplot</code> fits a separate regression for each level of a categorical <code>hue</code> variable.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Split decades into 'early' (1990-2009) and 'late' (2010-2023)</span>
+<span class="n">ff5_demo</span><span class="p">[</span><span class="s1">'era'</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">ff5_demo</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">year</span> <span class="o">&lt;</span> <span class="mi">2010</span><span class="p">,</span> <span class="s1">'Early (1990-2009)'</span><span class="p">,</span> <span class="s1">'Late (2010-2023)'</span><span class="p">)</span>
+
+<span class="n">sns</span><span class="o">.</span><span class="n">lmplot</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">ff5_demo</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="s1">'Mkt-RF'</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="s1">'HML'</span><span class="p">,</span> <span class="n">hue</span><span class="o">=</span><span class="s1">'era'</span><span class="p">,</span>
+           <span class="n">height</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">aspect</span><span class="o">=</span><span class="mf">1.2</span><span class="p">,</span>
+           <span class="n">scatter_kws</span><span class="o">=</span><span class="p">{</span><span class="s1">'alpha'</span><span class="p">:</span> <span class="mf">0.4</span><span class="p">,</span> <span class="s1">'s'</span><span class="p">:</span> <span class="mi">15</span><span class="p">})</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">'HML vs Mkt-RF: Two Eras'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="506" loading="lazy" src="fig-23.png" width="759"/>
+</div></div>
+<ul>
+<li><code>lmplot</code> returns a <code>FacetGrid</code>, not an Axes, so we use <code>plt.title()</code> rather than <code>ax.set_title()</code>.</li>
+</ul>
+
+<h3 id="categorical-plots">Categorical Plots</h3>
+
+<h4 id="barplot-mean-and-confidence-interval"><code>barplot()</code>: Mean and Confidence Interval</h4><ul>
+<li><code>barplot</code> computes the <strong>mean</strong> of <code>y</code> for each level of <code>x</code> by default, plus a confidence interval.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">barplot</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">ff5_demo</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="s1">'decade'</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="s1">'Mkt-RF'</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'black'</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Mean Monthly Market Premium by Decade'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'Mean return (%)'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="402" loading="lazy" src="fig-24.png" width="713"/>
+</div></div>
+<h4 id="countplot-frequency-of-each-category"><code>countplot()</code>: Frequency of Each Category</h4>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># How many up vs down market months in each decade?</span>
+<span class="n">ff5_demo</span><span class="p">[</span><span class="s1">'direction'</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">ff5_demo</span><span class="p">[</span><span class="s1">'Mkt-RF'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">'up'</span><span class="p">,</span> <span class="s1">'down'</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">countplot</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">ff5_demo</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="s1">'decade'</span><span class="p">,</span> <span class="n">hue</span><span class="o">=</span><span class="s1">'direction'</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Up vs Down Market Months by Decade'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'Number of months'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="402" loading="lazy" src="fig-25.png" width="696"/>
+</div></div>
+<h3 id="matrix-plot-correlation-heatmap">Matrix Plot: Correlation Heatmap</h3>
+
+<ul>
+<li>A correlation <strong>heatmap</strong> shows how factors move together at a glance.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">corr</span> <span class="o">=</span> <span class="n">ff5</span><span class="p">[[</span><span class="s1">'Mkt-RF'</span><span class="p">,</span> <span class="s1">'SMB'</span><span class="p">,</span> <span class="s1">'HML'</span><span class="p">,</span> <span class="s1">'RMW'</span><span class="p">,</span> <span class="s1">'CMA'</span><span class="p">]]</span><span class="o">.</span><span class="n">corr</span><span class="p">()</span>
+<span class="n">corr</span></code></pre></div><div class="nb-out nb-table"><div>
+
+<div class="nb-table"><table class="dataframe">
+<thead>
+<tr>
+<th></th>
+<th>Mkt-RF</th>
+<th>SMB</th>
+<th>HML</th>
+<th>RMW</th>
+<th>CMA</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>Mkt-RF</th>
+<td>1.000000</td>
+<td>0.231935</td>
+<td>-0.111981</td>
+<td>-0.314162</td>
+<td>-0.329824</td>
+</tr>
+<tr>
+<th>SMB</th>
+<td>0.231935</td>
+<td>1.000000</td>
+<td>0.000160</td>
+<td>-0.458621</td>
+<td>-0.043114</td>
+</tr>
+<tr>
+<th>HML</th>
+<td>-0.111981</td>
+<td>0.000160</td>
+<td>1.000000</td>
+<td>0.317990</td>
+<td>0.660124</td>
+</tr>
+<tr>
+<th>RMW</th>
+<td>-0.314162</td>
+<td>-0.458621</td>
+<td>0.317990</td>
+<td>1.000000</td>
+<td>0.218510</td>
+</tr>
+<tr>
+<th>CMA</th>
+<td>-0.329824</td>
+<td>-0.043114</td>
+<td>0.660124</td>
+<td>0.218510</td>
+<td>1.000000</td>
+</tr>
+</tbody>
+</table></div>
+</div></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">heatmap</span><span class="p">(</span><span class="n">corr</span><span class="p">,</span> <span class="n">annot</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">'.2f'</span><span class="p">,</span>
+            <span class="n">cmap</span><span class="o">=</span><span class="s1">'RdBu_r'</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+            <span class="n">vmin</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">square</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Correlation of Fama-French Factors'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="442" loading="lazy" src="fig-26.png" width="522"/>
+</div></div>
+<ul>
+<li><code>annot=True</code> writes the value in each cell; <code>fmt='.2f'</code> formats to two decimals.</li>
+<li><code>cmap='RdBu_r'</code> is a diverging palette ideal for correlations: red = positive, blue = negative.</li>
+<li><code>center=0</code> ensures the colormap is symmetric around zero.</li>
+</ul>
+
+<h3 id="multi-plot-grids">Multi-Plot Grids</h3>
+
+<h4 id="pairplot-all-pairs-scatter-matrix"><code>pairplot()</code>: All-Pairs Scatter Matrix</h4><ul>
+<li><code>pairplot</code> shows scatter plots for every pair of variables and histograms on the diagonal.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">sns</span><span class="o">.</span><span class="n">pairplot</span><span class="p">(</span><span class="n">ff5</span><span class="p">[[</span><span class="s1">'Mkt-RF'</span><span class="p">,</span> <span class="s1">'SMB'</span><span class="p">,</span> <span class="s1">'HML'</span><span class="p">,</span> <span class="s1">'RMW'</span><span class="p">]],</span>
+             <span class="n">plot_kws</span><span class="o">=</span><span class="p">{</span><span class="s1">'alpha'</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">,</span> <span class="s1">'s'</span><span class="p">:</span> <span class="mi">10</span><span class="p">},</span>
+             <span class="n">diag_kind</span><span class="o">=</span><span class="s1">'hist'</span><span class="p">,</span>
+             <span class="n">height</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s1">'Pairwise Relationships Among Factors'</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">1.02</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="819" loading="lazy" src="fig-27.png" width="787"/>
+</div></div>
+<h4 id="faceting-with-catplot">Faceting with <code>catplot</code></h4><ul>
+<li><code>catplot</code> and <code>relplot</code> create grids of plots split by one or two categorical variables.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Build a long-format frame that carries decade through the melt</span>
+<span class="n">ff5_long_dec</span> <span class="o">=</span> <span class="p">(</span><span class="n">ff5_demo</span><span class="p">[[</span><span class="s1">'Mkt-RF'</span><span class="p">,</span> <span class="s1">'SMB'</span><span class="p">,</span> <span class="s1">'HML'</span><span class="p">,</span> <span class="s1">'RMW'</span><span class="p">,</span> <span class="s1">'CMA'</span><span class="p">,</span> <span class="s1">'decade'</span><span class="p">]]</span>
+                <span class="o">.</span><span class="n">melt</span><span class="p">(</span><span class="n">id_vars</span><span class="o">=</span><span class="s1">'decade'</span><span class="p">,</span> <span class="n">var_name</span><span class="o">=</span><span class="s1">'factor'</span><span class="p">,</span> <span class="n">value_name</span><span class="o">=</span><span class="s1">'return'</span><span class="p">))</span>
+
+<span class="n">sns</span><span class="o">.</span><span class="n">catplot</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">ff5_long_dec</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="s1">'factor'</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="s1">'return'</span><span class="p">,</span> <span class="n">col</span><span class="o">=</span><span class="s1">'decade'</span><span class="p">,</span>
+            <span class="n">kind</span><span class="o">=</span><span class="s1">'box'</span><span class="p">,</span> <span class="n">col_wrap</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mf">3.5</span><span class="p">,</span> <span class="n">aspect</span><span class="o">=</span><span class="mf">1.3</span><span class="p">,</span> <span class="n">sharey</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="684" loading="lazy" src="fig-28.png" width="915"/>
+</div></div>
+<ul>
+<li><p>The <code>col_wrap=2</code> argument wraps the facets into a 2-column grid.</p>
+</li>
+<li><p>We melted with <code>id_vars='decade'</code> so <code>decade</code> survives the wide-to-long reshape.</p>
+</li>
+</ul>
+
+<h3 id="styling-and-palettes">Styling and Palettes</h3>
+
+<h4 id="themes">Themes</h4><ul>
+<li><code>sns.set_theme(style=..., palette=...)</code> configures the global look.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># Show a few palette options</span>
+<span class="k">for</span> <span class="n">palette</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">'deep'</span><span class="p">,</span> <span class="s1">'pastel'</span><span class="p">,</span> <span class="s1">'colorblind'</span><span class="p">]:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">palette</span><span class="p">)</span>
+    <span class="n">sns</span><span class="o">.</span><span class="n">palplot</span><span class="p">(</span><span class="n">sns</span><span class="o">.</span><span class="n">color_palette</span><span class="p">(</span><span class="n">palette</span><span class="p">))</span></code></pre></div><div class="nb-out nb-stream">
+<pre>deep
+pastel
+colorblind
+</pre>
+</div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="97" loading="lazy" src="fig-29.png" width="794"/>
+</div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="97" loading="lazy" src="fig-30.png" width="794"/>
+</div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="97" loading="lazy" src="fig-31.png" width="794"/>
+</div></div>
+<h4 id="per-plot-palette">Per-Plot Palette</h4><ul>
+<li>You can also pass <code>palette=</code> to most Seaborn functions for one-off control.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">boxplot</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">ff5_long</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="s1">'factor'</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="s1">'return'</span><span class="p">,</span>
+            <span class="n">hue</span><span class="o">=</span><span class="s1">'factor'</span><span class="p">,</span> <span class="n">palette</span><span class="o">=</span><span class="s1">'Set2'</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'red'</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">'--'</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Boxplot with Set2 Palette'</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'Return (%)'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="402" loading="lazy" src="fig-32.png" width="708"/>
+</div></div>
+<h3 id="matplotlib-seaborn-together">Matplotlib + Seaborn Together</h3><ul>
+<li><p>Seaborn returns Matplotlib Axes (for most functions), so you can mix the two freely.</p>
+</li>
+<li><p>Use Seaborn for the statistical layer, then add Matplotlib annotations on top.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+
+<span class="c1"># Seaborn regression layer</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">regplot</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">ff5</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="s1">'Mkt-RF'</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="s1">'SMB'</span><span class="p">,</span>
+            <span class="n">scatter_kws</span><span class="o">=</span><span class="p">{</span><span class="s1">'alpha'</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">,</span> <span class="s1">'s'</span><span class="p">:</span> <span class="mi">12</span><span class="p">},</span>
+            <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+
+<span class="c1"># Matplotlib annotations on the same Axes</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'black'</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'black'</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span><span class="s1">'Tech-bust cluster'</span><span class="p">,</span>
+            <span class="n">xy</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">15</span><span class="p">,</span> <span class="o">-</span><span class="mi">10</span><span class="p">),</span>
+            <span class="n">xytext</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">25</span><span class="p">,</span> <span class="o">-</span><span class="mi">15</span><span class="p">),</span>
+            <span class="n">arrowprops</span><span class="o">=</span><span class="p">{</span><span class="s1">'arrowstyle'</span><span class="p">:</span> <span class="s1">'-&gt;'</span><span class="p">})</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'SMB vs Mkt-RF (Seaborn + Matplotlib)'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></code></pre></div><div class="nb-out nb-image">
+<img alt="Figure produced by the code above" decoding="async" height="479" loading="lazy" src="fig-33.png" width="762"/>
+</div></div>
+<h3 id="in-class-exercise-2">In-Class Exercise</h3>
+
+<p><strong>14-1. Distribution Plot:</strong></p>
+<ul>
+<li>Use <code>sns.histplot()</code> with <code>kde=True</code> to plot the distribution of <code>RMW</code>.</li>
+<li>Set <code>bins=40</code> and give the plot a title and x-label.</li>
+</ul>
+
+<p><strong>14-2. Comparing Distributions:</strong></p>
+<ul>
+<li>Use <code>sns.kdeplot()</code> to overlay the densities of <code>Mkt-RF</code>, <code>SMB</code>, and <code>HML</code> on a single Axes.</li>
+<li>Add a legend and an appropriate title.</li>
+</ul>
+
+<p><strong>14-3. Regression Plot:</strong></p>
+<ul>
+<li>Use <code>sns.regplot()</code> to plot <code>Mkt-RF</code> (x) against <code>RMW</code> (y).</li>
+<li>Use semi-transparent markers (<code>alpha=0.4</code>) and a reasonable point size.</li>
+<li>What sign does the fitted line have? (Brief written answer in a markdown comment is fine.)</li>
+</ul>
+
+<p><strong>14-4. Correlation Heatmap:</strong></p>
+<ul>
+<li>Compute the correlation matrix of the five factors <code>['Mkt-RF', 'SMB', 'HML', 'RMW', 'CMA']</code>.</li>
+<li>Plot it with <code>sns.heatmap()</code> using <code>annot=True</code>, <code>cmap='RdBu_r'</code>, <code>center=0</code>, and <code>vmin=-1, vmax=1</code>.</li>
+<li>Which two factors are most negatively correlated?</li>
+</ul>
+
+<p><strong>14-5. Categorical Comparison by Decade:</strong></p>
+<ul>
+<li>Create a <code>decade</code> column (e.g., <code>'1990s'</code>, <code>'2000s'</code>, ...) on a copy of <code>ff5</code>.</li>
+<li>Use <code>sns.barplot()</code> to show the mean monthly <code>Mkt-RF</code> by decade with confidence intervals.</li>
+<li>Add a zero-line with <code>ax.axhline(0)</code> for reference.</li>
+</ul>
+
+<p><strong>14-6. Pairplot:</strong></p>
+<ul>
+<li>Use <code>sns.pairplot()</code> to plot all pairwise relationships among <code>Mkt-RF</code>, <code>SMB</code>, <code>HML</code>, and <code>CMA</code>.</li>
+<li>Use semi-transparent markers and histograms on the diagonal.</li>
+</ul>
+</div>

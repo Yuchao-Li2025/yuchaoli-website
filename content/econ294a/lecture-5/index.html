@@ -1,0 +1,1137 @@
+---
+title: "Lecture 5: Classes, Files, and Exceptions"
+lecture: 5
+weight: 5
+summary: "Classes, attributes, methods, and inheritance; reading and writing files with pathlib; try/except; saving data with json."
+description: "ECON 294A lecture notes by Yuchao Li: Python classes, files, and exceptions, with finance examples."
+notebook: "ECON294A_Lecture5.ipynb"
+---
+<div class="toc"><details><summary accesskey="c" title="(Alt + C)"><span class="details">Contents</span></summary><div class="inner"><ul><li><a href="#what-well-cover" aria-label="What We&#x27;ll Cover">What We&#x27;ll Cover</a></li><li><a href="#ch-9-classes" aria-label="Ch 9: Classes">Ch 9: Classes</a><ul><li><a href="#defining-and-using-a-class" aria-label="Defining and Using a Class">Defining and Using a Class</a></li><li><a href="#changing-instances-over-time" aria-label="Changing Instances Over Time">Changing Instances Over Time</a></li><li><a href="#inheritance" aria-label="Inheritance">Inheritance</a></li><li><a href="#importing-classes-from-modules" aria-label="Importing Classes from Modules">Importing Classes from Modules</a></li><li><a href="#a-note-on-the-standard-library" aria-label="A Note on the Standard Library">A Note on the Standard Library</a></li><li><a href="#class-style-conventions" aria-label="Class Style Conventions">Class Style Conventions</a></li><li><a href="#in-class-exercise" aria-label="In-Class Exercise">In-Class Exercise</a></li></ul></li><li><a href="#ch-10-files-and-exceptions" aria-label="Ch 10: Files and Exceptions">Ch 10: Files and Exceptions</a><ul><li><a href="#reading-text-files" aria-label="Reading Text Files">Reading Text Files</a></li><li><a href="#writing-text-files" aria-label="Writing Text Files">Writing Text Files</a></li><li><a href="#exceptions" aria-label="Exceptions">Exceptions</a></li><li><a href="#saving-structured-data-with-json" aria-label="Saving Structured Data with json">Saving Structured Data with json</a></li><li><a href="#refactoring-into-functions" aria-label="Refactoring into Functions">Refactoring into Functions</a></li><li><a href="#in-class-exercise-2" aria-label="In-Class Exercise">In-Class Exercise</a></li></ul></li></ul></div></details></div>
+<div class="post-content nb">
+<ul>
+<li><p>This lecture completes Part I of the course (Lectures 1-5), which covers the core Python language.</p>
+</li>
+<li><p>A class defines a new kind of object, such as a stock, a brokerage account, or a portfolio, that holds data together with the functions that work on that data.</p>
+</li>
+<li><p>Writing data to a file keeps it after the program finishes. Handling exceptions allows a program to continue when something goes wrong, such as a missing file or a price of zero.</p>
+</li>
+<li><p>Classes, files, and exceptions all appear again in Lectures 6-9. A pandas <code>DataFrame</code> is an instance of a class, almost every analysis starts by reading a file, and the data loaders in Lectures 8-9 use <code>try</code>-<code>except</code> to switch to another source when a download fails.</p>
+</li>
+</ul>
+
+<h3 id="what-well-cover">What We'll Cover</h3><ul>
+<li><p><strong>Ch 9 (Classes):</strong> defining a class, <code>__init__()</code> and attributes, methods, default values, changing attributes, inheritance with <code>super()</code>, overriding methods, objects as attributes, and importing classes from modules.</p>
+</li>
+<li><p><strong>Ch 10 (Files and Exceptions):</strong> reading and writing text files with <code>pathlib</code>, relative and absolute paths, <code>try</code>-<code>except</code>-<code>else</code>, <code>ZeroDivisionError</code> and <code>FileNotFoundError</code>, and saving data with <code>json</code>.</p>
+</li>
+<li><p>The running example is a set of classes for stocks, accounts, and portfolio holdings, followed in Ch 10 by price files, a trade log, and a saved watchlist. All prices, earnings, and balances are illustrative.</p>
+</li>
+</ul>
+
+<h2 id="ch-9-classes">Ch 9: Classes</h2>
+
+<ul>
+<li><p>So far, data has been stored in plain values, lists, and dictionaries, and the code that works on it has been written as separate functions that take the data as arguments.</p>
+</li>
+<li><p>A <strong>class</strong> combines the two. It defines a new type of object with its own data, called attributes, and its own functions, called methods.</p>
+</li>
+<li><p>Writing programs around such objects is called <strong>object-oriented programming</strong> (OOP). Every string and list is an object, and so is every pandas <code>DataFrame</code> in Lecture 6.</p>
+</li>
+<li><p>A class is a template, and each object created from it is an <strong>instance</strong> of the class. One <code>Stock</code> class can create an instance for AAPL, another for MSFT, and so on.</p>
+</li>
+</ul>
+
+<h3 id="defining-and-using-a-class">Defining and Using a Class</h3><h4 id="the-stock-class">The <code>Stock</code> Class</h4><ul>
+<li><p>The first class describes a stock. Each stock has a ticker, a share price, and earnings per share (EPS). It can compute its price-to-earnings (P/E) ratio, the share price divided by EPS, and print a one-line description of itself.</p>
+</li>
+<li><p>The <code>class</code> line names the new class, and the indented lines below it belong to the class. The text in triple quotes is a docstring that describes the class, as with functions in Lecture 4.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">class</span><span class="w"> </span><span class="nc">Stock</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A publicly traded stock."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ticker</span><span class="p">,</span> <span class="n">price</span><span class="p">,</span> <span class="n">eps</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Store the ticker, share price, and earnings per share."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ticker</span> <span class="o">=</span> <span class="n">ticker</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">price</span> <span class="o">=</span> <span class="n">price</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eps</span> <span class="o">=</span> <span class="n">eps</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">pe_ratio</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Return the price-to-earnings ratio."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">price</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">eps</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">describe</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Print a one-line summary of the stock."""</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ticker</span><span class="si">}</span><span class="s2">: $</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">price</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2"> per share, "</span>
+              <span class="sa">f</span><span class="s2">"P/E </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">pe_ratio</span><span class="p">()</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div></div>
+<h4 id="how-init-and-self-work">How <code>__init__()</code> and <code>self</code> Work</h4><ul>
+<li><p>A function defined inside a class is a <strong>method</strong>. <code>__init__()</code> (two underscores on each side) is a special method that Python runs automatically each time a new instance is created.</p>
+</li>
+<li><p>Its first parameter, <code>self</code>, is the new instance. Python fills it in, so you never pass it yourself.</p>
+</li>
+<li><p>A line such as <code>self.ticker = ticker</code> stores the value passed in as an <strong>attribute</strong> of the instance. Every method in the class can then read it as <code>self.ticker</code>.</p>
+</li>
+<li><p><code>pe_ratio()</code> and <code>describe()</code> are ordinary methods. They also receive <code>self</code>, which is how they read the instance's attributes and how <code>describe()</code> calls <code>self.pe_ratio()</code>.</p>
+</li>
+</ul>
+
+<h4 id="building-an-object-from-the-class">Building an Object from the Class</h4><ul>
+<li><p>To create an instance, call the class like a function and pass the arguments that <code>__init__()</code> expects (all except <code>self</code>).</p>
+</li>
+<li><p>By convention, class names use CamelCase (<code>Stock</code>) and instance names use lowercase (<code>aapl</code>), so the two are easy to tell apart.</p>
+</li>
+<li><p><code>type()</code> shows that <code>aapl</code> is a <code>Stock</code>. (<code>__main__</code> is Python's name for the notebook or script in which the class was defined.)</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">aapl</span> <span class="o">=</span> <span class="n">Stock</span><span class="p">(</span><span class="s2">"AAPL"</span><span class="p">,</span> <span class="mf">230.00</span><span class="p">,</span> <span class="mf">6.50</span><span class="p">)</span>
+<span class="nb">type</span><span class="p">(</span><span class="n">aapl</span><span class="p">)</span></code></pre></div><div class="nb-out nb-text">
+<pre>__main__.Stock</pre>
+</div></div>
+<h4 id="using-attributes-and-methods">Using Attributes and Methods</h4><ul>
+<li><p>Read an attribute with <strong>dot notation</strong>: <code>instance.attribute</code>.</p>
+</li>
+<li><p>Call a method the same way, with parentheses: <code>instance.method()</code>. Python passes the instance in as <code>self</code>, which is why <code>aapl.pe_ratio()</code> takes no arguments.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="nb">print</span><span class="p">(</span><span class="n">aapl</span><span class="o">.</span><span class="n">ticker</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">aapl</span><span class="o">.</span><span class="n">price</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">aapl</span><span class="o">.</span><span class="n">pe_ratio</span><span class="p">(),</span> <span class="mi">1</span><span class="p">))</span>
+<span class="n">aapl</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span></code></pre></div><div class="nb-out nb-stream">
+<pre>AAPL
+230.0
+35.4
+AAPL: $230.00 per share, P/E 35.4
+</pre>
+</div></div>
+<h4 id="several-stocks-from-one-class">Several Stocks from One Class</h4><ul>
+<li><p>A class can create any number of instances. Each instance has its own attributes, so changing one stock does not affect another.</p>
+</li>
+<li><p>Instances can be stored in a list like any other value. The loop below calls <code>describe()</code> on each one.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">msft</span> <span class="o">=</span> <span class="n">Stock</span><span class="p">(</span><span class="s2">"MSFT"</span><span class="p">,</span> <span class="mf">420.00</span><span class="p">,</span> <span class="mf">12.00</span><span class="p">)</span>
+<span class="n">ko</span> <span class="o">=</span> <span class="n">Stock</span><span class="p">(</span><span class="s2">"KO"</span><span class="p">,</span> <span class="mf">62.00</span><span class="p">,</span> <span class="mf">2.50</span><span class="p">)</span>
+<span class="n">jpm</span> <span class="o">=</span> <span class="n">Stock</span><span class="p">(</span><span class="s2">"JPM"</span><span class="p">,</span> <span class="mf">210.00</span><span class="p">,</span> <span class="mf">18.00</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">stock</span> <span class="ow">in</span> <span class="p">[</span><span class="n">aapl</span><span class="p">,</span> <span class="n">msft</span><span class="p">,</span> <span class="n">ko</span><span class="p">,</span> <span class="n">jpm</span><span class="p">]:</span>
+    <span class="n">stock</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span></code></pre></div><div class="nb-out nb-stream">
+<pre>AAPL: $230.00 per share, P/E 35.4
+MSFT: $420.00 per share, P/E 35.0
+KO: $62.00 per share, P/E 24.8
+JPM: $210.00 per share, P/E 11.7
+</pre>
+</div></div>
+<p><strong>Note:</strong> Every argument that <code>__init__()</code> requires must be supplied. If any are missing, Python raises a <code>TypeError</code> that names them.</p>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># This will fail: Stock() also needs a price and an EPS</span>
+<span class="n">xom</span> <span class="o">=</span> <span class="n">Stock</span><span class="p">(</span><span class="s2">"XOM"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-error">
+<pre>
+---------------------------------------------------------------------------
+TypeError                                 Traceback (most recent call last)
+Cell In[5], line 2
+      1 # This will fail: Stock() also needs a price and an EPS
+----&gt; 2 xom = Stock("XOM")
+
+TypeError: Stock.__init__() missing 2 required positional arguments: 'price' and 'eps'</pre>
+</div></div>
+<h3 id="changing-instances-over-time">Changing Instances Over Time</h3><h4 id="an-account-class-with-a-default-value">An Account Class with a Default Value</h4><ul>
+<li><p>An instance's attributes often change while a program runs. This section builds a class for a brokerage account, whose cash balance changes over time.</p>
+</li>
+<li><p>Not every attribute needs a parameter. The line <code>self.cash = 0.0</code> gives every new account the same <strong>default value</strong>, so the caller does not pass one in.</p>
+</li>
+<li><p><code>account_type="individual"</code> is a parameter with a default value, as in Lecture 4. The caller can pass a different value.</p>
+</li>
+<li><p>Unlike <code>describe()</code> in <code>Stock</code>, <code>summary()</code> returns its text instead of printing it, so the caller decides what to do with it. <code>buying_power()</code> is used later, in the section on inheritance.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">class</span><span class="w"> </span><span class="nc">BrokerageAccount</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A cash account at a broker."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">,</span> <span class="n">account_type</span><span class="o">=</span><span class="s2">"individual"</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Set up a new account; every new account starts with no cash."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">owner</span> <span class="o">=</span> <span class="n">owner</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">account_type</span> <span class="o">=</span> <span class="n">account_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cash</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">summary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Return a one-line description of the account."""</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">owner</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">account_type</span><span class="si">}</span><span class="s2">): $</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cash</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2"> in cash"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_cash</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">amount</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Set the cash balance, rejecting negative amounts."""</span>
+        <span class="k">if</span> <span class="n">amount</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"Cash balance cannot be negative."</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cash</span> <span class="o">=</span> <span class="n">amount</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">deposit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">amount</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Add money to the account."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cash</span> <span class="o">+=</span> <span class="n">amount</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">buying_power</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Return the dollar amount of stock the account can buy."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cash</span></code></pre></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">my_account</span> <span class="o">=</span> <span class="n">BrokerageAccount</span><span class="p">(</span><span class="s2">"Avery Chen"</span><span class="p">)</span>
+<span class="n">ira</span> <span class="o">=</span> <span class="n">BrokerageAccount</span><span class="p">(</span><span class="s2">"Avery Chen"</span><span class="p">,</span> <span class="n">account_type</span><span class="o">=</span><span class="s2">"Roth IRA"</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">my_account</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">ira</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Avery Chen (individual): $0.00 in cash
+Avery Chen (Roth IRA): $0.00 in cash
+</pre>
+</div></div>
+<h4 id="updating-an-attribute">Updating an Attribute</h4><ul>
+<li><p>There are three ways to change an attribute's value. Each example below changes <code>my_account.cash</code>, the account's cash balance.</p>
+</li>
+<li><p>The first is to assign a new value directly, with the attribute on the left of <code>=</code> as with a variable.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">my_account</span><span class="o">.</span><span class="n">cash</span> <span class="o">=</span> <span class="mf">1_000.0</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">my_account</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Avery Chen (individual): $1,000.00 in cash
+</pre>
+</div></div>
+<ul>
+<li><p>The second is to set the value through a method. <code>set_cash()</code> updates the balance, and because every update runs through code we wrote, the method can check a new value before accepting it.</p>
+</li>
+<li><p>Python itself does not prevent <code>my_account.cash = -300.0</code>. Changing attributes only through methods is a convention, and it keeps the account's rules in one place.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">my_account</span><span class="o">.</span><span class="n">set_cash</span><span class="p">(</span><span class="mf">2_500.0</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">my_account</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span>
+
+<span class="n">my_account</span><span class="o">.</span><span class="n">set_cash</span><span class="p">(</span><span class="o">-</span><span class="mf">300.0</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">my_account</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Avery Chen (individual): $2,500.00 in cash
+Cash balance cannot be negative.
+Avery Chen (individual): $2,500.00 in cash
+</pre>
+</div></div>
+<ul>
+<li>The third is to increment the value through a method. <code>deposit()</code> uses <code>+=</code> to add each amount to the current balance instead of replacing it.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">my_account</span><span class="o">.</span><span class="n">deposit</span><span class="p">(</span><span class="mf">750.0</span><span class="p">)</span>
+<span class="n">my_account</span><span class="o">.</span><span class="n">deposit</span><span class="p">(</span><span class="mf">1_200.0</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">my_account</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Avery Chen (individual): $4,450.00 in cash
+</pre>
+</div></div>
+<h3 id="inheritance">Inheritance</h3><ul>
+<li><p>A class we need is often a special case of one we already have. A margin account, for example, is a brokerage account that can also borrow money from the broker.</p>
+</li>
+<li><p>Instead of starting from scratch, we write a <strong>child class</strong> (or subclass) that inherits from the existing parent class (or superclass). The child gets every attribute and method of the parent.</p>
+</li>
+<li><p>The child can then add its own attributes and methods, and <strong>override</strong> (replace) any parent method that should work differently.</p>
+</li>
+</ul>
+<h4 id="a-child-class-and-super">A Child Class and <code>super()</code></h4><ul>
+<li><p>Put the parent's name in parentheses after the child's name: <code>class MarginAccount(BrokerageAccount):</code>. The parent class must already be defined.</p>
+</li>
+<li><p>Inside the child's <code>__init__()</code>, the call <code>super().__init__(...)</code> runs the parent's <code>__init__()</code>. This sets <code>owner</code>, <code>account_type</code>, and <code>cash</code> without repeating the parent's code.</p>
+</li>
+<li><p>This child always passes <code>account_type="margin"</code>, so the caller supplies only the owner.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">class</span><span class="w"> </span><span class="nc">MarginAccount</span><span class="p">(</span><span class="n">BrokerageAccount</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""A brokerage account that can borrow from the broker."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Set up everything a regular brokerage account has."""</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">owner</span><span class="p">,</span> <span class="n">account_type</span><span class="o">=</span><span class="s2">"margin"</span><span class="p">)</span></code></pre></div></div>
+<ul>
+<li><p><code>MarginAccount</code> defines no other methods yet, but it can already use <code>deposit()</code> and <code>summary()</code> from its parent.</p>
+</li>
+<li><p><code>isinstance()</code> shows that a <code>MarginAccount</code> instance is also a <code>BrokerageAccount</code>.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">margin</span> <span class="o">=</span> <span class="n">MarginAccount</span><span class="p">(</span><span class="s2">"Jordan Park"</span><span class="p">)</span>
+<span class="n">margin</span><span class="o">.</span><span class="n">deposit</span><span class="p">(</span><span class="mf">5_000.0</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">margin</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">margin</span><span class="p">,</span> <span class="n">BrokerageAccount</span><span class="p">))</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Jordan Park (margin): $5,000.00 in cash
+True
+</pre>
+</div></div>
+<h4 id="attributes-and-methods-only-the-child-has">Attributes and Methods Only the Child Has</h4><ul>
+<li><p>After the <code>super().__init__()</code> line, the child sets attributes that only it needs: the annual margin rate (the interest rate charged on borrowed money) and a leverage limit with a default value of <code>2.0</code>.</p>
+</li>
+<li><p>The new method <code>interest_cost()</code> computes simple interest: amount borrowed × annual rate × years.</p>
+</li>
+<li><p><code>margin_rate</code>, <code>leverage</code>, and <code>interest_cost()</code> belong only to <code>MarginAccount</code>. A plain <code>BrokerageAccount</code> does not have them, and calling <code>interest_cost()</code> on one would raise an <code>AttributeError</code>.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">class</span><span class="w"> </span><span class="nc">MarginAccount</span><span class="p">(</span><span class="n">BrokerageAccount</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""A brokerage account that can borrow from the broker."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">,</span> <span class="n">margin_rate</span><span class="o">=</span><span class="mf">0.08</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Set up the parent's attributes, then the borrowing terms."""</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">owner</span><span class="p">,</span> <span class="n">account_type</span><span class="o">=</span><span class="s2">"margin"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">margin_rate</span> <span class="o">=</span> <span class="n">margin_rate</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">leverage</span> <span class="o">=</span> <span class="mf">2.0</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">interest_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">borrowed</span><span class="p">,</span> <span class="n">years</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Return the simple interest owed on a margin loan."""</span>
+        <span class="k">return</span> <span class="n">borrowed</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">margin_rate</span> <span class="o">*</span> <span class="n">years</span></code></pre></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">margin</span> <span class="o">=</span> <span class="n">MarginAccount</span><span class="p">(</span><span class="s2">"Jordan Park"</span><span class="p">,</span> <span class="n">margin_rate</span><span class="o">=</span><span class="mf">0.075</span><span class="p">)</span>
+
+<span class="n">interest</span> <span class="o">=</span> <span class="n">margin</span><span class="o">.</span><span class="n">interest_cost</span><span class="p">(</span><span class="mi">4_000</span><span class="p">,</span> <span class="n">years</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Margin rate: </span><span class="si">{</span><span class="n">margin</span><span class="o">.</span><span class="n">margin_rate</span><span class="si">:</span><span class="s2">.1%</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Interest on $4,000 for 6 months: $</span><span class="si">{</span><span class="n">interest</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Margin rate: 7.5%
+Interest on $4,000 for 6 months: $150.00
+</pre>
+</div></div>
+<h4 id="replacing-a-parent-method-overriding">Replacing a Parent Method (Overriding)</h4><ul>
+<li><p>To override a parent method, define a method with the same name in the child. Instances of the child then use the child's version, and instances of the parent keep the original.</p>
+</li>
+<li><p>The parent's <code>buying_power()</code> returns the cash balance. Under a simplified margin rule, the broker lends up to <code>leverage - 1</code> times the cash, so a margin account's buying power is <code>cash * leverage</code>.</p>
+</li>
+<li><p>The class below repeats the previous definition and adds the override at the end. In the next cell, the same method call gives different results because each object uses the <code>buying_power()</code> of its own class.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">class</span><span class="w"> </span><span class="nc">MarginAccount</span><span class="p">(</span><span class="n">BrokerageAccount</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""A brokerage account that can borrow from the broker."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">,</span> <span class="n">margin_rate</span><span class="o">=</span><span class="mf">0.08</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Set up the parent's attributes, then the borrowing terms."""</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">owner</span><span class="p">,</span> <span class="n">account_type</span><span class="o">=</span><span class="s2">"margin"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">margin_rate</span> <span class="o">=</span> <span class="n">margin_rate</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">leverage</span> <span class="o">=</span> <span class="mf">2.0</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">interest_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">borrowed</span><span class="p">,</span> <span class="n">years</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Return the simple interest owed on a margin loan."""</span>
+        <span class="k">return</span> <span class="n">borrowed</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">margin_rate</span> <span class="o">*</span> <span class="n">years</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">buying_power</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Return cash plus the most the broker will lend."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cash</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">leverage</span></code></pre></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">cash_account</span> <span class="o">=</span> <span class="n">BrokerageAccount</span><span class="p">(</span><span class="s2">"Sam Rivera"</span><span class="p">)</span>
+<span class="n">cash_account</span><span class="o">.</span><span class="n">deposit</span><span class="p">(</span><span class="mf">10_000.0</span><span class="p">)</span>
+
+<span class="n">margin</span> <span class="o">=</span> <span class="n">MarginAccount</span><span class="p">(</span><span class="s2">"Sam Rivera"</span><span class="p">)</span>
+<span class="n">margin</span><span class="o">.</span><span class="n">deposit</span><span class="p">(</span><span class="mf">10_000.0</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Cash account buying power:   $</span><span class="si">{</span><span class="n">cash_account</span><span class="o">.</span><span class="n">buying_power</span><span class="p">()</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Margin account buying power: $</span><span class="si">{</span><span class="n">margin</span><span class="o">.</span><span class="n">buying_power</span><span class="p">()</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Cash account buying power:   $10,000.00
+Margin account buying power: $20,000.00
+</pre>
+</div></div>
+<h4 id="objects-as-attributes">Objects as Attributes</h4><ul>
+<li><p>An attribute can hold any value, including an instance of another class. A larger class can then be built from smaller ones.</p>
+</li>
+<li><p>A position is a holding in one stock: a ticker, a number of shares, and the average price paid per share (the cost basis per share). Its method <code>unrealized_gain()</code> returns the profit or loss on paper, which is the current value of the shares minus what they cost.</p>
+</li>
+<li><p>A portfolio is a collection of positions. <code>Portfolio</code> stores its <code>Position</code> instances in a dictionary attribute, <code>positions</code>, keyed by ticker. <code>buy()</code> creates a new <code>Position</code> and stores it. <code>total_value()</code> and <code>report()</code> take a dictionary of current prices and call the methods of each stored position to get its value and gain.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">class</span><span class="w"> </span><span class="nc">Position</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A holding of shares in one stock."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ticker</span><span class="p">,</span> <span class="n">shares</span><span class="p">,</span> <span class="n">cost_basis</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Store the ticker, the share count, and the price paid per share."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ticker</span> <span class="o">=</span> <span class="n">ticker</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shares</span> <span class="o">=</span> <span class="n">shares</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cost_basis</span> <span class="o">=</span> <span class="n">cost_basis</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">market_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">price</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Return the value of the position at the given share price."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">shares</span> <span class="o">*</span> <span class="n">price</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">unrealized_gain</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">price</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Return the paper profit (or loss) at the given share price."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">shares</span> <span class="o">*</span> <span class="p">(</span><span class="n">price</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">cost_basis</span><span class="p">)</span></code></pre></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">class</span><span class="w"> </span><span class="nc">Portfolio</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A named collection of Position objects."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Start with no positions."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">positions</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">buy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ticker</span><span class="p">,</span> <span class="n">shares</span><span class="p">,</span> <span class="n">price</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Open a position in ticker at the given price."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">positions</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span> <span class="o">=</span> <span class="n">Position</span><span class="p">(</span><span class="n">ticker</span><span class="p">,</span> <span class="n">shares</span><span class="p">,</span> <span class="n">price</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">total_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prices</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Return the market value of all positions."""</span>
+        <span class="n">total</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">for</span> <span class="n">position</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">positions</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">total</span> <span class="o">+=</span> <span class="n">position</span><span class="o">.</span><span class="n">market_value</span><span class="p">(</span><span class="n">prices</span><span class="p">[</span><span class="n">position</span><span class="o">.</span><span class="n">ticker</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">total</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">report</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prices</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Print the value and gain of each position, then the total."""</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Portfolio: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">ticker</span><span class="p">,</span> <span class="n">position</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">positions</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">position</span><span class="o">.</span><span class="n">market_value</span><span class="p">(</span><span class="n">prices</span><span class="p">[</span><span class="n">ticker</span><span class="p">])</span>
+            <span class="n">gain</span> <span class="o">=</span> <span class="n">position</span><span class="o">.</span><span class="n">unrealized_gain</span><span class="p">(</span><span class="n">prices</span><span class="p">[</span><span class="n">ticker</span><span class="p">])</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">ticker</span><span class="si">}</span><span class="s2">: value $</span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">, gain $</span><span class="si">{</span><span class="n">gain</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Total value: $</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">total_value</span><span class="p">(</span><span class="n">prices</span><span class="p">)</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">growth</span> <span class="o">=</span> <span class="n">Portfolio</span><span class="p">(</span><span class="s2">"Growth"</span><span class="p">)</span>
+<span class="n">growth</span><span class="o">.</span><span class="n">buy</span><span class="p">(</span><span class="s2">"NVDA"</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mf">110.00</span><span class="p">)</span>
+<span class="n">growth</span><span class="o">.</span><span class="n">buy</span><span class="p">(</span><span class="s2">"AMZN"</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mf">180.00</span><span class="p">)</span>
+<span class="n">growth</span><span class="o">.</span><span class="n">buy</span><span class="p">(</span><span class="s2">"MSFT"</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mf">400.00</span><span class="p">)</span>
+
+<span class="n">prices_today</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"NVDA"</span><span class="p">:</span> <span class="mf">125.00</span><span class="p">,</span> <span class="s2">"AMZN"</span><span class="p">:</span> <span class="mf">195.00</span><span class="p">,</span> <span class="s2">"MSFT"</span><span class="p">:</span> <span class="mf">410.00</span><span class="p">}</span>
+<span class="n">growth</span><span class="o">.</span><span class="n">report</span><span class="p">(</span><span class="n">prices_today</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Portfolio: Growth
+  NVDA: value $2,500.00, gain $300.00
+  AMZN: value $2,925.00, gain $225.00
+  MSFT: value $4,100.00, gain $100.00
+Total value: $9,525.00
+</pre>
+</div></div>
+<ul>
+<li>To reach inside a nested object, chain the dots. <code>growth.positions["NVDA"]</code> is a <code>Position</code>, so we can read its attributes and call its methods directly.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">nvda_position</span> <span class="o">=</span> <span class="n">growth</span><span class="o">.</span><span class="n">positions</span><span class="p">[</span><span class="s2">"NVDA"</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nvda_position</span><span class="o">.</span><span class="n">shares</span><span class="p">,</span> <span class="n">nvda_position</span><span class="o">.</span><span class="n">cost_basis</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">growth</span><span class="o">.</span><span class="n">positions</span><span class="p">[</span><span class="s2">"AMZN"</span><span class="p">]</span><span class="o">.</span><span class="n">unrealized_gain</span><span class="p">(</span><span class="n">prices_today</span><span class="p">[</span><span class="s2">"AMZN"</span><span class="p">]))</span></code></pre></div><div class="nb-out nb-stream">
+<pre>20 110.0
+225.0
+</pre>
+</div></div>
+<h3 id="importing-classes-from-modules">Importing Classes from Modules</h3><ul>
+<li><p>A notebook full of class definitions is hard to read. As in Lecture 4, the code can be moved into a module (a <code>.py</code> file) and imported where it is needed.</p>
+</li>
+<li><p><code>%%writefile &lt;filename&gt;</code> on the first line of a code cell saves the rest of the cell to a file instead of running it.</p>
+</li>
+<li><p>In Colab, the file is saved in the working folder, <code>/content</code>, which is where Python looks first when you import. Colab deletes these files when the runtime shuts down, so keep a copy of anything you need.</p>
+</li>
+</ul>
+<h4 id="a-module-with-one-class">A Module with One Class</h4><ul>
+<li>The module <code>stock.py</code> contains only the <code>Stock</code> class, below a one-line docstring that describes the module.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="o">%%</span><span class="n">writefile</span> <span class="n">stock</span><span class="o">.</span><span class="n">py</span>
+<span class="sd">"""A class for representing a single stock."""</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Stock</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A publicly traded stock."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ticker</span><span class="p">,</span> <span class="n">price</span><span class="p">,</span> <span class="n">eps</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Store the ticker, share price, and earnings per share."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ticker</span> <span class="o">=</span> <span class="n">ticker</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">price</span> <span class="o">=</span> <span class="n">price</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eps</span> <span class="o">=</span> <span class="n">eps</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">pe_ratio</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Return the price-to-earnings ratio."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">price</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">eps</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">describe</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Print a one-line summary of the stock."""</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ticker</span><span class="si">}</span><span class="s2">: $</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">price</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2"> per share, "</span>
+              <span class="sa">f</span><span class="s2">"P/E </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">pe_ratio</span><span class="p">()</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Writing stock.py
+</pre>
+</div></div>
+<ul>
+<li><p><code>from stock import Stock</code> opens the module <code>stock</code> (the file <code>stock.py</code>, without the extension) and brings the class <code>Stock</code> into the notebook.</p>
+</li>
+<li><p>Once imported, the class works as if it were defined in the notebook.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">from</span><span class="w"> </span><span class="nn">stock</span><span class="w"> </span><span class="kn">import</span> <span class="n">Stock</span>
+
+<span class="n">nvda</span> <span class="o">=</span> <span class="n">Stock</span><span class="p">(</span><span class="s2">"NVDA"</span><span class="p">,</span> <span class="mf">125.00</span><span class="p">,</span> <span class="mf">2.90</span><span class="p">)</span>
+<span class="n">nvda</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span></code></pre></div><div class="nb-out nb-stream">
+<pre>NVDA: $125.00 per share, P/E 43.1
+</pre>
+</div></div>
+<h4 id="a-module-with-several-classes">A Module with Several Classes</h4><ul>
+<li><p>A module can hold any number of classes. Related classes usually go together, so <code>accounts.py</code> holds shortened versions of both account classes.</p>
+</li>
+<li><p><code>MarginAccount</code> inherits from <code>BrokerageAccount</code>, so the parent must come first in the file. Two blank lines separate the classes.</p>
+</li>
+</ul>
+<p><strong>Note:</strong> Python loads a module only once per session. If you edit a module and rerun its <code>%%writefile</code> cell, a new <code>import</code> still uses the old version. Restart the session (in Colab, Runtime → Restart session) and import again.</p>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="o">%%</span><span class="n">writefile</span> <span class="n">accounts</span><span class="o">.</span><span class="n">py</span>
+<span class="sd">"""Classes for cash and margin brokerage accounts."""</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">BrokerageAccount</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A cash account at a broker."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">,</span> <span class="n">account_type</span><span class="o">=</span><span class="s2">"individual"</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Set up a new account; every new account starts with no cash."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">owner</span> <span class="o">=</span> <span class="n">owner</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">account_type</span> <span class="o">=</span> <span class="n">account_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cash</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">summary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Return a one-line description of the account."""</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">owner</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">account_type</span><span class="si">}</span><span class="s2">): $</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cash</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2"> in cash"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">deposit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">amount</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Add money to the account."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cash</span> <span class="o">+=</span> <span class="n">amount</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">buying_power</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Return the dollar amount of stock the account can buy."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cash</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MarginAccount</span><span class="p">(</span><span class="n">BrokerageAccount</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""A brokerage account that can borrow from the broker."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">,</span> <span class="n">margin_rate</span><span class="o">=</span><span class="mf">0.08</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Set up the parent's attributes, then the borrowing terms."""</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">owner</span><span class="p">,</span> <span class="n">account_type</span><span class="o">=</span><span class="s2">"margin"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">margin_rate</span> <span class="o">=</span> <span class="n">margin_rate</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">leverage</span> <span class="o">=</span> <span class="mf">2.0</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">interest_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">borrowed</span><span class="p">,</span> <span class="n">years</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Return the simple interest owed on a margin loan."""</span>
+        <span class="k">return</span> <span class="n">borrowed</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">margin_rate</span> <span class="o">*</span> <span class="n">years</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">buying_power</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Return cash plus the most the broker will lend."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cash</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">leverage</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Writing accounts.py
+</pre>
+</div></div>
+<ul>
+<li>You can import only the class you need. <code>MarginAccount</code> works even though <code>BrokerageAccount</code> was not imported by name, because the parent class is defined in the module.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">from</span><span class="w"> </span><span class="nn">accounts</span><span class="w"> </span><span class="kn">import</span> <span class="n">MarginAccount</span>
+
+<span class="n">margin</span> <span class="o">=</span> <span class="n">MarginAccount</span><span class="p">(</span><span class="s2">"Lee Wong"</span><span class="p">)</span>
+<span class="n">margin</span><span class="o">.</span><span class="n">deposit</span><span class="p">(</span><span class="mf">8_000.0</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">margin</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Buying power: $</span><span class="si">{</span><span class="n">margin</span><span class="o">.</span><span class="n">buying_power</span><span class="p">()</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Lee Wong (margin): $8,000.00 in cash
+Buying power: $16,000.00
+</pre>
+</div></div>
+<h4 id="picking-several-classes-from-a-module">Picking Several Classes from a Module</h4><ul>
+<li>List the classes after <code>import</code>, separated by commas.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">from</span><span class="w"> </span><span class="nn">accounts</span><span class="w"> </span><span class="kn">import</span> <span class="n">BrokerageAccount</span><span class="p">,</span> <span class="n">MarginAccount</span>
+
+<span class="n">savings</span> <span class="o">=</span> <span class="n">BrokerageAccount</span><span class="p">(</span><span class="s2">"Lee Wong"</span><span class="p">)</span>
+<span class="n">trading</span> <span class="o">=</span> <span class="n">MarginAccount</span><span class="p">(</span><span class="s2">"Lee Wong"</span><span class="p">,</span> <span class="n">margin_rate</span><span class="o">=</span><span class="mf">0.065</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="p">[</span><span class="n">savings</span><span class="p">,</span> <span class="n">trading</span><span class="p">]:</span>
+    <span class="n">account</span><span class="o">.</span><span class="n">deposit</span><span class="p">(</span><span class="mf">3_000.0</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">account</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span><span class="si">}</span><span class="s2"> | buying power $</span><span class="si">{</span><span class="n">account</span><span class="o">.</span><span class="n">buying_power</span><span class="p">()</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Lee Wong (individual): $3,000.00 in cash | buying power $3,000.00
+Lee Wong (margin): $3,000.00 in cash | buying power $6,000.00
+</pre>
+</div></div>
+<h4 id="bringing-in-the-whole-module">Bringing In the Whole Module</h4><ul>
+<li><p><code>import accounts</code> loads the entire module. Each class is then accessed with dot notation: <code>accounts.ClassName</code>.</p>
+</li>
+<li><p>This style shows where every class comes from. Only the name <code>accounts</code> is added to the notebook, so the module's classes cannot overwrite names you already use. Ch 10 imports <code>json</code> this way and calls <code>json.dumps()</code> and <code>json.loads()</code>.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">import</span><span class="w"> </span><span class="nn">accounts</span>
+
+<span class="n">ira</span> <span class="o">=</span> <span class="n">accounts</span><span class="o">.</span><span class="n">BrokerageAccount</span><span class="p">(</span><span class="s2">"Lee Wong"</span><span class="p">,</span> <span class="n">account_type</span><span class="o">=</span><span class="s2">"traditional IRA"</span><span class="p">)</span>
+<span class="n">ira</span><span class="o">.</span><span class="n">deposit</span><span class="p">(</span><span class="mf">6_500.0</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">ira</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Lee Wong (traditional IRA): $6,500.00 in cash
+</pre>
+</div></div>
+<h4 id="importing-everything-with">Importing Everything with <code>*</code></h4><ul>
+<li><p><code>from accounts import *</code> imports every class (and function) that the module defines.</p>
+</li>
+<li><p>Avoid this in your own code. A reader cannot tell which names came from the module, and if the module defines a name you already use, your version is silently replaced. Import the classes you need by name, or import the whole module.</p>
+</li>
+<li><p>Named imports can also replace existing names. Earlier, <code>from accounts import BrokerageAccount, MarginAccount</code> replaced the notebook's own <code>BrokerageAccount</code>, which had a <code>set_cash()</code> method, with the shorter version in <code>accounts.py</code>. With <code>*</code>, such replacements are much harder to spot.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">from</span><span class="w"> </span><span class="nn">accounts</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">MarginAccount</span><span class="p">(</span><span class="s2">"Lee Wong"</span><span class="p">)</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Lee Wong (margin): $0.00 in cash
+</pre>
+</div></div>
+<h4 id="aliases-with-as">Aliases with <code>as</code></h4><ul>
+<li><p><code>as</code> gives an imported class or module a different name in your code. Use it when a name is long or clashes with one you already use.</p>
+</li>
+<li><p>Lecture 4 applied <code>as</code> to functions and modules. The standard short names in Lectures 6-9, <code>import numpy as np</code> and <code>import pandas as pd</code>, use the same syntax.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">from</span><span class="w"> </span><span class="nn">accounts</span><span class="w"> </span><span class="kn">import</span> <span class="n">BrokerageAccount</span> <span class="k">as</span> <span class="n">Account</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">accounts</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">acct</span>
+
+<span class="n">roth</span> <span class="o">=</span> <span class="n">Account</span><span class="p">(</span><span class="s2">"Lee Wong"</span><span class="p">,</span> <span class="n">account_type</span><span class="o">=</span><span class="s2">"Roth IRA"</span><span class="p">)</span>
+<span class="n">joint</span> <span class="o">=</span> <span class="n">acct</span><span class="o">.</span><span class="n">MarginAccount</span><span class="p">(</span><span class="s2">"Lee and Sam Wong"</span><span class="p">,</span> <span class="n">margin_rate</span><span class="o">=</span><span class="mf">0.07</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">roth</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">joint</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span><span class="si">}</span><span class="s2">, margin rate </span><span class="si">{</span><span class="n">joint</span><span class="o">.</span><span class="n">margin_rate</span><span class="si">:</span><span class="s2">.1%</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Lee Wong (Roth IRA): $0.00 in cash
+Lee and Sam Wong (margin): $0.00 in cash, margin rate 7.0%
+</pre>
+</div></div>
+<h3 id="a-note-on-the-standard-library">A Note on the Standard Library</h3><ul>
+<li><p>Every Python installation includes the <strong>standard library</strong>, a large set of modules that you import the same way as your own, with nothing to install. Ch 10 uses two of them, <code>pathlib</code> and <code>json</code>; others include <code>math</code>, <code>random</code>, <code>statistics</code>, and <code>csv</code>.</p>
+</li>
+<li><p>Many of these modules define classes. <code>date</code>, from the <code>datetime</code> module, is a class whose instances are calendar dates. Each instance has attributes such as <code>.year</code>, and subtracting one date from another gives the time between them.</p>
+</li>
+<li><p>Before writing a general-purpose tool yourself, check the <a href="https://docs.python.org/3/library/" rel="noopener" target="_blank">library documentation</a> to see whether the standard library already has one.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">date</span>
+
+<span class="n">settlement</span> <span class="o">=</span> <span class="n">date</span><span class="p">(</span><span class="mi">2026</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+<span class="n">maturity</span> <span class="o">=</span> <span class="n">date</span><span class="p">(</span><span class="mi">2031</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">maturity</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">maturity</span><span class="o">.</span><span class="n">year</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">((</span><span class="n">maturity</span> <span class="o">-</span> <span class="n">settlement</span><span class="p">)</span><span class="o">.</span><span class="n">days</span><span class="p">,</span> <span class="s2">"days to maturity"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>&lt;class 'datetime.date'&gt;
+2031
+1826 days to maturity
+</pre>
+</div></div>
+<h3 id="class-style-conventions">Class Style Conventions</h3><ul>
+<li><p>These conventions follow PEP 8, Python's official style guide, as did the function conventions in Lecture 4.</p>
+</li>
+<li><p>Class names use CamelCase: capitalize each word and drop underscores (<code>MarginAccount</code>, not <code>margin_account</code>). Instance and module names use lowercase with underscores (<code>my_account</code>, <code>accounts.py</code>).</p>
+</li>
+<li><p>Give every class a docstring, right below the <code>class</code> line, that says what the class represents. Give every method a docstring that says what it does, and start each module with a docstring too.</p>
+</li>
+<li><p>Separate methods with one blank line. In a module, separate classes with two blank lines.</p>
+</li>
+<li><p>Put all imports at the top of a file or notebook: standard-library modules first, then a blank line, then your own modules.</p>
+</li>
+<li><p>Keep each class focused on one idea. If a class starts doing two unrelated jobs, split it, as we did with <code>Position</code> and <code>Portfolio</code>.</p>
+</li>
+</ul>
+
+<h3 id="in-class-exercise">In-Class Exercise</h3>
+
+<p><strong>9-1. A Bond Class:</strong></p>
+<ul>
+<li>Write a class <code>Bond</code> with attributes <code>issuer</code>, <code>face_value</code>, <code>coupon_rate</code>, and <code>years_to_maturity</code>.</li>
+<li>Add a method <code>annual_coupon()</code> that returns <code>face_value * coupon_rate</code>, and a method <code>describe()</code> that prints a one-line summary.</li>
+<li>Create two bonds with different coupon rates and call both methods on each.</li>
+</ul>
+
+<p><strong>9-2. Bond Prices and Yields:</strong></p>
+<ul>
+<li>Give your <code>Bond</code> an attribute <code>price</code> whose default value equals <code>face_value</code>.</li>
+<li>Write a method <code>update_price(new_price)</code> that rejects negative prices, and a method <code>current_yield()</code> that returns <code>annual_coupon() / price</code>.</li>
+<li>Change the price three times (directly, through the method, and through the method with a negative value) and print the current yield after each change.</li>
+</ul>
+
+<p><strong>9-3. An ETF Child Class:</strong></p>
+<ul>
+<li>Write a class <code>ETF</code> that inherits from <code>Stock</code> and adds an attribute <code>expense_ratio</code> (for example, <code>0.0009</code> for 0.09% per year).</li>
+<li>Add a method <code>annual_fee(amount_invested)</code> that returns the yearly fee in dollars.</li>
+<li>Override <code>describe()</code> so that it also prints the expense ratio.</li>
+</ul>
+
+<p><strong>9-4. A Bond Ladder Module:</strong></p>
+<ul>
+<li>A <strong>bond ladder</strong> is a set of bonds that mature in different years. Use <code>%%writefile bonds.py</code> to save your <code>Bond</code> class and a new class <code>BondLadder</code> whose attribute <code>bonds</code> is a list of <code>Bond</code> instances.</li>
+<li>Give <code>BondLadder</code> a method <code>add(bond)</code> and a method <code>total_annual_income()</code> that adds up the coupons.</li>
+<li>In a new cell, import both classes from <code>bonds</code>, build a ladder of three bonds, and print its total annual income.</li>
+</ul>
+
+<h2 id="ch-10-files-and-exceptions">Ch 10: Files and Exceptions</h2>
+
+<ul>
+<li><p>Everything created so far (variables, lists, instances) is lost when the session ends. To keep results, a program writes them to a file; to use data from elsewhere, it reads one.</p>
+</li>
+<li><p>Programs that work with outside data also run into errors, such as a missing file or a price recorded as zero. Python signals such errors with exceptions, and a program that handles them can respond to the problem instead of stopping.</p>
+</li>
+<li><p>We use two standard-library modules, <code>pathlib</code> and <code>json</code>. In Lecture 6, pandas reads an entire CSV file into a table in one line.</p>
+</li>
+</ul>
+
+<h3 id="reading-text-files">Reading Text Files</h3><h4 id="creating-a-small-price-file">Creating a Small Price File</h4><ul>
+<li><p>To keep the notebook self-contained, we first create a small file ourselves. In practice, files come from a data vendor, a download, or another program.</p>
+</li>
+<li><p><code>Path</code>, from the standard-library module <code>pathlib</code>, represents the location of a file. Its method <code>write_text()</code> saves a string to that file.</p>
+</li>
+<li><p>The file is in CSV (comma-separated values) format: a header line, then one line per trading day with the date and NVDA's closing price.</p>
+</li>
+<li><p><code>write_text()</code> returns the number of characters it wrote, which Jupyter displays below the cell.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="n">price_data</span> <span class="o">=</span> <span class="s2">"""date,close</span>
+<span class="s2">2026-03-02,121.40</span>
+<span class="s2">2026-03-03,123.10</span>
+<span class="s2">2026-03-04,120.75</span>
+<span class="s2">2026-03-05,124.60</span>
+<span class="s2">2026-03-06,126.30</span>
+<span class="s2">"""</span>
+
+<span class="n">price_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"nvda_prices.csv"</span><span class="p">)</span>
+<span class="n">price_path</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">price_data</span><span class="p">)</span></code></pre></div><div class="nb-out nb-text">
+<pre>101</pre>
+</div></div>
+<h4 id="reading-the-whole-file">Reading the Whole File</h4><ul>
+<li><code>read_text()</code> returns the entire contents of a file as one string, including line breaks.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">contents</span> <span class="o">=</span> <span class="n">price_path</span><span class="o">.</span><span class="n">read_text</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">contents</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>date,close
+2026-03-02,121.40
+2026-03-03,123.10
+2026-03-04,120.75
+2026-03-05,124.60
+2026-03-06,126.30
+
+</pre>
+</div></div>
+<h4 id="relative-vs-absolute-paths">Relative vs. Absolute Paths</h4><ul>
+<li><p>A <strong>relative path</strong>, such as <code>Path("nvda_prices.csv")</code>, is looked up starting from the current working directory, the folder the notebook runs in. In Colab that is <code>/content</code>; in Jupyter on your own computer it is usually the folder that holds the notebook. <code>Path.cwd()</code> returns this folder.</p>
+</li>
+<li><p>To keep a project organized, put data files in a subfolder. The <code>/</code> operator joins parts of a path, as in <code>Path("data") / "nvda_prices.csv"</code>, and uses the correct separator on every operating system. <code>mkdir(exist_ok=True)</code> creates the folder, or does nothing if it already exists.</p>
+</li>
+<li><p>An <strong>absolute path</strong> gives the full location from the top of the file system: <code>/content/data/nvda_prices.csv</code> in Colab, or something like <code>C:\Users\you\Documents\data\nvda_prices.csv</code> on Windows.</p>
+</li>
+<li><p>Absolute paths work from any working directory, but they differ from one computer to the next. Relative paths keep a project portable, so this course uses them. The <code>is_absolute()</code> method of a <code>Path</code> reports which kind it holds.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">data_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"data"</span><span class="p">)</span>
+<span class="n">data_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">nvda_copy</span> <span class="o">=</span> <span class="n">data_dir</span> <span class="o">/</span> <span class="s2">"nvda_prices.csv"</span>
+<span class="n">nvda_copy</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">price_data</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nvda_copy</span><span class="p">,</span> <span class="n">nvda_copy</span><span class="o">.</span><span class="n">is_absolute</span><span class="p">())</span>
+
+<span class="n">colab_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"/content/data/nvda_prices.csv"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">colab_path</span><span class="p">,</span> <span class="n">colab_path</span><span class="o">.</span><span class="n">is_absolute</span><span class="p">())</span></code></pre></div><div class="nb-out nb-stream">
+<pre>data/nvda_prices.csv False
+/content/data/nvda_prices.csv True
+</pre>
+</div></div>
+<h4 id="working-through-the-file-line-by-line">Working Through the File Line by Line</h4><ul>
+<li><p><code>splitlines()</code> splits a string into a list with one item per line, so we can loop over the lines of the file.</p>
+</li>
+<li><p>The first line is the header; <code>lines[1:]</code> skips it.</p>
+</li>
+<li><p>Each remaining line, such as <code>"2026-03-02,121.40"</code>, splits at the comma into a date and a price. The price is read as a string, so <code>float()</code> converts it to a number.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">lines</span> <span class="o">=</span> <span class="n">price_path</span><span class="o">.</span><span class="n">read_text</span><span class="p">()</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+<span class="n">dates</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">closes</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+    <span class="n">day</span><span class="p">,</span> <span class="n">close</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">","</span><span class="p">)</span>
+    <span class="n">dates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">day</span><span class="p">)</span>
+    <span class="n">closes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">close</span><span class="p">))</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">dates</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">closes</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>date,close
+['2026-03-02', '2026-03-03', '2026-03-04', '2026-03-05', '2026-03-06']
+[121.4, 123.1, 120.75, 124.6, 126.3]
+</pre>
+</div></div>
+<ul>
+<li><p>With the prices stored as numbers, we can compute each day's simple return: today's close divided by the previous close, minus 1.</p>
+</li>
+<li><p>The loop starts at index 1 because the first day has no previous close.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">closes</span><span class="p">)):</span>
+    <span class="n">daily_return</span> <span class="o">=</span> <span class="n">closes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="n">closes</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">dates</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">daily_return</span><span class="si">:</span><span class="s2">+.2%</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="n">week_return</span> <span class="o">=</span> <span class="n">closes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="n">closes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Return for the week: </span><span class="si">{</span><span class="n">week_return</span><span class="si">:</span><span class="s2">+.2%</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>2026-03-03: +1.40%
+2026-03-04: -1.91%
+2026-03-05: +3.19%
+2026-03-06: +1.36%
+Return for the week: +4.04%
+</pre>
+</div></div>
+<h3 id="writing-text-files">Writing Text Files</h3><h4 id="saving-a-single-record">Saving a Single Record</h4><ul>
+<li><p><code>write_text()</code> creates the file if needed and <strong>replaces</strong> anything already in it.</p>
+</li>
+<li><p>It accepts only strings. Use an f-string (or <code>str()</code>) to put numbers into the text, and end the line with the newline character <code>\n</code>.</p>
+</li>
+<li><p>The example starts a trade log, a text file with one line per trade.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">log_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"trade_log.txt"</span><span class="p">)</span>
+
+<span class="n">shares</span><span class="p">,</span> <span class="n">price</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="mf">121.40</span>
+<span class="n">log_path</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="sa">f</span><span class="s2">"BUY </span><span class="si">{</span><span class="n">shares</span><span class="si">}</span><span class="s2"> NVDA at </span><span class="si">{</span><span class="n">price</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">log_path</span><span class="o">.</span><span class="n">read_text</span><span class="p">())</span></code></pre></div><div class="nb-out nb-stream">
+<pre>BUY 20 NVDA at 121.40
+
+</pre>
+</div></div>
+<h4 id="saving-many-records-at-once">Saving Many Records at Once</h4><ul>
+<li><p><code>write_text()</code> writes exactly the string it is given, so several lines must be combined into one string with <code>\n</code> between them.</p>
+</li>
+<li><p>One way is to collect the lines in a list and join them: <code>"\n".join(log_lines)</code> combines the strings with a newline between each pair.</p>
+</li>
+<li><p>Writing the file again replaces the one-line log from the previous cell.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">trades</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="s2">"BUY"</span><span class="p">,</span> <span class="s2">"NVDA"</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mf">121.40</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">"BUY"</span><span class="p">,</span> <span class="s2">"KO"</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mf">61.20</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">"SELL"</span><span class="p">,</span> <span class="s2">"NVDA"</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mf">126.30</span><span class="p">),</span>
+<span class="p">]</span>
+
+<span class="n">log_lines</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">side</span><span class="p">,</span> <span class="n">ticker</span><span class="p">,</span> <span class="n">shares</span><span class="p">,</span> <span class="n">price</span> <span class="ow">in</span> <span class="n">trades</span><span class="p">:</span>
+    <span class="n">log_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">side</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">shares</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">ticker</span><span class="si">}</span><span class="s2"> at </span><span class="si">{</span><span class="n">price</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="n">log_path</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">log_lines</span><span class="p">)</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">log_path</span><span class="o">.</span><span class="n">read_text</span><span class="p">())</span></code></pre></div><div class="nb-out nb-stream">
+<pre>BUY 20 NVDA at 121.40
+BUY 50 KO at 61.20
+SELL 5 NVDA at 126.30
+
+</pre>
+</div></div>
+<p><strong>Note:</strong> A trade log usually grows one trade at a time, and rewriting the whole file for each trade is wasteful. <code>log_path.open("a")</code> opens the file in <strong>append mode</strong>, which adds text to the end instead. The <code>with</code> statement closes the file automatically when its indented block ends. <code>write()</code> adds the text exactly as given, so include the <code>\n</code>.</p>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">with</span> <span class="n">log_path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"a"</span><span class="p">)</span> <span class="k">as</span> <span class="n">log_file</span><span class="p">:</span>
+    <span class="n">log_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"BUY 10 JPM at 210.00</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">log_path</span><span class="o">.</span><span class="n">read_text</span><span class="p">())</span></code></pre></div><div class="nb-out nb-stream">
+<pre>BUY 20 NVDA at 121.40
+BUY 50 KO at 61.20
+SELL 5 NVDA at 126.30
+BUY 10 JPM at 210.00
+
+</pre>
+</div></div>
+<h3 id="exceptions">Exceptions</h3><ul>
+<li><p>When an error occurs while a program runs, Python raises an <strong>exception</strong>, an object that describes the problem. If nothing handles it, the program stops and prints a traceback that ends with the exception's type and a message.</p>
+</li>
+<li><p>A <code>try</code>-<code>except</code> block handles an exception. It says in advance what to do if a particular error occurs, and the program then continues instead of stopping.</p>
+</li>
+<li><p>Handling errors matters most in code that runs unattended, such as a script that updates prices every night. One bad record should not stop the whole job.</p>
+</li>
+</ul>
+<h4 id="zerodivisionerror"><code>ZeroDivisionError</code></h4><ul>
+<li>A return divides by the starting price. Data feeds sometimes record a missing price as <code>0</code>, and division by zero is undefined.</li>
+</ul>
+<p><strong>Note:</strong> Python cannot divide by zero, so it raises a <code>ZeroDivisionError</code> and stops.</p>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># This will fail: the starting price is zero</span>
+<span class="n">start_price</span><span class="p">,</span> <span class="n">end_price</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">48.20</span>
+<span class="n">end_price</span> <span class="o">/</span> <span class="n">start_price</span> <span class="o">-</span> <span class="mi">1</span></code></pre></div><div class="nb-out nb-error">
+<pre>
+---------------------------------------------------------------------------
+ZeroDivisionError                         Traceback (most recent call last)
+Cell In[38], line 3
+      1 # This will fail: the starting price is zero
+      2 start_price, end_price = 0.0, 48.20
+----&gt; 3 end_price / start_price - 1
+
+ZeroDivisionError: float division by zero</pre>
+</div></div>
+<h4 id="catching-an-exception-with-try-and-except">Catching an Exception with <code>try</code> and <code>except</code></h4><ul>
+<li><p>Put the line that might fail inside a <code>try</code> block. If it raises the exception named after <code>except</code>, Python skips the rest of the <code>try</code> block and runs the <code>except</code> block instead.</p>
+</li>
+<li><p>If no exception occurs, the <code>except</code> block is skipped. Either way, the program then continues with the code after the <code>try</code>-<code>except</code> block.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">try</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">end_price</span> <span class="o">/</span> <span class="n">start_price</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">ZeroDivisionError</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Cannot compute a return: the starting price is zero."</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"The program keeps running."</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Cannot compute a return: the starting price is zero.
+The program keeps running.
+</pre>
+</div></div>
+<h4 id="adding-an-else-block">Adding an <code>else</code> Block</h4><ul>
+<li><p>Code that should run only if the <code>try</code> block succeeded goes in an <code>else</code> block after <code>except</code>.</p>
+</li>
+<li><p>This keeps the <code>try</code> block to the one line that can fail, so an error from another line is not caught by mistake.</p>
+</li>
+<li><p>Below, one record has a starting price of zero. The loop reports the problem and moves on to the next stock.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">records</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="s2">"AAPL"</span><span class="p">,</span> <span class="mf">225.00</span><span class="p">,</span> <span class="mf">231.75</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">"XOM"</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">112.40</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">"KO"</span><span class="p">,</span> <span class="mf">61.20</span><span class="p">,</span> <span class="mf">62.10</span><span class="p">),</span>
+<span class="p">]</span>
+
+<span class="k">for</span> <span class="n">ticker</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="ow">in</span> <span class="n">records</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">period_return</span> <span class="o">=</span> <span class="n">end</span> <span class="o">/</span> <span class="n">start</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="k">except</span> <span class="ne">ZeroDivisionError</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ticker</span><span class="si">}</span><span class="s2">: starting price missing, return skipped"</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ticker</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">period_return</span><span class="si">:</span><span class="s2">+.2%</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>AAPL: +3.00%
+XOM: starting price missing, return skipped
+KO: +1.47%
+</pre>
+</div></div>
+<h4 id="filenotfounderror"><code>FileNotFoundError</code></h4><ul>
+<li>Reading a file that does not exist is a common error in data work. The name may be misspelled, the file may be in another folder, or it may not have been created yet.</li>
+</ul>
+<p><strong>Note:</strong> We never created a file for AMZN, so reading it raises a <code>FileNotFoundError</code>.</p>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># This will fail: there is no file named amzn_prices.csv</span>
+<span class="n">amzn_text</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"amzn_prices.csv"</span><span class="p">)</span><span class="o">.</span><span class="n">read_text</span><span class="p">()</span></code></pre></div><div class="nb-out nb-error">
+<pre>
+---------------------------------------------------------------------------
+FileNotFoundError                         Traceback (most recent call last)
+Cell In[41], line 2
+      1 # This will fail: there is no file named amzn_prices.csv
+----&gt; 2 amzn_text = Path("amzn_prices.csv").read_text()
+
+File /usr/lib/python3.13/pathlib/_local.py:546, in Path.read_text(self, encoding, errors, newline)
+    543 # Call io.text_encoding() here to ensure any warning is raised at an
+    544 # appropriate stack level.
+    545 encoding = io.text_encoding(encoding)
+--&gt; 546 return PathBase.read_text(self, encoding, errors, newline)
+
+File /usr/lib/python3.13/pathlib/_abc.py:632, in PathBase.read_text(self, encoding, errors, newline)
+    628 def read_text(self, encoding=None, errors=None, newline=None):
+    629     """
+    630     Open the file in text mode, read it, and close the file.
+    631     """
+--&gt; 632     with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+    633         return f.read()
+
+File /usr/lib/python3.13/pathlib/_local.py:537, in Path.open(self, mode, buffering, encoding, errors, newline)
+    535 if "b" not in mode:
+    536     encoding = io.text_encoding(encoding)
+--&gt; 537 return io.open(self, mode, buffering, encoding, errors, newline)
+
+FileNotFoundError: [Errno 2] No such file or directory: 'amzn_prices.csv'</pre>
+</div></div>
+<ul>
+<li><p>The last line of a traceback names the exception type, which is what goes after <code>except</code>.</p>
+</li>
+<li><p>Here, the <code>else</code> block counts the trading days only if the file was read successfully.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">amzn_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"amzn_prices.csv"</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">amzn_text</span> <span class="o">=</span> <span class="n">amzn_path</span><span class="o">.</span><span class="n">read_text</span><span class="p">()</span>
+<span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"No price file at </span><span class="si">{</span><span class="n">amzn_path</span><span class="si">}</span><span class="s2">. Check the name or create it first."</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">amzn_path</span><span class="si">}</span><span class="s2"> has </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">amzn_text</span><span class="o">.</span><span class="n">splitlines</span><span class="p">())</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2"> trading days."</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>No price file at amzn_prices.csv. Check the name or create it first.
+</pre>
+</div></div>
+<h4 id="skipping-errors-quietly-with-pass">Skipping Errors Quietly with <code>pass</code></h4><ul>
+<li><p>Sometimes a missing file is expected and needs no message. For example, a nightly job may read the latest close for each ticker from its price file and skip tickers that have no file yet.</p>
+</li>
+<li><p>The <code>pass</code> statement does nothing. In an <code>except</code> block, it makes Python ignore the error and continue without a message.</p>
+</li>
+<li><p>The cell below first creates a short price file for KO. AMZN still has no file, so it is left out of the result.</p>
+</li>
+<li><p>Use this with care, because a silent failure can hide a real problem. Always name the exception type, as in <code>except FileNotFoundError:</code>. A bare <code>except:</code> would also catch errors you did not expect, including typos in your own code.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">ko_data</span> <span class="o">=</span> <span class="s2">"date,close</span><span class="se">\n</span><span class="s2">2026-03-05,61.20</span><span class="se">\n</span><span class="s2">2026-03-06,61.85</span><span class="se">\n</span><span class="s2">"</span>
+<span class="n">Path</span><span class="p">(</span><span class="s2">"ko_prices.csv"</span><span class="p">)</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">ko_data</span><span class="p">)</span>
+
+<span class="n">latest_close</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">ticker</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"NVDA"</span><span class="p">,</span> <span class="s2">"AMZN"</span><span class="p">,</span> <span class="s2">"KO"</span><span class="p">]:</span>
+    <span class="n">file_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ticker</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s2">_prices.csv"</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">price_lines</span> <span class="o">=</span> <span class="n">file_path</span><span class="o">.</span><span class="n">read_text</span><span class="p">()</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">latest_close</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">price_lines</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">","</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">latest_close</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>{'NVDA': 126.3, 'KO': 61.85}
+</pre>
+</div></div>
+<h3 id="saving-structured-data-with-json">Saving Structured Data with <code>json</code></h3><ul>
+<li><p>Text files work well for simple records. Many programs also need to save structured data, such as a list of tickers or a dictionary of holdings, and load it back later in the same form.</p>
+</li>
+<li><p><strong>JSON</strong> (JavaScript Object Notation) is a text format for this. The standard-library module <code>json</code> converts between Python objects and JSON text.</p>
+</li>
+<li><p><code>json.dumps()</code> ("dump to string") converts a Python object into a JSON-formatted string, which we then save with <code>write_text()</code>.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+
+<span class="n">watchlist</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"AAPL"</span><span class="p">,</span> <span class="s2">"MSFT"</span><span class="p">,</span> <span class="s2">"NVDA"</span><span class="p">,</span> <span class="s2">"JPM"</span><span class="p">,</span> <span class="s2">"XOM"</span><span class="p">]</span>
+<span class="n">watchlist_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"watchlist.json"</span><span class="p">)</span>
+<span class="n">watchlist_path</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">watchlist</span><span class="p">))</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">watchlist_path</span><span class="o">.</span><span class="n">read_text</span><span class="p">())</span></code></pre></div><div class="nb-out nb-stream">
+<pre>["AAPL", "MSFT", "NVDA", "JPM", "XOM"]
+</pre>
+</div></div>
+<ul>
+<li><p><code>json.loads()</code> ("load from string") does the reverse: it converts JSON text back into a Python object.</p>
+</li>
+<li><p>The result is a Python list again, so indexing and loops work as usual.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">loaded_watchlist</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">watchlist_path</span><span class="o">.</span><span class="n">read_text</span><span class="p">())</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">loaded_watchlist</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">loaded_watchlist</span><span class="p">),</span> <span class="n">loaded_watchlist</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span></code></pre></div><div class="nb-out nb-stream">
+<pre>['AAPL', 'MSFT', 'NVDA', 'JPM', 'XOM']
+&lt;class 'list'&gt; NVDA
+</pre>
+</div></div>
+<h4 id="saving-and-restoring-a-portfolio">Saving and Restoring a Portfolio</h4><ul>
+<li><p><code>json</code> also handles dictionaries and nested structures. The argument <code>indent=4</code> spreads the output over several indented lines, which makes the file easier to read.</p>
+</li>
+<li><p><code>json</code> cannot save a class instance directly, so we first copy the attributes of each <code>Position</code> in the <code>growth</code> portfolio from Ch 9 into a plain dictionary.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">holdings</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">ticker</span><span class="p">,</span> <span class="n">position</span> <span class="ow">in</span> <span class="n">growth</span><span class="o">.</span><span class="n">positions</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">holdings</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"shares"</span><span class="p">:</span> <span class="n">position</span><span class="o">.</span><span class="n">shares</span><span class="p">,</span>
+        <span class="s2">"cost_basis"</span><span class="p">:</span> <span class="n">position</span><span class="o">.</span><span class="n">cost_basis</span><span class="p">,</span>
+    <span class="p">}</span>
+
+<span class="n">portfolio_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"portfolio.json"</span><span class="p">)</span>
+<span class="n">portfolio_path</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">holdings</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">portfolio_path</span><span class="o">.</span><span class="n">read_text</span><span class="p">())</span></code></pre></div><div class="nb-out nb-stream">
+<pre>{
+    "NVDA": {
+        "shares": 20,
+        "cost_basis": 110.0
+    },
+    "AMZN": {
+        "shares": 15,
+        "cost_basis": 180.0
+    },
+    "MSFT": {
+        "shares": 10,
+        "cost_basis": 400.0
+    }
+}
+</pre>
+</div></div>
+<ul>
+<li>Loading the file returns the nested dictionary, and passing its contents to <code>buy()</code> rebuilds an equivalent <code>Portfolio</code>. This also works in a later session, as long as the <code>Portfolio</code> class is defined or imported first.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">saved_holdings</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">portfolio_path</span><span class="o">.</span><span class="n">read_text</span><span class="p">())</span>
+
+<span class="n">restored</span> <span class="o">=</span> <span class="n">Portfolio</span><span class="p">(</span><span class="s2">"Growth (restored)"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">ticker</span><span class="p">,</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">saved_holdings</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">restored</span><span class="o">.</span><span class="n">buy</span><span class="p">(</span><span class="n">ticker</span><span class="p">,</span> <span class="n">info</span><span class="p">[</span><span class="s2">"shares"</span><span class="p">],</span> <span class="n">info</span><span class="p">[</span><span class="s2">"cost_basis"</span><span class="p">])</span>
+
+<span class="n">restored</span><span class="o">.</span><span class="n">report</span><span class="p">(</span><span class="n">prices_today</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Portfolio: Growth (restored)
+  NVDA: value $2,500.00, gain $300.00
+  AMZN: value $2,925.00, gain $225.00
+  MSFT: value $4,100.00, gain $100.00
+Total value: $9,525.00
+</pre>
+</div></div>
+<h4 id="strengths-and-limits-of-json">Strengths and Limits of JSON</h4><ul>
+<li><p>A JSON file is plain text, so you can open it and check it by eye.</p>
+</li>
+<li><p>Almost every programming language can read and write JSON, and most web data services, including financial data APIs, send their results in it.</p>
+</li>
+<li><p>JSON objects become Python dictionaries and JSON arrays become lists, so the data need little conversion.</p>
+</li>
+<li><p>JSON can store only basic types: strings, numbers, <code>True</code>/<code>False</code>, <code>None</code>, lists, and dictionaries. A tuple comes back as a list, and dictionary keys always come back as strings, as the cell below shows.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">coupon_dates</span> <span class="o">=</span> <span class="p">{</span><span class="mi">2026</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Mar 20"</span><span class="p">,</span> <span class="s2">"Sep 20"</span><span class="p">)}</span>
+<span class="n">coupon_text</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">coupon_dates</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">coupon_text</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">coupon_text</span><span class="p">))</span></code></pre></div><div class="nb-out nb-stream">
+<pre>{"2026": ["Mar 20", "Sep 20"]}
+{'2026': ['Mar 20', 'Sep 20']}
+</pre>
+</div></div>
+<h4 id="loading-or-creating-a-saved-watchlist">Loading or Creating a Saved Watchlist</h4><ul>
+<li><p>A common pattern combines <code>json</code> with exceptions: try to load saved data, and if the file does not exist yet (for example, on the first run), start from a default value and save it.</p>
+</li>
+<li><p>The first time the cell below runs, <code>my_watchlist.json</code> does not exist, so the <code>except</code> block creates it. If you run the cell again, the <code>else</code> block loads the saved list instead.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">my_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"my_watchlist.json"</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">my_watchlist</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">my_path</span><span class="o">.</span><span class="n">read_text</span><span class="p">())</span>
+<span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+    <span class="n">my_watchlist</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"AAPL"</span><span class="p">,</span> <span class="s2">"MSFT"</span><span class="p">]</span>
+    <span class="n">my_path</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">my_watchlist</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"No saved watchlist found; created one with </span><span class="si">{</span><span class="n">my_watchlist</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Loaded saved watchlist: </span><span class="si">{</span><span class="n">my_watchlist</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>No saved watchlist found; created one with ['AAPL', 'MSFT']
+</pre>
+</div></div>
+<h3 id="refactoring-into-functions">Refactoring into Functions</h3><ul>
+<li><p><strong>Refactoring</strong> means restructuring working code without changing what it does, usually by splitting it into smaller functions with one job each.</p>
+</li>
+<li><p>Below, the logic from the previous cell is split into three functions: <code>load_watchlist()</code> reads the file (or returns an empty list), <code>save_watchlist()</code> writes it, and <code>add_ticker()</code> uses the other two.</p>
+</li>
+<li><p>Each function is short and can be tested on its own. Because the list is saved to a file after each change, it is still there after you restart the Python session.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">def</span><span class="w"> </span><span class="nf">load_watchlist</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Return the saved watchlist, or an empty list if there is none yet."""</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">contents</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">read_text</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">contents</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">save_watchlist</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">watchlist</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Save the watchlist to path as JSON."""</span>
+    <span class="n">path</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">watchlist</span><span class="p">))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">add_ticker</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">ticker</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Add ticker to the saved watchlist unless it is already there."""</span>
+    <span class="n">watchlist</span> <span class="o">=</span> <span class="n">load_watchlist</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">ticker</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">watchlist</span><span class="p">:</span>
+        <span class="n">watchlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ticker</span><span class="p">)</span>
+        <span class="n">save_watchlist</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">watchlist</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">watchlist</span></code></pre></div></div>
+<ul>
+<li>On a first run of this notebook, <code>my_watchlist.json</code> holds <code>["AAPL", "MSFT"]</code> at this point, saved by the load-or-create example above. Adding NVDA and then KO extends the saved list; adding NVDA a second time leaves it unchanged.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="nb">print</span><span class="p">(</span><span class="n">add_ticker</span><span class="p">(</span><span class="n">my_path</span><span class="p">,</span> <span class="s2">"NVDA"</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">add_ticker</span><span class="p">(</span><span class="n">my_path</span><span class="p">,</span> <span class="s2">"KO"</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">add_ticker</span><span class="p">(</span><span class="n">my_path</span><span class="p">,</span> <span class="s2">"NVDA"</span><span class="p">))</span></code></pre></div><div class="nb-out nb-stream">
+<pre>['AAPL', 'MSFT', 'NVDA']
+['AAPL', 'MSFT', 'NVDA', 'KO']
+['AAPL', 'MSFT', 'NVDA', 'KO']
+</pre>
+</div></div>
+<h3 id="in-class-exercise-2">In-Class Exercise</h3>
+
+<p><strong>10-1. Reading a Price File:</strong></p>
+<ul>
+<li>Use <code>Path.write_text()</code> to create <code>msft_prices.csv</code> with a header line and six days of made-up closing prices.</li>
+<li>Read it back, convert the prices to a list of floats, and print the highest close, the lowest close, and the return over the six days.</li>
+</ul>
+
+<p><strong>10-2. A Dividend Log:</strong></p>
+<ul>
+<li>Starting from a list of tuples such as <code>("KO", "2026-04-01", 0.51)</code> (ticker, payment date, dividend per share), write one line per payment to <code>dividends.txt</code>.</li>
+<li>Append one more payment with <code>path.open("a")</code>, then read the file back and compute the total dividends received on 100 shares of each stock.</li>
+</ul>
+
+<p><strong>10-3. Safe Returns:</strong></p>
+<ul>
+<li>Write a function <code>simple_return(start, end)</code> that uses <code>try</code>-<code>except</code>-<code>else</code> to return <code>end / start - 1</code>, or prints a message and returns <code>None</code> when <code>start</code> is zero.</li>
+<li>Test it on the pairs <code>(50.0, 52.5)</code>, <code>(0.0, 30.0)</code>, and <code>(80.0, 76.0)</code>.</li>
+</ul>
+
+<p><strong>10-4. A Robust Price Loader:</strong></p>
+<ul>
+<li>Write a function <code>load_closes(path)</code> that returns the closing prices in a price file as a list of floats, or an empty list if the file doesn't exist.</li>
+<li>Use it to print the number of prices and the last close for <code>nvda_prices.csv</code>, <code>ko_prices.csv</code>, and <code>tsla_prices.csv</code>.</li>
+</ul>
+
+<p><strong>10-5. Saving Portfolio Weights:</strong></p>
+<ul>
+<li>Save the dictionary <code>{"AAPL": 0.40, "JPM": 0.35, "XOM": 0.25}</code> to <code>weights.json</code> with <code>json.dumps()</code>.</li>
+<li>Write a function <code>load_weights(path)</code> that returns the saved dictionary, or an empty dictionary if the file doesn't exist.</li>
+<li>Load the weights and check that they sum to 1.</li>
+</ul>
+</div>

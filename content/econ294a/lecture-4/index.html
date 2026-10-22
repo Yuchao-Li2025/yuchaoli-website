@@ -1,0 +1,715 @@
+---
+title: "Lecture 4: Functions"
+lecture: 4
+weight: 4
+summary: "Defining functions and docstrings; positional, keyword, and default arguments; return values; passing lists; *args and **kwargs; modules and import styles."
+description: "ECON 294A lecture notes by Yuchao Li: Python functions with finance examples (returns, compounding, bond pricing), organized into modules."
+notebook: "ECON294A_Lecture4.ipynb"
+---
+<div class="toc"><details><summary accesskey="c" title="(Alt + C)"><span class="details">Contents</span></summary><div class="inner"><ul><li><a href="#what-well-cover" aria-label="What We&#x27;ll Cover">What We&#x27;ll Cover</a></li><li><a href="#ch-8-functions" aria-label="Ch 8: Functions">Ch 8: Functions</a><ul><li><a href="#defining-a-function" aria-label="Defining a Function">Defining a Function</a></li><li><a href="#ways-to-pass-arguments" aria-label="Ways to Pass Arguments">Ways to Pass Arguments</a></li><li><a href="#return-values" aria-label="Return Values">Return Values</a></li><li><a href="#functions-and-lists" aria-label="Functions and Lists">Functions and Lists</a></li><li><a href="#accepting-any-number-of-arguments" aria-label="Accepting Any Number of Arguments">Accepting Any Number of Arguments</a></li><li><a href="#organizing-functions-into-modules" aria-label="Organizing Functions into Modules">Organizing Functions into Modules</a></li><li><a href="#function-style-conventions" aria-label="Function Style Conventions">Function Style Conventions</a></li><li><a href="#in-class-exercise" aria-label="In-Class Exercise">In-Class Exercise</a></li></ul></li></ul></div></details></div>
+<div class="post-content nb">
+<ul>
+<li><p>Lectures 1-3 covered the basics of Python: variables, strings and numbers, lists, <code>if</code> statements, dictionaries, and loops.</p>
+</li>
+<li><p>This lecture shows how to package a calculation as a function, so that it is written once and reused by name.</p>
+</li>
+<li><p>The classes in Lecture 5 are organized around functions, and Lectures 6-9 put data loading and analysis steps into small helper functions.</p>
+</li>
+</ul>
+
+<h3 id="what-well-cover">What We'll Cover</h3><ul>
+<li><p><strong>Ch 8 (Functions):</strong> defining functions and docstrings, positional and keyword arguments, default values, return values, passing lists, <code>*args</code> and <code>**kwargs</code>, modules and imports, and style conventions.</p>
+</li>
+<li><p>The running example is a small set of finance functions for returns, compound growth, trades, and portfolio value. Near the end we save the core ones in a module, <code>finance_tools.py</code>. All prices, rates, and share counts are illustrative.</p>
+</li>
+</ul>
+
+<h2 id="ch-8-functions">Ch 8: Functions</h2>
+
+<ul>
+<li><p>A <strong>function</strong> is a named block of code that does one job. You define it once and then call it by name each time you need that job done.</p>
+</li>
+<li><p>You have already called many built-in functions, such as <code>print()</code>, <code>len()</code>, <code>sorted()</code>, <code>range()</code>, and <code>input()</code>. Now you will write your own.</p>
+</li>
+<li><p>A function keeps a calculation in one place. If a return formula is copied into ten places and one copy has a bug, you must find and fix every copy. If the formula is in a function, you fix it once.</p>
+</li>
+</ul>
+
+<h3 id="defining-a-function">Defining a Function</h3><ul>
+<li><p>A definition starts with the keyword <code>def</code>, then the function's name, a pair of parentheses, and a colon.</p>
+</li>
+<li><p>The indented lines below it are the <strong>body</strong>, the code that runs each time the function is called. Here the body begins with a docstring, a short description in triple quotes (more on these below).</p>
+</li>
+<li><p>Defining a function does not run it. To run it, write its name followed by parentheses. This is called a <strong>function call</strong>.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">def</span><span class="w"> </span><span class="nf">print_report_header</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""Print the title line of a daily portfolio report."""</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"===== Daily Portfolio Report ====="</span><span class="p">)</span>
+
+
+<span class="n">print_report_header</span><span class="p">()</span></code></pre></div><div class="nb-out nb-stream">
+<pre>===== Daily Portfolio Report =====
+</pre>
+</div></div>
+<h4 id="adding-a-parameter">Adding a Parameter</h4><ul>
+<li><p>Most functions need input. Name each input inside the parentheses of the <code>def</code> line.</p>
+</li>
+<li><p>This version takes an <code>account</code> name, so the same code prints a header for any account.</p>
+</li>
+<li><p><strong>Note:</strong> A new <code>def</code> with an existing name replaces the earlier function.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">def</span><span class="w"> </span><span class="nf">print_report_header</span><span class="p">(</span><span class="n">account</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Print the title line of a daily report for one account."""</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"===== Daily Report: </span><span class="si">{</span><span class="n">account</span><span class="si">}</span><span class="s2"> ====="</span><span class="p">)</span>
+
+
+<span class="n">print_report_header</span><span class="p">(</span><span class="s2">"Growth Fund"</span><span class="p">)</span>
+<span class="n">print_report_header</span><span class="p">(</span><span class="s2">"Income Fund"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>===== Daily Report: Growth Fund =====
+===== Daily Report: Income Fund =====
+</pre>
+</div></div>
+<h4 id="parameters-vs-arguments">Parameters vs. Arguments</h4><ul>
+<li><p>A <strong>parameter</strong> is a name listed in the function's definition, such as <code>account</code>. It is a placeholder for a value the function will receive.</p>
+</li>
+<li><p>An <strong>argument</strong> is the actual value supplied in a call, such as <code>"Growth Fund"</code>.</p>
+</li>
+<li><p>In the call <code>print_report_header("Growth Fund")</code>, Python assigns the argument <code>"Growth Fund"</code> to the parameter <code>account</code> and then runs the body.</p>
+</li>
+<li><p>In practice the two words are often used interchangeably. Python's own error messages call a missing parameter a "missing argument" (see below).</p>
+</li>
+</ul>
+
+<h4 id="docstrings">Docstrings</h4><ul>
+<li><p>A <strong>docstring</strong> is a string in triple quotes on the first line of a function's body. For a short function, one sentence saying what it does or returns is enough.</p>
+</li>
+<li><p>Python stores the docstring with the function. <code>help()</code> displays it, and in Colab or Jupyter running <code>print_report_header?</code> does the same.</p>
+</li>
+<li><p>Write a docstring for every function so that a reader (including you, months later) can see what it does without reading the code.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">help</span><span class="p">(</span><span class="n">print_report_header</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Help on function print_report_header in module __main__:
+
+print_report_header(account)
+    Print the title line of a daily report for one account.
+
+</pre>
+</div></div>
+<h3 id="ways-to-pass-arguments">Ways to Pass Arguments</h3><ul>
+<li><p>A function can have as many parameters as it needs, and Python offers several ways to match the arguments in a call to the parameters in a definition.</p>
+</li>
+<li><p>To compare them, we use a function that prints the value of an investment after annual compounding: <code>principal * (1 + rate) ** years</code>.</p>
+</li>
+</ul>
+
+<h4 id="positional-arguments">Positional Arguments</h4><ul>
+<li><p>With <strong>positional arguments</strong>, Python matches arguments to parameters by position: the first argument goes to the first parameter, the second to the second, and so on.</p>
+</li>
+<li><p>The cell below calls the function twice. In each call the three numbers go to <code>principal</code>, <code>rate</code>, and <code>years</code>, in that order.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">def</span><span class="w"> </span><span class="nf">show_growth</span><span class="p">(</span><span class="n">principal</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span> <span class="n">years</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Print the value of an investment after annual compounding."""</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="n">principal</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">rate</span><span class="p">)</span> <span class="o">**</span> <span class="n">years</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"$</span><span class="si">{</span><span class="n">principal</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> at </span><span class="si">{</span><span class="n">rate</span><span class="si">:</span><span class="s2">.1%</span><span class="si">}</span><span class="s2"> for </span><span class="si">{</span><span class="n">years</span><span class="si">}</span><span class="s2"> years: $</span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+
+<span class="n">show_growth</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">show_growth</span><span class="p">(</span><span class="mi">5000</span><span class="p">,</span> <span class="mf">0.07</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>$1,000 at 5.0% for 10 years: $1,628.89
+$5,000 at 7.0% for 30 years: $38,061.28
+</pre>
+</div></div>
+<ul>
+<li>Python matches the numbers by position and does not know what each one means. If we swap the rate and the number of years, the call still runs:</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">show_growth</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">)</span>  <span class="c1"># rate and years in the wrong order</span></code></pre></div><div class="nb-out nb-stream">
+<pre>$1,000 at 1000.0% for 0.05 years: $1,127.38
+</pre>
+</div></div>
+<ul>
+<li><p>Python compounded at 1000% for 0.05 years and printed a plausible-looking dollar amount. Nothing crashed, so a mistake like this can easily go unnoticed.</p>
+</li>
+<li><p>When a function takes several numbers, check the order against the definition, or use keyword arguments.</p>
+</li>
+</ul>
+
+<h4 id="keyword-arguments">Keyword Arguments</h4><ul>
+<li><p>A <strong>keyword argument</strong> names the parameter it is meant for, as in <code>rate=0.05</code>. Python matches it by name, so the order no longer matters.</p>
+</li>
+<li><p>Keyword arguments also document the call: a reader can tell what each number means without looking up the definition.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">show_growth</span><span class="p">(</span><span class="n">principal</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">years</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">show_growth</span><span class="p">(</span><span class="n">years</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">principal</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>  <span class="c1"># same inputs, new order</span></code></pre></div><div class="nb-out nb-stream">
+<pre>$1,000 at 5.0% for 10 years: $1,628.89
+$1,000 at 5.0% for 10 years: $1,628.89
+</pre>
+</div></div>
+<ul>
+<li>A keyword must match a parameter name exactly. A misspelled or guessed name raises a <code>TypeError</code>.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># This will fail: show_growth() has no parameter named interest_rate</span>
+<span class="n">show_growth</span><span class="p">(</span><span class="n">principal</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">interest_rate</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">years</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span></code></pre></div><div class="nb-out nb-error">
+<pre>
+---------------------------------------------------------------------------
+TypeError                                 Traceback (most recent call last)
+Cell In[8], line 2
+      1 # This will fail: show_growth() has no parameter named interest_rate
+----&gt; 2 show_growth(principal=1000, interest_rate=0.05, years=10)
+
+TypeError: show_growth() got an unexpected keyword argument 'interest_rate'</pre>
+</div></div>
+<h4 id="parameters-with-default-values">Parameters with Default Values</h4><ul>
+<li><p>A parameter can have a <strong>default value</strong>, written <code>name=value</code> in the definition. If a call leaves that argument out, Python uses the default; pass a value, by position or by keyword, to override it.</p>
+</li>
+<li><p>Defaults suit settings that usually take the same value. Below we redefine <code>show_growth</code> with a fourth parameter, <code>periods_per_year</code>, the number of compounding periods per year. Its default is 1, which means annual compounding.</p>
+</li>
+<li><p><strong>Note:</strong> Parameters with defaults must come after all parameters without defaults; otherwise the definition raises a <code>SyntaxError</code>.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">def</span><span class="w"> </span><span class="nf">show_growth</span><span class="p">(</span><span class="n">principal</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span> <span class="n">years</span><span class="p">,</span> <span class="n">periods_per_year</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Print the value of an investment under compound interest."""</span>
+    <span class="n">periodic_rate</span> <span class="o">=</span> <span class="n">rate</span> <span class="o">/</span> <span class="n">periods_per_year</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="n">principal</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">periodic_rate</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="n">years</span> <span class="o">*</span> <span class="n">periods_per_year</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Compounded </span><span class="si">{</span><span class="n">periods_per_year</span><span class="si">}</span><span class="s2">x per year: $</span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+
+<span class="n">show_growth</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>  <span class="c1"># periods_per_year takes its default, 1</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Compounded 1x per year: $1,628.89
+</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">show_growth</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">12</span><span class="p">)</span>                    <span class="c1"># monthly</span>
+<span class="n">show_growth</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">periods_per_year</span><span class="o">=</span><span class="mi">365</span><span class="p">)</span>  <span class="c1"># daily</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Compounded 12x per year: $1,647.01
+Compounded 365x per year: $1,648.66
+</pre>
+</div></div>
+<h4 id="mixing-argument-styles">Mixing Argument Styles</h4><ul>
+<li><p>Positional arguments, keyword arguments, and defaults can be combined, so the same inputs can usually be passed in several ways.</p>
+</li>
+<li><p>The four calls below are equivalent:</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">show_growth</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">12</span><span class="p">)</span>
+<span class="n">show_growth</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">periods_per_year</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+<span class="n">show_growth</span><span class="p">(</span><span class="n">principal</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">years</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">periods_per_year</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+<span class="n">show_growth</span><span class="p">(</span><span class="n">years</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">periods_per_year</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">principal</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Compounded 12x per year: $1,647.01
+Compounded 12x per year: $1,647.01
+Compounded 12x per year: $1,647.01
+Compounded 12x per year: $1,647.01
+</pre>
+</div></div>
+<ul>
+<li><p>Use whichever form reads most clearly. A common habit is to pass the essential inputs by position and optional settings by keyword, as in the second call.</p>
+</li>
+<li><p>In any call, positional arguments must come before keyword arguments. Breaking this rule is a <code>SyntaxError</code>, so Python rejects the whole cell without running any of it.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># This will fail: a positional argument cannot follow a keyword argument</span>
+<span class="n">show_growth</span><span class="p">(</span><span class="n">principal</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span></code></pre></div><div class="nb-out nb-error">
+<pre>
+  Cell In[12], line 2
+    show_growth(principal=1000, 0.05, 10)
+                                        ^
+SyntaxError: positional argument follows keyword argument
+</pre>
+</div></div>
+<h4 id="missing-and-extra-arguments">Missing and Extra Arguments</h4><ul>
+<li><p>If a call leaves out a parameter that has no default, Python stops with a <code>TypeError</code>.</p>
+</li>
+<li><p>Passing too many arguments, as in <code>show_growth(1000, 0.05, 10, 12, 4)</code>, also raises a <code>TypeError</code>: <code>takes from 3 to 4 positional arguments but 5 were given</code>.</p>
+</li>
+<li><p>In both cases the last line of the error message names the function and the problem, which is usually all you need to fix the call.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="c1"># This will fail: the required argument years is missing</span>
+<span class="n">show_growth</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">)</span></code></pre></div><div class="nb-out nb-error">
+<pre>
+---------------------------------------------------------------------------
+TypeError                                 Traceback (most recent call last)
+Cell In[13], line 2
+      1 # This will fail: the required argument years is missing
+----&gt; 2 show_growth(1000, 0.05)
+
+TypeError: show_growth() missing 1 required positional argument: 'years'</pre>
+</div></div>
+<h3 id="return-values">Return Values</h3><ul>
+<li><p>So far our functions only print. Usually you want a function to send its result back so that you can store it or use it in another calculation.</p>
+</li>
+<li><p>A <code>return</code> statement ends the function and sends a value back to the caller. The call then evaluates to that value, just as <code>len(watchlist)</code> evaluates to the number of tickers in a watchlist.</p>
+</li>
+<li><p>The first example computes the <strong>simple return</strong> from buying at one price and selling at another: <code>(sell_price - buy_price) / buy_price</code>.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">def</span><span class="w"> </span><span class="nf">simple_return</span><span class="p">(</span><span class="n">buy_price</span><span class="p">,</span> <span class="n">sell_price</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Return the simple return from buy_price to sell_price."""</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">sell_price</span> <span class="o">-</span> <span class="n">buy_price</span><span class="p">)</span> <span class="o">/</span> <span class="n">buy_price</span>
+
+
+<span class="n">r</span> <span class="o">=</span> <span class="n">simple_return</span><span class="p">(</span><span class="mf">150.00</span><span class="p">,</span> <span class="mf">165.00</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Return: </span><span class="si">{</span><span class="n">r</span><span class="si">:</span><span class="s2">.2%</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Return: 10.00%
+</pre>
+</div></div>
+<ul>
+<li><p><code>simple_return()</code> prints nothing; the caller decides what to do with the result (here, display it as a percentage).</p>
+</li>
+<li><p>A call that returns a number can appear anywhere a number can. Below, <code>future_value()</code> returns the value of a lump sum after compounding, and we subtract two of its results to see how much monthly compounding adds.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">def</span><span class="w"> </span><span class="nf">future_value</span><span class="p">(</span><span class="n">principal</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span> <span class="n">years</span><span class="p">,</span> <span class="n">periods_per_year</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Return the future value of a lump sum under compound interest."""</span>
+    <span class="n">periodic_rate</span> <span class="o">=</span> <span class="n">rate</span> <span class="o">/</span> <span class="n">periods_per_year</span>
+    <span class="k">return</span> <span class="n">principal</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">periodic_rate</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="n">years</span> <span class="o">*</span> <span class="n">periods_per_year</span><span class="p">)</span>
+
+
+<span class="n">annual</span> <span class="o">=</span> <span class="n">future_value</span><span class="p">(</span><span class="mi">10_000</span><span class="p">,</span> <span class="mf">0.06</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">monthly</span> <span class="o">=</span> <span class="n">future_value</span><span class="p">(</span><span class="mi">10_000</span><span class="p">,</span> <span class="mf">0.06</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">periods_per_year</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Annual: $</span><span class="si">{</span><span class="n">annual</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">   Monthly: $</span><span class="si">{</span><span class="n">monthly</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Monthly compounding adds $</span><span class="si">{</span><span class="n">monthly</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">annual</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Annual: $17,908.48   Monthly: $18,193.97
+Monthly compounding adds $285.49
+</pre>
+</div></div>
+<ul>
+<li>A function without a <code>return</code> statement returns the special value <code>None</code>, which means "no value". So the result of a function that only prints cannot be used in a calculation.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">result</span> <span class="o">=</span> <span class="n">show_growth</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Compounded 1x per year: $1,628.89
+None
+</pre>
+</div></div>
+<h4 id="optional-arguments">Optional Arguments</h4><ul>
+<li><p>Some inputs matter only in some calls. Make such an argument optional by giving it a neutral default: a value that has no effect when the caller leaves the argument out.</p>
+</li>
+<li><p>Example: a stock's <strong>holding-period return</strong> includes any dividends received while holding it. Many stocks pay no dividend, so <code>dividends</code> defaults to <code>0.0</code>.</p>
+</li>
+<li><p><strong>Note:</strong> Some optional inputs have no neutral value, such as an order's limit price. The usual default for these is <code>None</code>, and the function checks <code>if limit_price is not None:</code> before using the argument. Many library functions in Lectures 6-9 have <code>None</code> defaults.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">def</span><span class="w"> </span><span class="nf">holding_return</span><span class="p">(</span><span class="n">buy_price</span><span class="p">,</span> <span class="n">sell_price</span><span class="p">,</span> <span class="n">dividends</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Return the holding-period return, including any dividends."""</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">sell_price</span> <span class="o">-</span> <span class="n">buy_price</span> <span class="o">+</span> <span class="n">dividends</span><span class="p">)</span> <span class="o">/</span> <span class="n">buy_price</span>
+
+
+<span class="n">price_only</span> <span class="o">=</span> <span class="n">holding_return</span><span class="p">(</span><span class="mf">60.00</span><span class="p">,</span> <span class="mf">63.00</span><span class="p">)</span>
+<span class="n">with_dividends</span> <span class="o">=</span> <span class="n">holding_return</span><span class="p">(</span><span class="mf">60.00</span><span class="p">,</span> <span class="mf">63.00</span><span class="p">,</span> <span class="n">dividends</span><span class="o">=</span><span class="mf">1.80</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Price change only: </span><span class="si">{</span><span class="n">price_only</span><span class="si">:</span><span class="s2">.2%</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"With dividends:    </span><span class="si">{</span><span class="n">with_dividends</span><span class="si">:</span><span class="s2">.2%</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Price change only: 5.00%
+With dividends:    8.00%
+</pre>
+</div></div>
+<h4 id="returning-a-record-as-a-dictionary">Returning a Record as a Dictionary</h4><ul>
+<li><p>A function can return any type of value: a number, a string, a list, or a dictionary.</p>
+</li>
+<li><p>A dictionary is a convenient way to return several related values at once, such as the details of an executed trade.</p>
+</li>
+<li><p><code>make_trade()</code> below takes an optional <code>commission</code> that defaults to <code>0.0</code>. An <code>if</code> statement gives the net cash flow its sign: negative when you pay for a purchase, positive when a sale brings cash in.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">def</span><span class="w"> </span><span class="nf">make_trade</span><span class="p">(</span><span class="n">ticker</span><span class="p">,</span> <span class="n">side</span><span class="p">,</span> <span class="n">shares</span><span class="p">,</span> <span class="n">price</span><span class="p">,</span> <span class="n">commission</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Return a dictionary that records one executed trade."""</span>
+    <span class="n">gross</span> <span class="o">=</span> <span class="n">shares</span> <span class="o">*</span> <span class="n">price</span>
+    <span class="k">if</span> <span class="n">side</span> <span class="o">==</span> <span class="s2">"buy"</span><span class="p">:</span>
+        <span class="n">net_cash</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">gross</span> <span class="o">+</span> <span class="n">commission</span><span class="p">)</span>  <span class="c1"># cash paid out</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">net_cash</span> <span class="o">=</span> <span class="n">gross</span> <span class="o">-</span> <span class="n">commission</span>  <span class="c1"># cash received</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"ticker"</span><span class="p">:</span> <span class="n">ticker</span><span class="p">,</span> <span class="s2">"side"</span><span class="p">:</span> <span class="n">side</span><span class="p">,</span> <span class="s2">"shares"</span><span class="p">:</span> <span class="n">shares</span><span class="p">,</span>
+            <span class="s2">"price"</span><span class="p">:</span> <span class="n">price</span><span class="p">,</span> <span class="s2">"commission"</span><span class="p">:</span> <span class="n">commission</span><span class="p">,</span> <span class="s2">"net_cash"</span><span class="p">:</span> <span class="n">net_cash</span><span class="p">}</span>
+
+
+<span class="n">make_trade</span><span class="p">(</span><span class="s2">"JPM"</span><span class="p">,</span> <span class="s2">"buy"</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mf">198.25</span><span class="p">)</span></code></pre></div><div class="nb-out nb-text">
+<pre>{'ticker': 'JPM',
+ 'side': 'buy',
+ 'shares': 40,
+ 'price': 198.25,
+ 'commission': 0.0,
+ 'net_cash': -7930.0}</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">sell</span> <span class="o">=</span> <span class="n">make_trade</span><span class="p">(</span><span class="s2">"XOM"</span><span class="p">,</span> <span class="s2">"sell"</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mf">112.50</span><span class="p">,</span> <span class="n">commission</span><span class="o">=</span><span class="mf">4.95</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Cash received: $</span><span class="si">{</span><span class="n">sell</span><span class="p">[</span><span class="s1">'net_cash'</span><span class="p">]</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="n">sell</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Cash received: $2,807.55
+</pre>
+</div><div class="nb-out nb-text">
+<pre>{'ticker': 'XOM',
+ 'side': 'sell',
+ 'shares': 25,
+ 'price': 112.5,
+ 'commission': 4.95,
+ 'net_cash': 2807.55}</pre>
+</div></div>
+<h4 id="calling-a-function-inside-a-while-loop">Calling a Function inside a <code>while</code> Loop</h4><ul>
+<li><p>Functions can be called inside the <code>while</code> loops from Lecture 3. The loop below asks how many years to leave 10,000 dollars invested at 5%, converts each answer with <code>int()</code>, passes it to <code>future_value()</code>, and stops when the user types <code>q</code>.</p>
+</li>
+<li><p>The function does the math, and the loop handles input and output. Keeping the two jobs separate makes each one easier to read and change.</p>
+</li>
+<li><p>The output below shows a sample run; when you run the cell, type your own answers.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+    <span class="n">years</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">"Years to invest (or 'q' to quit): "</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">years</span> <span class="o">==</span> <span class="s2">"q"</span><span class="p">:</span>
+        <span class="k">break</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="n">future_value</span><span class="p">(</span><span class="mi">10_000</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">years</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"$10,000 at 5% for </span><span class="si">{</span><span class="n">years</span><span class="si">}</span><span class="s2"> years grows to $</span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Years to invest (or 'q' to quit): 5
+$10,000 at 5% for 5 years grows to $12,762.82
+
+Years to invest (or 'q' to quit): 10
+$10,000 at 5% for 10 years grows to $16,288.95
+
+Years to invest (or 'q' to quit): 30
+$10,000 at 5% for 30 years grows to $43,219.42
+
+Years to invest (or 'q' to quit): q
+</pre>
+</div></div>
+<h3 id="functions-and-lists">Functions and Lists</h3><ul>
+<li><p>You can pass a list to a function just as you pass a number or a string; the function can then loop over the whole collection.</p>
+</li>
+<li><p>Below, a portfolio is a list of dictionaries, one per holding (the nesting pattern from Lecture 3). Each holding records a ticker, a number of shares, and a price.</p>
+</li>
+<li><p><code>portfolio_value()</code> takes the whole list and adds up the market value (shares times price) of every holding.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">portfolio</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span><span class="s2">"ticker"</span><span class="p">:</span> <span class="s2">"AAPL"</span><span class="p">,</span> <span class="s2">"shares"</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span> <span class="s2">"price"</span><span class="p">:</span> <span class="mf">185.00</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">"ticker"</span><span class="p">:</span> <span class="s2">"MSFT"</span><span class="p">,</span> <span class="s2">"shares"</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span> <span class="s2">"price"</span><span class="p">:</span> <span class="mf">410.00</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">"ticker"</span><span class="p">:</span> <span class="s2">"KO"</span><span class="p">,</span> <span class="s2">"shares"</span><span class="p">:</span> <span class="mi">120</span><span class="p">,</span> <span class="s2">"price"</span><span class="p">:</span> <span class="mf">62.00</span><span class="p">},</span>
+<span class="p">]</span>
+<span class="n">portfolio</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></code></pre></div><div class="nb-out nb-text">
+<pre>{'ticker': 'AAPL', 'shares': 50, 'price': 185.0}</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">def</span><span class="w"> </span><span class="nf">portfolio_value</span><span class="p">(</span><span class="n">holdings</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Return the total market value of a list of holdings."""</span>
+    <span class="n">total</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">for</span> <span class="n">holding</span> <span class="ow">in</span> <span class="n">holdings</span><span class="p">:</span>
+        <span class="n">total</span> <span class="o">+=</span> <span class="n">holding</span><span class="p">[</span><span class="s2">"shares"</span><span class="p">]</span> <span class="o">*</span> <span class="n">holding</span><span class="p">[</span><span class="s2">"price"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">total</span>
+
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Portfolio value: $</span><span class="si">{</span><span class="n">portfolio_value</span><span class="p">(</span><span class="n">portfolio</span><span class="p">)</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Portfolio value: $24,890.00
+</pre>
+</div></div>
+<h4 id="changing-a-list-inside-a-function">Changing a List inside a Function</h4><ul>
+<li><p>A function receives the same list that the caller passed, not a copy. Any change it makes (appending, removing, popping) is still there after the function returns.</p>
+</li>
+<li><p>So a function can update a list for the caller. In the example below, pending orders are filled in the order they arrived (first in, first out) and moved to a list of filled orders.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">pending_orders</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"BUY 50 AAPL"</span><span class="p">,</span> <span class="s2">"SELL 20 XOM"</span><span class="p">,</span> <span class="s2">"BUY 15 NVDA"</span><span class="p">]</span>
+<span class="n">filled_orders</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Before: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">pending_orders</span><span class="p">)</span><span class="si">}</span><span class="s2"> pending, </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">filled_orders</span><span class="p">)</span><span class="si">}</span><span class="s2"> filled"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Before: 3 pending, 0 filled
+</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">def</span><span class="w"> </span><span class="nf">fill_orders</span><span class="p">(</span><span class="n">pending</span><span class="p">,</span> <span class="n">filled</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Fill pending orders in arrival order, moving each to filled."""</span>
+    <span class="k">while</span> <span class="n">pending</span><span class="p">:</span>
+        <span class="n">order</span> <span class="o">=</span> <span class="n">pending</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Filling: </span><span class="si">{</span><span class="n">order</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">filled</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
+
+
+<span class="n">fill_orders</span><span class="p">(</span><span class="n">pending_orders</span><span class="p">,</span> <span class="n">filled_orders</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"After: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">pending_orders</span><span class="p">)</span><span class="si">}</span><span class="s2"> pending, </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">filled_orders</span><span class="p">)</span><span class="si">}</span><span class="s2"> filled"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Filling: BUY 50 AAPL
+Filling: SELL 20 XOM
+Filling: BUY 15 NVDA
+After: 0 pending, 3 filled
+</pre>
+</div></div>
+<ul>
+<li><p>The function emptied <code>pending_orders</code> and filled <code>filled_orders</code>: it changed the caller's lists directly.</p>
+</li>
+<li><p><strong>Note:</strong> This works because lists and dictionaries can be changed in place. Numbers and strings cannot: a line such as <code>rate = rate / 12</code> inside a function gives the function's own variable a new value and leaves the caller's variable unchanged.</p>
+</li>
+</ul>
+
+<h4 id="passing-a-copy-of-a-list">Passing a Copy of a List</h4><ul>
+<li><p>Sometimes you need the original list afterward, for example as a record of exactly which orders were submitted.</p>
+</li>
+<li><p>In that case, pass a copy. The slice <code>pending_orders[:]</code> builds a new list with the same items, and the function empties the copy and leaves the original alone.</p>
+</li>
+<li><p><strong>Note:</strong> Copying costs time and memory, which adds up for large lists. Pass the original by default, and a copy only when you need the original unchanged.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">pending_orders</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"BUY 50 AAPL"</span><span class="p">,</span> <span class="s2">"SELL 20 XOM"</span><span class="p">,</span> <span class="s2">"BUY 15 NVDA"</span><span class="p">]</span>
+<span class="n">filled_orders</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="n">fill_orders</span><span class="p">(</span><span class="n">pending_orders</span><span class="p">[:],</span> <span class="n">filled_orders</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"After: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">pending_orders</span><span class="p">)</span><span class="si">}</span><span class="s2"> pending, </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">filled_orders</span><span class="p">)</span><span class="si">}</span><span class="s2"> filled"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Original list intact: </span><span class="si">{</span><span class="n">pending_orders</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Filling: BUY 50 AAPL
+Filling: SELL 20 XOM
+Filling: BUY 15 NVDA
+After: 3 pending, 3 filled
+Original list intact: ['BUY 50 AAPL', 'SELL 20 XOM', 'BUY 15 NVDA']
+</pre>
+</div></div>
+<h3 id="accepting-any-number-of-arguments">Accepting Any Number of Arguments</h3><ul>
+<li><p>Sometimes the number of arguments is not known in advance. For example, one call may average 3 monthly returns and another 12.</p>
+</li>
+<li><p>Put <code>*</code> in front of a parameter name, as in <code>*returns</code>, and Python packs all the arguments of the call into a tuple with that name.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">def</span><span class="w"> </span><span class="nf">show_returns</span><span class="p">(</span><span class="o">*</span><span class="n">returns</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Print the tuple of returns that a call passes in."""</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">returns</span><span class="p">)</span><span class="si">}</span><span class="s2"> returns: </span><span class="si">{</span><span class="n">returns</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+
+<span class="n">show_returns</span><span class="p">(</span><span class="mf">0.012</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.004</span><span class="p">,</span> <span class="mf">0.021</span><span class="p">)</span>
+<span class="n">show_returns</span><span class="p">(</span><span class="mf">0.03</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.01</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>3 returns: (0.012, -0.004, 0.021)
+2 returns: (0.03, -0.01)
+</pre>
+</div></div>
+<ul>
+<li>Inside the function, <code>returns</code> is an ordinary tuple, so <code>sum()</code> and <code>len()</code> give the average for any number of values.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">def</span><span class="w"> </span><span class="nf">average_return</span><span class="p">(</span><span class="o">*</span><span class="n">returns</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Return the arithmetic average of any number of period returns."""</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">returns</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">returns</span><span class="p">)</span>
+
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">average_return</span><span class="p">(</span><span class="mf">0.012</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mf">0.004</span><span class="p">,</span><span class="w"> </span><span class="mf">0.021</span><span class="p">)</span><span class="si">:</span><span class="s2">.2%</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">average_return</span><span class="p">(</span><span class="mf">0.03</span><span class="p">,</span><span class="w"> </span><span class="mf">0.01</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mf">0.02</span><span class="p">,</span><span class="w"> </span><span class="mf">0.015</span><span class="p">,</span><span class="w"> </span><span class="mf">0.005</span><span class="p">,</span><span class="w"> </span><span class="mf">0.02</span><span class="p">)</span><span class="si">:</span><span class="s2">.2%</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>0.97%
+1.00%
+</pre>
+</div></div>
+<ul>
+<li><strong>Note:</strong> If your returns are already in a list, put <code>*</code> in front of the list in the call. Python then unpacks the list into separate arguments.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">monthly_returns</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.012</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.004</span><span class="p">,</span> <span class="mf">0.021</span><span class="p">,</span> <span class="mf">0.008</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.015</span><span class="p">,</span> <span class="mf">0.017</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">average_return</span><span class="p">(</span><span class="o">*</span><span class="n">monthly_returns</span><span class="p">)</span><span class="si">:</span><span class="s2">.2%</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>0.65%
+</pre>
+</div></div>
+<h4 id="combining-regular-parameters-with-args">Combining Regular Parameters with <code>*args</code></h4><ul>
+<li><p>A function can take regular parameters and a <code>*</code> parameter together. The <code>*</code> parameter comes after the regular ones. Python fills the regular parameters first, then packs whatever is left into the tuple.</p>
+</li>
+<li><p>Below, the first argument is the starting investment and the rest are the returns earned in successive periods, applied one after another.</p>
+</li>
+<li><p>You will often see the generic name <code>*args</code> for such a parameter.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">def</span><span class="w"> </span><span class="nf">grow_investment</span><span class="p">(</span><span class="n">principal</span><span class="p">,</span> <span class="o">*</span><span class="n">period_returns</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Return principal grown through each period return in turn."""</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="n">principal</span>
+    <span class="k">for</span> <span class="n">period_return</span> <span class="ow">in</span> <span class="n">period_returns</span><span class="p">:</span>
+        <span class="n">value</span> <span class="o">*=</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">period_return</span>
+    <span class="k">return</span> <span class="n">value</span>
+
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"$</span><span class="si">{</span><span class="n">grow_investment</span><span class="p">(</span><span class="mi">10_000</span><span class="p">,</span><span class="w"> </span><span class="mf">0.05</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mf">0.02</span><span class="p">,</span><span class="w"> </span><span class="mf">0.03</span><span class="p">)</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>$10,598.70
+</pre>
+</div></div>
+<h4 id="collecting-keyword-arguments-with-kwargs">Collecting Keyword Arguments with <code>**kwargs</code></h4><ul>
+<li><p>A parameter with two stars, as in <code>**attributes</code>, packs any number of keyword arguments into a dictionary. Each keyword becomes a key, and each argument becomes its value.</p>
+</li>
+<li><p>This suits records whose fields depend on the instrument. A stock has a sector and a dividend yield, while a bond has a coupon and a maturity. The function below builds both kinds of record.</p>
+</li>
+<li><p>The generic name is <code>**kwargs</code>. You will see it in library documentation, since many pandas and matplotlib functions accept extra keyword arguments and pass them along.</p>
+</li>
+<li><p><strong>Note:</strong> In a definition, list regular parameters first, then <code>*args</code>, then <code>**kwargs</code>.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">def</span><span class="w"> </span><span class="nf">make_instrument</span><span class="p">(</span><span class="n">symbol</span><span class="p">,</span> <span class="n">asset_class</span><span class="p">,</span> <span class="o">**</span><span class="n">attributes</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Return a record of an instrument and its extra attributes."""</span>
+    <span class="n">record</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"symbol"</span><span class="p">:</span> <span class="n">symbol</span><span class="p">,</span> <span class="s2">"asset_class"</span><span class="p">:</span> <span class="n">asset_class</span><span class="p">}</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">attributes</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">record</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+    <span class="k">return</span> <span class="n">record</span>
+
+
+<span class="n">make_instrument</span><span class="p">(</span><span class="s2">"KO"</span><span class="p">,</span> <span class="s2">"equity"</span><span class="p">,</span> <span class="n">sector</span><span class="o">=</span><span class="s2">"Consumer Staples"</span><span class="p">,</span>
+                <span class="n">dividend_yield</span><span class="o">=</span><span class="mf">0.031</span><span class="p">)</span></code></pre></div><div class="nb-out nb-text">
+<pre>{'symbol': 'KO',
+ 'asset_class': 'equity',
+ 'sector': 'Consumer Staples',
+ 'dividend_yield': 0.031}</pre>
+</div></div><div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">make_instrument</span><span class="p">(</span><span class="s2">"UST-10Y"</span><span class="p">,</span> <span class="s2">"bond"</span><span class="p">,</span> <span class="n">coupon</span><span class="o">=</span><span class="mf">0.0425</span><span class="p">,</span> <span class="n">maturity</span><span class="o">=</span><span class="mi">2035</span><span class="p">,</span>
+                <span class="n">face_value</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span></code></pre></div><div class="nb-out nb-text">
+<pre>{'symbol': 'UST-10Y',
+ 'asset_class': 'bond',
+ 'coupon': 0.0425,
+ 'maturity': 2035,
+ 'face_value': 1000}</pre>
+</div></div>
+<h3 id="organizing-functions-into-modules">Organizing Functions into Modules</h3><ul>
+<li><p>As the number of functions grows, you can move them into a separate file called a <strong>module</strong>: a file ending in <code>.py</code> that contains Python code.</p>
+</li>
+<li><p>Any notebook or script can then <strong>import</strong> the module and use its functions. The definitions no longer clutter the notebook, and a fix made once in the module reaches every notebook that imports it.</p>
+</li>
+<li><p>In Colab or Jupyter, a cell whose first line is <code>%%writefile finance_tools.py</code> saves the rest of the cell to that file in the current folder instead of running it. In Colab the file lives in the session's temporary storage, so re-run the cell in each new session.</p>
+</li>
+<li><p><strong>Note:</strong> Python loads a module only once per session. If you edit and rewrite the file, restart the runtime (or kernel) before importing it again.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="o">%%</span><span class="n">writefile</span> <span class="n">finance_tools</span><span class="o">.</span><span class="n">py</span>
+<span class="sd">"""Finance helper functions from ECON 294A, Lecture 4."""</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">simple_return</span><span class="p">(</span><span class="n">buy_price</span><span class="p">,</span> <span class="n">sell_price</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Return the simple return from buy_price to sell_price."""</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">sell_price</span> <span class="o">-</span> <span class="n">buy_price</span><span class="p">)</span> <span class="o">/</span> <span class="n">buy_price</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">future_value</span><span class="p">(</span><span class="n">principal</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span> <span class="n">years</span><span class="p">,</span> <span class="n">periods_per_year</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Return the future value of a lump sum under compound interest."""</span>
+    <span class="n">periodic_rate</span> <span class="o">=</span> <span class="n">rate</span> <span class="o">/</span> <span class="n">periods_per_year</span>
+    <span class="k">return</span> <span class="n">principal</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">periodic_rate</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="n">years</span> <span class="o">*</span> <span class="n">periods_per_year</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">average_return</span><span class="p">(</span><span class="o">*</span><span class="n">returns</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Return the arithmetic average of any number of period returns."""</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">returns</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">returns</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">portfolio_value</span><span class="p">(</span><span class="n">holdings</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Return the total market value of a list of holdings."""</span>
+    <span class="n">total</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">for</span> <span class="n">holding</span> <span class="ow">in</span> <span class="n">holdings</span><span class="p">:</span>
+        <span class="n">total</span> <span class="o">+=</span> <span class="n">holding</span><span class="p">[</span><span class="s2">"shares"</span><span class="p">]</span> <span class="o">*</span> <span class="n">holding</span><span class="p">[</span><span class="s2">"price"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">total</span></code></pre></div><div class="nb-out nb-stream">
+<pre>Writing finance_tools.py
+</pre>
+</div></div>
+<h4 id="importing-the-whole-module">Importing the Whole Module</h4><ul>
+<li><p><code>import finance_tools</code> loads the entire module. To call one of its functions, write the module name, a dot, and the function name.</p>
+</li>
+<li><p>The prefix shows where each function comes from.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">import</span><span class="w"> </span><span class="nn">finance_tools</span>
+
+<span class="n">value</span> <span class="o">=</span> <span class="n">finance_tools</span><span class="o">.</span><span class="n">future_value</span><span class="p">(</span><span class="mi">10_000</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">periods_per_year</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"$</span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>$16,470.09
+</pre>
+</div></div>
+<h4 id="importing-selected-functions">Importing Selected Functions</h4><ul>
+<li><p><code>from finance_tools import simple_return, average_return</code> imports only the functions you name; separate several names with commas.</p>
+</li>
+<li><p>You then call them without the module prefix.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">from</span><span class="w"> </span><span class="nn">finance_tools</span><span class="w"> </span><span class="kn">import</span> <span class="n">simple_return</span><span class="p">,</span> <span class="n">average_return</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">simple_return</span><span class="p">(</span><span class="mf">410.00</span><span class="p">,</span><span class="w"> </span><span class="mf">389.50</span><span class="p">)</span><span class="si">:</span><span class="s2">.2%</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">average_return</span><span class="p">(</span><span class="mf">0.02</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mf">0.01</span><span class="p">,</span><span class="w"> </span><span class="mf">0.015</span><span class="p">)</span><span class="si">:</span><span class="s2">.2%</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>-5.00%
+0.83%
+</pre>
+</div></div>
+<h4 id="renaming-a-function-with-as">Renaming a Function with <code>as</code></h4><ul>
+<li><p>If a function's name is long, or clashes with a name already in your code, give it an <strong>alias</strong> on import with <code>as</code>.</p>
+</li>
+<li><p>Here <code>future_value</code> becomes <code>fv</code>, the short name spreadsheet programs use for the same calculation.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">from</span><span class="w"> </span><span class="nn">finance_tools</span><span class="w"> </span><span class="kn">import</span> <span class="n">future_value</span> <span class="k">as</span> <span class="n">fv</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"$</span><span class="si">{</span><span class="n">fv</span><span class="p">(</span><span class="mi">10_000</span><span class="p">,</span><span class="w"> </span><span class="mf">0.05</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">)</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>$16,288.95
+</pre>
+</div></div>
+<h4 id="renaming-a-module-with-as">Renaming a Module with <code>as</code></h4><ul>
+<li><p>A module can get a short alias too: after <code>import finance_tools as ft</code>, calls read <code>ft.portfolio_value()</code>. The prefix stays, but there is less to type.</p>
+</li>
+<li><p>From Lecture 6 on we use this form for NumPy and pandas: <code>import numpy as np</code> and <code>import pandas as pd</code> are standard conventions.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="kn">import</span><span class="w"> </span><span class="nn">finance_tools</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ft</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"$</span><span class="si">{</span><span class="n">ft</span><span class="o">.</span><span class="n">portfolio_value</span><span class="p">(</span><span class="n">portfolio</span><span class="p">)</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>$24,890.00
+</pre>
+</div></div>
+<h4 id="importing-everything-with">Importing Everything with <code>*</code></h4><ul>
+<li><p><code>from finance_tools import *</code> imports every function in the module, so you can call each one without a prefix.</p>
+</li>
+<li><p>Avoid this form in your own code. A reader cannot tell where a name came from, and if the module uses a name you already use, the import silently replaces yours. Use one of the other four styles instead.</p>
+</li>
+<li><p>Below, a number stored in <code>average_return</code> is overwritten by the module's function of the same name.</p>
+</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="n">average_return</span> <span class="o">=</span> <span class="mf">0.0085</span>  <span class="c1"># an average monthly return computed earlier</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">finance_tools</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+<span class="n">average_return</span></code></pre></div><div class="nb-out nb-text">
+<pre>&lt;function finance_tools.average_return(*returns)&gt;</pre>
+</div></div>
+<h3 id="function-style-conventions">Function Style Conventions</h3><ul>
+<li><p><strong>Names:</strong> descriptive, lowercase, with words joined by underscores (<code>future_value</code>, not <code>FutureValue</code> or <code>calc2</code>). Module names follow the same rule.</p>
+</li>
+<li><p><strong>Docstrings:</strong> every function gets one, right after the <code>def</code> line, saying what it does or returns.</p>
+</li>
+<li><p><strong>Equals signs:</strong> no spaces around <code>=</code> in a default value or a keyword argument (<code>periods_per_year=12</code>), unlike an ordinary assignment (<code>rate = 0.05</code>).</p>
+</li>
+<li><p><strong>Line length:</strong> at most 79 characters. If a parameter list runs long, break it inside the parentheses and line up the continuation with the first parameter.</p>
+</li>
+<li><p><strong>Blank lines:</strong> two blank lines before and after each top-level function, as in <code>finance_tools.py</code>; <code>import</code> statements go at the top of a file.</p>
+</li>
+<li><p><strong>One job per function:</strong> if describing a function takes the word "and", consider splitting it in two.</p>
+</li>
+</ul>
+
+<ul>
+<li>The bond-pricing function below follows these rules. It discounts each coupon and the final repayment of face value at the market yield; with a 5% coupon and a 4% yield, the bond is priced above its face value.</li>
+</ul>
+<div class="nb-cell"><div class="highlight"><pre><code class="language-python"><span class="k">def</span><span class="w"> </span><span class="nf">bond_price</span><span class="p">(</span><span class="n">face_value</span><span class="p">,</span> <span class="n">coupon_rate</span><span class="p">,</span> <span class="n">market_yield</span><span class="p">,</span> <span class="n">years</span><span class="p">,</span>
+               <span class="n">payments_per_year</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Return the price of a fixed-coupon bond at a given market yield."""</span>
+    <span class="n">coupon</span> <span class="o">=</span> <span class="n">face_value</span> <span class="o">*</span> <span class="n">coupon_rate</span> <span class="o">/</span> <span class="n">payments_per_year</span>
+    <span class="n">periodic_yield</span> <span class="o">=</span> <span class="n">market_yield</span> <span class="o">/</span> <span class="n">payments_per_year</span>
+    <span class="n">n_payments</span> <span class="o">=</span> <span class="n">years</span> <span class="o">*</span> <span class="n">payments_per_year</span>
+    <span class="n">price</span> <span class="o">=</span> <span class="n">face_value</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">periodic_yield</span><span class="p">)</span> <span class="o">**</span> <span class="n">n_payments</span>
+    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_payments</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="n">price</span> <span class="o">+=</span> <span class="n">coupon</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">periodic_yield</span><span class="p">)</span> <span class="o">**</span> <span class="n">t</span>
+    <span class="k">return</span> <span class="n">price</span>
+
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"$</span><span class="si">{</span><span class="n">bond_price</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span><span class="w"> </span><span class="mf">0.05</span><span class="p">,</span><span class="w"> </span><span class="mf">0.04</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">)</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></code></pre></div><div class="nb-out nb-stream">
+<pre>$1,081.76
+</pre>
+</div></div>
+<h3 id="in-class-exercise">In-Class Exercise</h3>
+
+<p><strong>8-1. Position Summary:</strong></p>
+<ul>
+<li>Write a function <code>summarize_position(ticker, shares, price)</code> with a docstring. It should print a line such as <code>KO: 120 shares, market value 7,440.00</code>.</li>
+<li>Call it three times with positional arguments, then once with keyword arguments in a different order.</li>
+</ul>
+
+<p><strong>8-2. Mortgage Payment:</strong></p>
+<ul>
+<li>Write <code>loan_payment(principal, annual_rate, years=30)</code> that returns the fixed monthly payment <code>principal * r / (1 - (1 + r) ** -n)</code>, where <code>r = annual_rate / 12</code> and <code>n = years * 12</code>.</li>
+<li>Compare the monthly payment on a 400,000 loan at 6% over 30 years (the default) with the payment over 15 years.</li>
+</ul>
+
+<p><strong>8-3. Dividend Record:</strong></p>
+<ul>
+<li>Write <code>record_dividend(ticker, shares, dividend_per_share, tax_rate=0.0)</code> that returns a dictionary with the ticker, the gross dividend (<code>shares * dividend_per_share</code>), the tax withheld, and the net dividend.</li>
+<li>Call it for three holdings, using a nonzero <code>tax_rate</code> in at least one call, and collect the results in a list called <code>dividend_log</code>.</li>
+<li>Write a second function that takes <code>dividend_log</code> and returns the total net dividend.</li>
+</ul>
+
+<p><strong>8-4. Return Range:</strong></p>
+<ul>
+<li>Write <code>return_range(*returns)</code> that returns a dictionary with keys <code>"best"</code>, <code>"worst"</code>, and <code>"spread"</code> (best minus worst). Hint: <code>max()</code> and <code>min()</code> work on tuples.</li>
+<li>Call it once with four returns typed directly, and once with a list of eight returns unpacked with <code>*</code>.</li>
+</ul>
+
+<p><strong>8-5. Your Own Module:</strong></p>
+<ul>
+<li>Use <code>%%writefile my_finance.py</code> to save your functions from 8-2 and 8-4 in a module.</li>
+<li>Import them in two different styles (for example, a module alias and a function alias) and call each function once.</li>
+</ul>
+</div>
