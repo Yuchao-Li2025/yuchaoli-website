@@ -65,7 +65,7 @@ params:
 
             We use sophisticated arbitrageurs' observed trading as an informed indicator of mispricing to classify the 212 factors of the factor zoo, conservatively identifying 29 as mispricing. A Common Mispricing Factor built from a high-conviction core of these factors is unspanned by every leading model, and a three-factor model (MKT, SMB, CMF) prices the unclassified factors as well as leading benchmark models.
 
-            **Fields:**\
+            **Research fields:**\
             <span class="jm-sub">Primary: Asset Pricing, Behavioral Finance</span>\
             <span class="jm-sub">Secondary: Macro-Finance, Macroeconomics</span>\
             **Expected completion:** June 2027\
