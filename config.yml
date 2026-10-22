@@ -56,7 +56,7 @@ params:
     profileMode:
           enabled: true
           title: Yuchao Li
-          subtitle: "I am a Ph.D. candidate in Economics at the University of California, Santa Cruz, with a Designated Emphasis in Data Science. My research focuses on asset pricing and behavioral finance, with secondary interests in macroeconomics and macro-finance."
+          subtitle: "I am a Ph.D. candidate in Economics at the University of California, Santa Cruz, with a Designated Emphasis in Data Science. My research focuses on asset pricing and behavioral finance, with secondary interests in macro-finance and macroeconomics."
           # 首页的求职信息（Markdown，行尾的 \ 表示换行）。求职季结束后整段删掉即可；预览图 static/og.jpg 里也有求职那一行，要一起重新生成
           jobMarket: |
             **I am on the 2026–27 job market.**
@@ -65,7 +65,9 @@ params:
 
             We use sophisticated arbitrageurs' observed trading as an informed indicator of mispricing to classify the 212 factors of the factor zoo, conservatively identifying 29 as mispricing. A Common Mispricing Factor built from a high-conviction core of these factors is unspanned by every leading model, and a three-factor model (MKT, SMB, CMF) prices the unclassified factors as well as leading benchmark models.
 
-            **Fields:** Asset pricing, behavioral finance (primary); macroeconomics, macro-finance (secondary)\
+            **Fields:**\
+            <span class="jm-sub">Primary: Asset Pricing, Behavioral Finance</span>\
+            <span class="jm-sub">Secondary: Macro-Finance, Macroeconomics</span>\
             **Expected completion:** June 2027\
             **References:** [Alonso Villacorta](https://sites.google.com/site/alonsovillacorta/) (advisor), [Hikaru Saijo](https://hsaijo.github.io/) (co-advisor), [Galina Hale](https://sites.google.com/view/galinahale/home) (committee member)
           imageUrl: picture.jpeg

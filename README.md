@@ -8,7 +8,7 @@
 |---|---|
 | 名字、简介、导航、邮箱、LinkedIn、GitHub | `config.yml` |
 | 首页图标的样子 | `layouts/partials/svg.html`：邮件、LinkedIn、GitHub 用的是 Tabler Icons 的线条图标，按 `config.yml` 里 `socialIcons` 的 `name` 对应 |
-| 首页求职信息（JMP、领域、毕业时间、推荐人） | `config.yml` 里的 `profileMode.jobMarket` |
+| 首页求职信息（JMP、领域、毕业时间、推荐人） | `config.yml` 里的 `profileMode.jobMarket`。Fields 下面缩进的两行用 `<span class="jm-sub">` 包起来，缩进样式在 `assets/css/extended/site.css` |
 | 论文 | `content/papers/<论文>/index.md`，PDF 放在同一个文件夹 |
 | 教学 | `content/teaching.md` |
 | Syllabus | `static/teaching/ECON100B_Syllabus_Summer2026.pdf`、`static/teaching/ECON294A_Syllabus_Spring2026.pdf`，Teaching 页上的 Syllabus 链接指向它们。只放 PDF，.tex 源文件不放进仓库 |

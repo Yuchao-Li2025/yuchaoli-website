@@ -32,3 +32,9 @@
 .paper-category {
     margin-bottom: 8px;
 }
+
+/* 首页求职信息里 Fields 下面缩进的两行（Primary、Secondary）。用 inline-block 加左内边距，手机上折行时也保持缩进 */
+.profile .job-market .jm-sub {
+    display: inline-block;
+    padding-inline-start: 1.5em;
+}
