@@ -118,7 +118,7 @@ def check(cv_pdf, papers_dir):
         [f"网站上下面这些论文的文字和英文 CV（`{cv_rel}`）对不上：", *problems,
          "比较时不区分大小写，也不看标点、空格和换行。",
          "改的时候，同一个文件里的 `summary`（Research 页卡片上的简介）和 `description` 也要跟着改；"
-         "JMP 的标题或摘要改了的话，首页 `config.yml` 里 `jobMarket` 的标题和一句简介也要跟着改。改好推上去后，网站重新发布时会再检查一次，"
+         "JMP 的标题或摘要改了的话，首页 `config.yml` 里 `jobMarket` 的标题和简介也要跟着改。改好推上去后，网站重新发布时会再检查一次，"
          "一致了这个 issue 就会自动关闭。",
          "如果某篇论文有意和 CV 不一样（比如网站上放的是论文里的完整摘要），"
          "在它的 front matter 里写 `cv_check: false`，就不再检查这一篇。"]

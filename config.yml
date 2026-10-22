@@ -58,14 +58,14 @@ params:
           title: Yuchao Li
           subtitle: "I am a Ph.D. candidate in Economics at the University of California, Santa Cruz, with a Designated Emphasis in Data Science. My research focuses on asset pricing and behavioral finance, with secondary interests in macro-finance and macroeconomics."
           # 首页简介下面的求职信息：status 是加粗的第一行；items 每项一行，左边是灰色标签，右边是内容（Markdown），内容要分几行时写成列表（如 Research fields）；
-          # note 是内容下面一行灰色小字（如 JMP 的一句简介，由摘要缩写，CV 里改了摘要要跟着改）。
+          # note 是内容下面的灰色小字（如 JMP 的简介，由摘要缩写，CV 里改了摘要要跟着改）。
           # 求职季结束后删掉 status 和 Email 以外的各项；预览图 static/og.jpg 里也有求职那一行，要一起重新生成
           jobMarket:
             status: "I am on the 2026–27 job market."
             items:
               - label: Job market paper
                 value: "[Decoding the Factor Zoo: Insights from Arbitrage Trading](papers/factor-zoo-arbitrage/) (with Yuntong Wu)"
-                note: "We use sophisticated arbitrageurs’ observed trading as an informed indicator of mispricing to classify 212 factors from the Chen and Zimmermann (2022) database, conservatively identifying 29 as mispricing."
+                note: "Using hedge fund holdings and short interest, we classify 29 of 212 factors as mispricing. A three-factor model of market, size, and a mispricing factor prices the other 183 as well as the leading benchmark models (FF5+MOM, q5, SY, DHS) do."
               - label: Research fields
                 value:
                   - "Primary: Asset Pricing, Behavioral Finance"
