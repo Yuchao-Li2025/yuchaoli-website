@@ -37,12 +37,14 @@ Research 页按每篇论文 front matter 里的 `category` 分组，组内按 `w
 
 英文和中文 CV 各是一个 Overleaf 项目，在 Overleaf 里改完就行。`.github/workflows/cv-sync.yml` 每小时通过 Overleaf 的 Git 集成读取这两个项目；某一份出现新版本、并且到下一次检查时没再改动，就用完整的 TeX Live 编译，覆盖对应的 PDF，再重新发布网站。所以改完后一到两小时，网站上就是新版。要马上更新：仓库的 Actions → Sync CV from Overleaf → Run workflow。
 
+同步只更新 PDF，不会改网站上的论文页。论文的标题和摘要在 `content/papers/<论文>/index.md`，摘要原样取自英文 CV；同一文件里的 `summary`（Research 页卡片上的简介）、`description`（搜索结果和分享链接时显示的那句话），以及首页 `config.yml` 里 `jobMarket` 的 JMP 简介，都是由摘要缩写的。在 CV 里改了论文的标题或摘要，这几处要另外改。
+
 | | 英文 CV | 中文 CV |
 |---|---|---|
 | 网站上的文件 | `static/Li_Yuchao_CV.pdf` | `static/Li_Yuchao_CV_zh.pdf` |
 | 项目 ID 的 secret | `OVERLEAF_PROJECT_ID` | `OVERLEAF_PROJECT_ID_ZH` |
 | 编译器（和 Overleaf 项目的设置一致） | pdfLaTeX | XeLaTeX |
-| 网站上的入口 | 导航栏 CV、首页 CV 按钮 | 首页"中文简历"按钮 |
+| 网站上的入口 | 导航栏 CV、首页 CV 按钮 | 导航栏"中文简历"、首页"中文简历"按钮 |
 
 - 仓库 secret 在 Settings → Secrets and variables → Actions：
   - `OVERLEAF_TOKEN`：在 Overleaf → Account Settings → Git integration 生成，同一个账号下的项目共用。有效期一年，过期后重新生成，替换这个 secret。
