@@ -51,6 +51,9 @@
                     {{- range $i, $line := .value }}{{ if $i }}<br>{{ end }}{{ $line | markdownify }}{{ end }}
                     {{- else }}
                     {{- .value | markdownify }}
+                    {{- end }}
+                    {{- with .note }}
+                    <span class="jm-note">{{ . | markdownify }}</span>
                     {{- end -}}
                 </dd>
                 {{- end }}

@@ -39,7 +39,7 @@ Research 页按每篇论文 front matter 里的 `category` 分组，组内按 `w
 
 英文和中文 CV 各是一个 Overleaf 项目，在 Overleaf 里改完就行。`.github/workflows/cv-sync.yml` 每小时通过 Overleaf 的 Git 集成读取这两个项目；某一份出现新版本、并且到下一次检查时没再改动，就用完整的 TeX Live 编译，覆盖对应的 PDF，再重新发布网站。所以改完后一到两小时，网站上就是新版。要马上更新：仓库的 Actions → Sync CV from Overleaf → Run workflow。
 
-同步只更新 PDF，不会改网站上的论文页。论文的标题和摘要在 `content/papers/<论文>/index.md`，摘要原样取自英文 CV；同一文件里的 `summary`（Research 页卡片上的简介）和 `description`（搜索结果和分享链接时显示的那句话）都是由摘要缩写的；首页 `config.yml` 里 `jobMarket` 也写着 JMP 的标题。在 CV 里改了论文的标题或摘要，这几处要另外改。
+同步只更新 PDF，不会改网站上的论文页。论文的标题和摘要在 `content/papers/<论文>/index.md`，摘要原样取自英文 CV；同一文件里的 `summary`（Research 页卡片上的简介）和 `description`（搜索结果和分享链接时显示的那句话）都是由摘要缩写的；首页 `config.yml` 里 `jobMarket` 也写着 JMP 的标题和一句简介（`note`）。在 CV 里改了论文的标题或摘要，这几处要另外改。
 
 为了不漏改，网站每次重新发布（包括 CV 同步之后）都会检查各篇论文的标题和摘要是否还和英文 CV 一致。对不上就在仓库开一个 issue，标题是 "Paper text on the website differs from the English CV"（GitHub 会发邮件），里面列出是哪一篇、网站上哪几句在 CV 里找不到；改好推上去，一致了这个 issue 会自动关闭。检查结果不影响网站发布。
 

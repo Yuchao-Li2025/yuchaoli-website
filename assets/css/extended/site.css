@@ -53,6 +53,14 @@
     margin: 0;
 }
 
+/* 内容下面的一行灰色小字（JMP 的一句简介） */
+.profile .jm-note {
+    display: block;
+    margin-top: 4px;
+    font-size: 15px;
+    color: var(--secondary);
+}
+
 .profile .job-market a {
     text-decoration: underline;
     text-decoration-color: var(--gray);
