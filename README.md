@@ -8,12 +8,13 @@
 |---|---|
 | 名字、简介、导航、邮箱、LinkedIn、GitHub | `config.yml` |
 | 首页图标的样子 | `layouts/partials/svg.html`：邮件、LinkedIn、GitHub 用的是 Tabler Icons 的线条图标，按 `config.yml` 里 `socialIcons` 的 `name` 对应 |
-| 首页求职信息（JMP、领域、毕业时间、推荐人） | `config.yml` 里的 `profileMode.jobMarket`。Fields 下面缩进的两行用 `<span class="jm-sub">` 包起来，缩进样式在 `assets/css/extended/site.css` |
+| 首页求职信息（求职状态、JMP、推荐人、毕业时间、邮箱） | `config.yml` 里的 `profileMode.jobMarket`：`status` 是加粗的第一行，`items` 每项一行，左边是标签，右边是内容 |
+| 首页的版式（600px 单栏、分隔线、标签和内容两栏对齐、白底按钮） | `assets/css/extended/site.css`。首页不显示页脚，见 `layouts/_default/baseof.html` |
 | 论文 | `content/papers/<论文>/index.md`，PDF 放在同一个文件夹 |
 | 教学 | `content/teaching.md` |
 | Syllabus | `static/teaching/ECON100B_Syllabus_Summer2026.pdf`、`static/teaching/ECON294A_Syllabus_Spring2026.pdf`，Teaching 页上的 Syllabus 链接指向它们。只放 PDF，.tex 源文件不放进仓库 |
 | ECON 294A 课程页和讲义 | `content/econ294a/`，见下文"ECON 294A 讲义" |
-| 照片 | `static/picture.jpeg`：480×480 的正方形 JPEG，约 24 KB，首页显示成 160px 的圆形。换照片时同名覆盖，尺寸和大小保持在这个量级，不要直接放相机或影楼原图 |
+| 照片 | `static/picture.jpeg`：480×480 的正方形 JPEG，约 24 KB，首页显示成 130px 的圆角方形（手机上 110px）。换照片时同名覆盖，尺寸和大小保持在这个量级，不要直接放相机或影楼原图 |
 | 分享链接时的预览图 | `static/og.jpg`（1200×630），由 `config.yml` 里的 `images` 指定。源文件是 `og-image/og.html`（这个文件夹不会发布），改完运行 `python3 og-image/render.py` 重新生成；换图后把 `images` 改成 `og.jpg?v=2` 这样，避免各平台显示缓存的旧图。图里有求职那一行，求职季结束后要删掉再生成 |
 | CV | 在 Overleaf 里改，自动同步到 `static/Li_Yuchao_CV.pdf`（英文）和 `static/Li_Yuchao_CV_zh.pdf`（中文），见下文"更新 CV" |
 | 网站地址 | `config.yml` 第一行的 `baseURL`（https://www.yuchaoli.com/） |
@@ -38,7 +39,7 @@ Research 页按每篇论文 front matter 里的 `category` 分组，组内按 `w
 
 英文和中文 CV 各是一个 Overleaf 项目，在 Overleaf 里改完就行。`.github/workflows/cv-sync.yml` 每小时通过 Overleaf 的 Git 集成读取这两个项目；某一份出现新版本、并且到下一次检查时没再改动，就用完整的 TeX Live 编译，覆盖对应的 PDF，再重新发布网站。所以改完后一到两小时，网站上就是新版。要马上更新：仓库的 Actions → Sync CV from Overleaf → Run workflow。
 
-同步只更新 PDF，不会改网站上的论文页。论文的标题和摘要在 `content/papers/<论文>/index.md`，摘要原样取自英文 CV；同一文件里的 `summary`（Research 页卡片上的简介）、`description`（搜索结果和分享链接时显示的那句话），以及首页 `config.yml` 里 `jobMarket` 的 JMP 简介，都是由摘要缩写的。在 CV 里改了论文的标题或摘要，这几处要另外改。
+同步只更新 PDF，不会改网站上的论文页。论文的标题和摘要在 `content/papers/<论文>/index.md`，摘要原样取自英文 CV；同一文件里的 `summary`（Research 页卡片上的简介）和 `description`（搜索结果和分享链接时显示的那句话）都是由摘要缩写的；首页 `config.yml` 里 `jobMarket` 也写着 JMP 的标题。在 CV 里改了论文的标题或摘要，这几处要另外改。
 
 为了不漏改，网站每次重新发布（包括 CV 同步之后）都会检查各篇论文的标题和摘要是否还和英文 CV 一致。对不上就在仓库开一个 issue，标题是 "Paper text on the website differs from the English CV"（GitHub 会发邮件），里面列出是哪一篇、网站上哪几句在 CV 里找不到；改好推上去，一致了这个 issue 会自动关闭。检查结果不影响网站发布。
 
@@ -91,7 +92,7 @@ Research 页按每篇论文 front matter 里的 `category` 分组，组内按 `w
 
 - [x] 换照片 `static/picture.jpeg`
 - [ ] 论文 PDF：放进各论文文件夹并命名为 `paper.pdf`，再删掉 Download 那段的注释标记。JMP 最要紧
-- [ ] 核对首页的 JMP 简介和各论文卡片上的简介（摘要原文取自 CV）
+- [ ] 核对各论文卡片上的简介（摘要原文取自 CV）
 - [x] 域名：yuchaoli.com（Porkbun）
 
 ## 本地预览

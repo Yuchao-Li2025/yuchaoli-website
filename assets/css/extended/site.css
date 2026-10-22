@@ -1,14 +1,108 @@
-/* 首页求职信息 */
-.profile .job-market p {
+/* 首页：600px 宽的单栏，各块之间用细线隔开，照片是圆角方形，按钮是白底细边框 */
+:root {
+    --rule: rgb(228, 228, 228);
+}
+
+.main .profile {
+    max-width: 600px;
+    margin-inline: auto;
+    padding: 0;
+    /* 首页没有页脚，内容在整屏高度里上下居中 */
+    min-height: calc(100vh - var(--gap) * 2);
+}
+
+.profile .profile_inner h1 {
+    margin-top: 8px;
+    line-height: 1.2;
+}
+
+.profile img {
+    border-radius: 16px;
+    border-color: var(--rule);
+}
+
+.profile-rule {
+    align-self: stretch;
+    height: 1px;
+    margin: 4px 0;
+    border: 0;
+    background: var(--rule);
+}
+
+/* 求职信息：第一行加粗，下面是标签和内容两栏 */
+.profile .job-market {
+    align-self: stretch;
+}
+
+.profile .jm-status {
+    margin: 0 0 10px;
+    font-weight: 600;
+}
+
+.profile .jm-items {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 6px 24px;
     margin: 0;
 }
 
-.profile .job-market p + p {
-    margin-top: 10px;
+.profile .jm-items dt {
+    color: var(--secondary);
+}
+
+.profile .jm-items dd {
+    margin: 0;
 }
 
 .profile .job-market a {
-    box-shadow: 0 1px 0 var(--primary);
+    text-decoration: underline;
+    text-decoration-color: var(--gray);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+}
+
+.profile .job-market a:hover {
+    text-decoration-color: var(--primary);
+}
+
+/* 手机上标签放在内容上面 */
+@media screen and (max-width: 600px) {
+    .profile .jm-items {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    .profile .jm-items dd + dt {
+        margin-top: 8px;
+    }
+}
+
+/* 主题在手机上把照片 scale(0.85)，缩放以中心为准，照片左边会比文字往里缩一截；改成直接设尺寸，和文字左对齐 */
+@media screen and (max-width: 768px) {
+    .profile img {
+        transform: none;
+        width: 110px;
+        height: 110px;
+    }
+}
+
+.profile .social-icons a {
+    padding: 10px 15px 10px 0;
+}
+
+.profile .social-icons a svg {
+    width: 26px;
+    height: 26px;
+}
+
+.profile .button {
+    background: var(--theme);
+    border: 1px solid var(--rule);
+}
+
+.profile .button:hover {
+    background: var(--theme);
+    border-color: var(--darkcolor);
 }
 
 /* Research 页的分组标题，以及论文页标题上方的类别标签 */
@@ -31,10 +125,4 @@
 
 .paper-category {
     margin-bottom: 8px;
-}
-
-/* 首页求职信息里 Fields 下面缩进的两行（Primary、Secondary）。用 inline-block 加左内边距，手机上折行时也保持缩进 */
-.profile .job-market .jm-sub {
-    display: inline-block;
-    padding-inline-start: 1.5em;
 }

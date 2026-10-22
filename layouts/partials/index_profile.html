@@ -31,14 +31,33 @@
         {{- end }}
         {{- end }}
         <h1>{{ .title | default site.Title | markdownify }}</h1>
+        {{- /* 首页分成几块（简介、求职信息、图标、按钮），块与块之间用细线隔开 */}}
+        <hr class="profile-rule">
         <span>{{ .subtitle | markdownify }}</span>
-        {{- /* 求职信息块：内容写在 config.yml 的 profileMode.jobMarket */}}
+        {{- /* 求职信息：内容写在 config.yml 的 profileMode.jobMarket（status 一行，items 是标签和内容两栏） */}}
         {{- with .jobMarket }}
-        <div class="job-market">{{ . | markdownify }}</div>
+        <hr class="profile-rule">
+        <div class="job-market">
+            {{- with .status }}
+            <p class="jm-status">{{ . | markdownify }}</p>
+            {{- end }}
+            {{- with .items }}
+            <dl class="jm-items">
+                {{- range . }}
+                <dt>{{ .label }}</dt>
+                <dd>{{ .value | markdownify }}</dd>
+                {{- end }}
+            </dl>
+            {{- end }}
+        </div>
+        {{- end }}
+        {{- with site.Params.socialIcons }}
+        <hr class="profile-rule">
         {{- end }}
         {{- partial "social_icons.html" -}}
 
         {{- with .buttons }}
+        <hr class="profile-rule">
         <div class="buttons">
             {{- range . }}
             {{- $url := trim .url " " }}

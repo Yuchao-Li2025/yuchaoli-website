@@ -24,6 +24,9 @@
     <main class="main">
         {{- block "main" . }}{{ end }}
     </main>
+    {{- /* 首页不显示页脚，页面到按钮为止；其他页面照常显示 */}}
+    {{- if not .IsHome }}
     {{ partialCached "footer.html" . .Layout .Kind (.Param "hideFooter") (.Param "ShowCodeCopyButtons") -}}
+    {{- end }}
 </body>
 </html>
