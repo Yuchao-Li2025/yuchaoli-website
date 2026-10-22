@@ -45,7 +45,14 @@
             <dl class="jm-items">
                 {{- range . }}
                 <dt>{{ .label }}</dt>
-                <dd>{{ .value | markdownify }}</dd>
+                {{- /* value 写成列表时，每个元素占一行 */}}
+                <dd>
+                    {{- if reflect.IsSlice .value }}
+                    {{- range $i, $line := .value }}{{ if $i }}<br>{{ end }}{{ $line | markdownify }}{{ end }}
+                    {{- else }}
+                    {{- .value | markdownify }}
+                    {{- end -}}
+                </dd>
                 {{- end }}
             </dl>
             {{- end }}

@@ -8,13 +8,13 @@
 |---|---|
 | 名字、简介、导航、邮箱、LinkedIn、GitHub | `config.yml` |
 | 首页图标的样子 | `layouts/partials/svg.html`：邮件、LinkedIn、GitHub 用的是 Tabler Icons 的线条图标，按 `config.yml` 里 `socialIcons` 的 `name` 对应 |
-| 首页求职信息（求职状态、JMP、推荐人、毕业时间、邮箱） | `config.yml` 里的 `profileMode.jobMarket`：`status` 是加粗的第一行，`items` 每项一行，左边是标签，右边是内容 |
+| 首页求职信息（求职状态、JMP、研究领域、推荐人、毕业时间、邮箱） | `config.yml` 里的 `profileMode.jobMarket`：`status` 是加粗的第一行，`items` 每项一行，左边是标签，右边是内容；内容要分几行时写成列表（如 Research fields） |
 | 首页的版式（600px 单栏、分隔线、标签和内容两栏对齐、白底按钮） | `assets/css/extended/site.css`。首页不显示页脚，见 `layouts/_default/baseof.html` |
 | 论文 | `content/papers/<论文>/index.md`，PDF 放在同一个文件夹 |
 | 教学 | `content/teaching.md` |
 | Syllabus | `static/teaching/ECON100B_Syllabus_Summer2026.pdf`、`static/teaching/ECON294A_Syllabus_Spring2026.pdf`，Teaching 页上的 Syllabus 链接指向它们。只放 PDF，.tex 源文件不放进仓库 |
 | ECON 294A 课程页和讲义 | `content/econ294a/`，见下文"ECON 294A 讲义" |
-| 照片 | `static/picture.jpeg`：480×480 的正方形 JPEG，约 24 KB，首页显示成 130px 的圆角方形（手机上 110px）。换照片时同名覆盖，尺寸和大小保持在这个量级，不要直接放相机或影楼原图 |
+| 照片 | `static/picture.jpeg`：480×480 的正方形 JPEG，约 24 KB，首页显示成 130px 的圆形（手机上 110px）。换照片时同名覆盖，尺寸和大小保持在这个量级，不要直接放相机或影楼原图 |
 | 分享链接时的预览图 | `static/og.jpg`（1200×630），由 `config.yml` 里的 `images` 指定。源文件是 `og-image/og.html`（这个文件夹不会发布），改完运行 `python3 og-image/render.py` 重新生成；换图后把 `images` 改成 `og.jpg?v=2` 这样，避免各平台显示缓存的旧图。图里有求职那一行，求职季结束后要删掉再生成 |
 | CV | 在 Overleaf 里改，自动同步到 `static/Li_Yuchao_CV.pdf`（英文）和 `static/Li_Yuchao_CV_zh.pdf`（中文），见下文"更新 CV" |
 | 网站地址 | `config.yml` 第一行的 `baseURL`（https://www.yuchaoli.com/） |

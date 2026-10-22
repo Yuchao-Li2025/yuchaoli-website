@@ -57,13 +57,17 @@ params:
           enabled: true
           title: Yuchao Li
           subtitle: "I am a Ph.D. candidate in Economics at the University of California, Santa Cruz, with a Designated Emphasis in Data Science. My research focuses on asset pricing and behavioral finance, with secondary interests in macro-finance and macroeconomics."
-          # 首页简介下面的求职信息：status 是加粗的第一行；items 每项一行，左边是灰色标签，右边是内容（Markdown）。
-          # 求职季结束后删掉 status 和前三项，只留 Email；预览图 static/og.jpg 里也有求职那一行，要一起重新生成
+          # 首页简介下面的求职信息：status 是加粗的第一行；items 每项一行，左边是灰色标签，右边是内容（Markdown），内容要分几行时写成列表（如 Research fields）。
+          # 求职季结束后删掉 status 和 Email 以外的各项；预览图 static/og.jpg 里也有求职那一行，要一起重新生成
           jobMarket:
             status: "I am on the 2026–27 job market."
             items:
               - label: Job market paper
                 value: "[Decoding the Factor Zoo: Insights from Arbitrage Trading](papers/factor-zoo-arbitrage/) (with Yuntong Wu)"
+              - label: Research fields
+                value:
+                  - "Primary: Asset Pricing, Behavioral Finance"
+                  - "Secondary: Macro-Finance, Macroeconomics"
               - label: References
                 value: "[Alonso Villacorta](https://sites.google.com/site/alonsovillacorta/) (advisor), [Hikaru Saijo](https://hsaijo.github.io/) (co-advisor), [Galina Hale](https://sites.google.com/view/galinahale/home) (committee member)"
               - label: Expected completion
