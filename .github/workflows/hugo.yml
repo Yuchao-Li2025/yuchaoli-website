@@ -1,4 +1,6 @@
-# Build the Hugo site and deploy it to GitHub Pages on every push to main.
+# Build the Hugo site and deploy it to GitHub Pages on every push to main (cv-sync.yml also
+# starts it after publishing a CV). Each run also checks that the paper pages still match
+# the English CV.
 name: Deploy Hugo site to Pages
 
 on:
@@ -58,3 +60,45 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
+
+  # Paper titles and abstracts in content/papers/ are copied from the English CV, which
+  # cv-sync.yml updates from Overleaf on its own. If they no longer match, open an issue
+  # (GitHub emails it); close it once they match again. A mismatch does not stop the deploy.
+  check-papers:
+    name: Check papers against the CV
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    env:
+      ISSUE_TITLE: Paper text on the website differs from the English CV
+      GH_REPO: ${{ github.repository }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Compare titles and abstracts with the CV
+        id: check
+        run: |
+          pip install --quiet --disable-pip-version-check pypdf==6.21.2
+          python tools/check_papers.py --report "$RUNNER_TEMP/papers.md"
+      - name: Open or update the issue
+        if: steps.check.outputs.status == 'mismatch'
+        run: |
+          n=$(gh issue list --state open --json number,title --jq '[.[] | select(.title == env.ISSUE_TITLE) | .number][0] // empty')
+          if [[ -n "$n" ]]; then
+            gh issue edit "$n" --body-file "$RUNNER_TEMP/papers.md"
+          else
+            gh issue create --title "$ISSUE_TITLE" --body-file "$RUNNER_TEMP/papers.md"
+          fi
+      - name: Close the issue
+        if: steps.check.outputs.status == 'ok'
+        run: |
+          gh issue list --state open --json number,title --jq '.[] | select(.title == env.ISSUE_TITLE) | .number' |
+            while read -r n; do
+              gh issue close "$n" --comment "网站上的论文标题和摘要已经和英文 CV 一致。"
+            done

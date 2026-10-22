@@ -19,6 +19,7 @@
 | 网站地址 | `config.yml` 第一行的 `baseURL`（https://www.yuchaoli.com/） |
 | GitHub Pages 部署 | `.github/workflows/hugo.yml` |
 | CV 同步 | `.github/workflows/cv-sync.yml` |
+| 检查论文页和 CV 是否一致 | `tools/check_papers.py`，在 `hugo.yml` 的 check-papers 里运行，见下文"更新 CV" |
 | EdgeOne 构建设置（备用） | `edgeone.json` |
 
 ### 论文分组
@@ -31,13 +32,20 @@ Research 页按每篇论文 front matter 里的 `category` 分组，组内按 `w
 | `"Working Paper"` | Working Papers |
 | `"Work in Progress"` | Work in Progress |
 
-新加一篇论文：复制一个论文文件夹，改标题、作者、`category`、`weight`、`summary`（Research 页卡片上的简介）和摘要。
+新加一篇论文：复制一个论文文件夹，改标题、作者、`category`、`weight`、`summary`（Research 页卡片上的简介）、`description` 和摘要。
 
 ### 更新 CV
 
 英文和中文 CV 各是一个 Overleaf 项目，在 Overleaf 里改完就行。`.github/workflows/cv-sync.yml` 每小时通过 Overleaf 的 Git 集成读取这两个项目；某一份出现新版本、并且到下一次检查时没再改动，就用完整的 TeX Live 编译，覆盖对应的 PDF，再重新发布网站。所以改完后一到两小时，网站上就是新版。要马上更新：仓库的 Actions → Sync CV from Overleaf → Run workflow。
 
 同步只更新 PDF，不会改网站上的论文页。论文的标题和摘要在 `content/papers/<论文>/index.md`，摘要原样取自英文 CV；同一文件里的 `summary`（Research 页卡片上的简介）、`description`（搜索结果和分享链接时显示的那句话），以及首页 `config.yml` 里 `jobMarket` 的 JMP 简介，都是由摘要缩写的。在 CV 里改了论文的标题或摘要，这几处要另外改。
+
+为了不漏改，网站每次重新发布（包括 CV 同步之后）都会检查各篇论文的标题和摘要是否还和英文 CV 一致。对不上就在仓库开一个 issue，标题是 "Paper text on the website differs from the English CV"（GitHub 会发邮件），里面列出是哪一篇、网站上哪几句在 CV 里找不到；改好推上去，一致了这个 issue 会自动关闭。检查结果不影响网站发布。
+
+- 比较时不区分大小写，也不看标点、空格和换行，所以只改了标点（比如连字符）不会报。
+- 只检查网站上已有的论文。CV 里新加的论文，要另外加到网站上。
+- 某篇论文有意和 CV 不一样（比如网站上放的是论文里的完整摘要），在它的 front matter 里写 `cv_check: false`，就不再检查这一篇。`draft: true` 的论文也不检查。
+- 在本机检查：`pip install pypdf`，然后在仓库目录运行 `python3 tools/check_papers.py`。
 
 | | 英文 CV | 中文 CV |
 |---|---|---|
