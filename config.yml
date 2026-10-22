@@ -79,8 +79,6 @@ params:
               lang: zh
 
     socialIcons:
-        - name: CV
-          url: Li_Yuchao_CV.pdf
         - name: Email
           url: mailto:yli852@ucsc.edu
         - name: LinkedIn

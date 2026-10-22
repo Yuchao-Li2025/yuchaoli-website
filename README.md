@@ -41,7 +41,7 @@ Research 页按每篇论文 front matter 里的 `category` 分组，组内按 `w
 | 网站上的文件 | `static/Li_Yuchao_CV.pdf` | `static/Li_Yuchao_CV_zh.pdf` |
 | 项目 ID 的 secret | `OVERLEAF_PROJECT_ID` | `OVERLEAF_PROJECT_ID_ZH` |
 | 编译器（和 Overleaf 项目的设置一致） | pdfLaTeX | XeLaTeX |
-| 网站上的入口 | 导航栏 CV、首页 CV 按钮、CV 图标 | 首页"中文简历"按钮 |
+| 网站上的入口 | 导航栏 CV、首页 CV 按钮 | 首页"中文简历"按钮 |
 
 - 仓库 secret 在 Settings → Secrets and variables → Actions：
   - `OVERLEAF_TOKEN`：在 Overleaf → Account Settings → Git integration 生成，同一个账号下的项目共用。有效期一年，过期后重新生成，替换这个 secret。
@@ -53,7 +53,7 @@ Research 页按每篇论文 front matter 里的 `category` 分组，组内按 `w
 - 如果在 Overleaf 里换了编译器，cv-sync.yml 里对应那份的 `xelatex` 也要跟着改。
 - 主文件自动识别：项目里唯一一个带 `\documentclass` 的 .tex 文件，有多个时用 `main.tex`。识别不了时，在 cv-sync.yml 里给那份 CV 写上 `main`。
 - 仓库 60 天没有新提交，GitHub 会自动停用定时任务。到 Actions 页面点 Enable workflow 即可恢复。
-- 也可以直接用同名文件覆盖 static/ 里的 PDF，但 Overleaf 上下一次有改动时会被覆盖回去。导航栏、首页按钮和图标的链接都不用改。
+- 也可以直接用同名文件覆盖 static/ 里的 PDF，但 Overleaf 上下一次有改动时会被覆盖回去。导航栏和首页按钮的链接都不用改。
 
 ## ECON 294A 讲义
 
