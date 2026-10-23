@@ -65,7 +65,7 @@ params:
             items:
               - label: Job market paper
                 value: "[Decoding the Factor Zoo: Insights from Arbitrage Trading](papers/factor-zoo-arbitrage/) (with Yuntong Wu)"
-                note: "Using hedge fund holdings and short interest, we classify 29 of 212 factors as mispricing. A three-factor model of market, size, and a mispricing factor prices the other 183 as well as the leading benchmark models (FF5+MOM, q5, SY, DHS) do."
+                note: "Using hedge fund holdings and short interest, we classify 29 of 212 factors as mispricing. A three-factor model of market, size, and a mispricing factor prices the other 183 as well as the leading benchmark models (FF5+MOM, q5, SY, DHS) do, and leaves the fewest factors unpriced."
               - label: Research fields
                 value:
                   - "Primary: Asset Pricing, Behavioral Finance"

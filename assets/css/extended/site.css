@@ -53,10 +53,12 @@
     margin: 0;
 }
 
-/* 内容下面的一行灰色小字（JMP 的一句简介） */
+/* 内容下面的灰色小字（JMP 的简介）。和左栏的灰色标签同色，所以缩进并在左边加一条细线，看得出是标题下面的说明 */
 .profile .jm-note {
     display: block;
-    margin-top: 4px;
+    margin: 6px 0 4px;
+    padding-left: 12px;
+    border-left: 2px solid var(--rule);
     font-size: 15px;
     color: var(--secondary);
 }
