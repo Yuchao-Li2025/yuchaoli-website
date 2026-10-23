@@ -1,4 +1,5 @@
-/* 首页：600px 宽的单栏，各块之间用细线隔开，圆形照片，按钮是白底细边框 */
+/* 首页：600px 宽的单栏，各块之间用细线隔开，圆形照片放在名字左边，按钮是白底细边框，图标和按钮在同一行。
+   整页要在 1920×1080 屏幕的浏览器窗口（可视高度约 840px）里不用滚动；首页加内容后在这个高度下看一下 */
 :root {
     --rule: rgb(228, 228, 228);
 }
@@ -11,12 +12,20 @@
     min-height: calc(100vh - var(--gap) * 2);
 }
 
+/* 照片和名字在同一行，上下居中 */
+.profile .profile-head {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
 .profile .profile_inner h1 {
-    margin-top: 8px;
+    margin: 0;
     line-height: 1.2;
 }
 
 .profile img {
+    flex-shrink: 0;
     border-color: var(--rule);
 }
 
@@ -90,13 +99,31 @@
 @media screen and (max-width: 768px) {
     .profile img {
         transform: none;
-        width: 110px;
-        height: 110px;
+        width: 80px;
+        height: 80px;
+    }
+
+    .profile .profile-head {
+        gap: 18px;
     }
 }
 
+/* 最后一行：按钮靠左，图标靠右；放不下时图标换到下一行，靠左 */
+.profile .profile-links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    align-self: stretch;
+    column-gap: 12px;
+}
+
 .profile .social-icons a {
-    padding: 10px 15px 10px 0;
+    padding: 10px 0;
+}
+
+.profile .social-icons a + a {
+    margin-inline-start: 15px;
 }
 
 .profile .social-icons a svg {

@@ -77,8 +77,8 @@ params:
               - label: Email
                 value: "[yli852@ucsc.edu](mailto:yli852@ucsc.edu)"
           imageUrl: picture.jpeg
-          imageWidth: 130
-          imageHeight: 130
+          imageWidth: 100
+          imageHeight: 100
           buttons:
             - name: Research
               url: papers/
