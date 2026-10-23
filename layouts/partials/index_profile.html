@@ -1,8 +1,6 @@
 <div class="profile">
     {{- with site.Params.profileMode }}
     <div class="profile_inner">
-        {{- /* 照片和名字放在同一行 */}}
-        <div class="profile-head">
         {{- if .imageUrl -}}
         {{- $img := "" }}
         {{- if not (urls.Parse .imageUrl).IsAbs }}
@@ -33,8 +31,7 @@
         {{- end }}
         {{- end }}
         <h1>{{ .title | default site.Title | markdownify }}</h1>
-        </div>
-        {{- /* 首页分成几块（照片和名字、简介、求职信息、按钮和图标），块与块之间用细线隔开 */}}
+        {{- /* 首页分成几块（简介、求职信息、按钮和图标），块与块之间用细线隔开 */}}
         <hr class="profile-rule">
         <span>{{ .subtitle | markdownify }}</span>
         {{- /* 求职信息：内容写在 config.yml 的 profileMode.jobMarket（status 一行，items 是标签和内容两栏） */}}

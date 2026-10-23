@@ -72,13 +72,11 @@ params:
                   - "Secondary: Macro-Finance, Macroeconomics"
               - label: References
                 value: "[Alonso Villacorta](https://sites.google.com/site/alonsovillacorta/) (advisor), [Hikaru Saijo](https://hsaijo.github.io/) (co-advisor), [Galina Hale](https://sites.google.com/view/galinahale/home) (committee member)"
-              - label: Expected completion
-                value: June 2027
               - label: Email
                 value: "[yli852@ucsc.edu](mailto:yli852@ucsc.edu)"
           imageUrl: picture.jpeg
-          imageWidth: 100
-          imageHeight: 100
+          imageWidth: 130
+          imageHeight: 130
           buttons:
             - name: Research
               url: papers/
